@@ -1,0 +1,18 @@
+[settings]
+os=Windows
+os_build=Windows
+arch=x86_64
+arch_build=x86_64
+compiler=Visual Studio
+compiler.version=14
+build_type=Release
+[options]
+xmscore:xms=False
+xmsinterp:xms=False
+xmsextractor:xms=False
+xmscore:pybind=True
+xmsinterp:pybind=True
+xmsextractor:pybind=True
+
+[build_requires]
+[env]
