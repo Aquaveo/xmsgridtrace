@@ -19,6 +19,8 @@
 // 5. Shared code headers
 #include <xmscore/misc/XmError.h>
 #include <xmscore/misc/XmLog.h>
+#include <xmscore/math/math.h>
+#include <xmsgridtrace/extractor/XmUGrid2dDataExtractor.h>
 //#include <xmscore/misc/xmstype.h>
 //#include <xmsgrid/ugrid/XmUGrid.h>
 //#include <xmsinterp/geometry/geoms.h>
@@ -41,7 +43,25 @@ namespace xms
 //----- Classes / Structs ------------------------------------------------------
 
 //----- Internal functions -----------------------------------------------------
-
+bool extract(XmUGrid2dDataExtractor& a_extractorX, XmUGrid2dDataExtractor& a_extractorY, const Pt3d& a_pt, Pt3d& a_data)
+{
+  VecPt3d loc;
+  loc.push_back(a_pt);
+  a_extractorX.SetExtractLocations(loc);
+  a_extractorY.SetExtractLocations(loc);
+  VecFlt dataOutx;
+  VecFlt dataOuty;
+  a_extractorX.ExtractData(dataOutx);
+  a_extractorY.ExtractData(dataOuty);
+  if (dataOutx.size() != 1 || dataOuty.size() != 1)
+  {
+    XM_LOG(xmlog::error, "Extracted data had an error");
+    return false;
+  }
+  a_data.x = dataOutx[0];
+  a_data.y = dataOuty[0];
+  return true;
+}
 //----- Class / Function definitions -------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,22 +94,28 @@ public:
   double GetMaxChangeDirectionInRadians() const final;
   void SetMaxChangeDirectionInRadians(const double a_maxChangeDirection) final;
 
-  void AddGridPointVectorsAtTime(const VecPt3d& a_vec, double a_time) final;
-  void AddGridCellVectorsAtTime(const VecPt3d& a_vec, double a_time) final;
-  void AddGridPointActivityAtTime(const dyn_bitset& a_vec, double a_time) final;
-  void AddGridCellActivityAtTime(const dyn_bitset& a_vec, double a_time) final;
+  void AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocationEnum a_scalarLoc, xms::DynBitset& a_activity, DataLocationEnum a_activityLoc, double a_time) final;
 
-  void TracePoint(const Pt3d& a_pt, VecPt3d& a_outTrace) final;
+  void TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt3d& a_outTrace, VecDbl& a_outTimes) final;
 
 private:
+
   BSHP<XmUGrid> m_ugrid;
-  double m_vectorMultiplier;
-  double m_maxTracingTimeSeconds;
-  double m_maxTracingDistanceMeters;
-  double m_minDeltaTimeSeconds;
-  double m_maxChangeDistanceMeters;
-  double m_maxChangeVelocityMetersPerSecond;
-  double m_maxChangeDirectionInRadians;
+  double m_vectorMultiplier; //a_vectorMultiplier
+  double m_maxTracingTimeSeconds; // a_exitSpecifiedTime?
+  double m_maxTracingDistanceMeters; // a_exitDistance?
+  double m_minDeltaTimeSeconds; // a_minDeltaT
+  double m_maxChangeDistanceMeters;// a_maxChangeDist
+  double m_maxChangeVelocityMetersPerSecond; // a_maxChangeVel
+  double m_maxChangeDirectionInRadians; // a_maxChangeDir
+
+  BSHP<XmUGrid2dDataExtractor> m_extractor1x;
+  BSHP<XmUGrid2dDataExtractor> m_extractor1y;
+  double m_time1;
+  BSHP<XmUGrid2dDataExtractor> m_extractor2x;
+  BSHP<XmUGrid2dDataExtractor> m_extractor2y;
+  double m_time2;
+
 protected:
   XmGridTraceImpl();
 };
@@ -220,7 +246,216 @@ void XmGridTraceImpl::SetMaxChangeDirectionInRadians(const double a_maxChangeDir
 {
   m_maxChangeDirectionInRadians = a_maxChangeDirection;
 } // XmGridTraceImpl::SetMaxChangeDirectionInRadians
+//------------------------------------------------------------------------------
+/// \brief 
+/// \param[in] a_scalars
+/// \param[in] a_scalarLoc
+/// \param[in] a_activity
+/// \param[in] a_activityLoc
+/// \param[in] a_time
+//------------------------------------------------------------------------------
+void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocationEnum a_scalarLoc, xms::DynBitset& a_activity, DataLocationEnum a_activityLoc, double a_time)
+{
+  if (m_extractor1x&&m_extractor1y) {
+    m_extractor2x.reset(new XmUGrid2dDataExtractor(m_extractor1x));
+    m_extractor2y.reset(new XmUGrid2dDataExtractor(m_extractor1y));
+    m_time2 = m_time1;
+  }
+  m_extractor1x.reset(new XmUGrid2dDataExtractor(m_ugrid));
+  m_extractor1y.reset(new XmUGrid2dDataExtractor(m_extractor1x));
+  
+  m_time1 = a_time;
+  std::vector<float> xx, yy;
+  for (auto &pt : a_scalars) {
+    xx.push_back(pt.x);
+    yy.push_back(pt.y);
+  }
+  if (a_scalarLoc == DataLocationEnum::LOC_POINTS)
+  {
+    m_extractor1x->SetGridPointScalars(xx, a_activity, a_activityLoc);
+    m_extractor1y->SetGridPointScalars(yy, a_activity, a_activityLoc);
+  }
+  else
+  {
+    m_extractor1x->SetGridCellScalars(xx, a_activity, a_activityLoc);
+    m_extractor1y->SetGridCellScalars(yy, a_activity, a_activityLoc);
+  }
+}
 
+//------------------------------------------------------------------------------
+/// \brief Runs the Grid Trace for a point
+/// \param[in] a_pt The point to process
+/// \param[out] a_outTrace the resultant trace
+//------------------------------------------------------------------------------
+void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt3d& a_outTrace, VecDbl& a_outTimes)
+{
+  double deltaT = 1.00; // seconds
+  trirec tri;
+  double mag0 = 0, mag1 = 0;
+  Pt3d pt0 = a_pt, pt1;
+  double v[2], vx0 = 0, vx1 = 0, vy0 = 0, vy1 = 0, t0 = 0;
+  bool bContinue = true;
+  Pt3d vtkVec; // Rename this variable
+  Pt3d vtkPt;
+  Pt3d vector;
+
+  m_distTraveled = 0;
+  
+  if (!extract(m_extractor1x, m_extractor1y, a_pt, vector))
+  {
+    a_outTrace.clear();
+    return;
+  }
+
+  vx0 = vector.x * m_vectorMultiplier;
+  vy0 = vector.y * m_vectorMultiplier;
+  mag0 = sqrt(vector.x * vector.x + vector.y * vector.y);
+  double maxAngleChange = sin(m_maxChangeDirectionInRadians);
+
+  while (bContinue)
+  {
+    if (m_maxChangeDistanceMeters > 0)
+    {
+      // make sure deltaT is small enough to not go past the max dist
+      double d2 = m_maxChangeDistanceMeters * m_maxChangeDistanceMeters;
+      double denom = (vx0 * vx0) + (vy0 * vy0) + (m_maxChangeDistanceMeters * XM_ZERO_TOL);
+      double dt = sqrt(d2 / denom);
+      if (deltaT > dt)
+      {
+        deltaT = dt;
+      }
+    }
+
+    // compute candidate point
+    pt1.x = pt0.x + deltaT * vx0;
+    pt1.y = pt0.y + deltaT * vy0;
+    bool bInDomain = true;
+
+    // if pt1 outside of domain, compute new deltaT to get to boundary
+    if (!extract(m_extractor2x, m_extractor2y, vtkVec, vector))
+    {
+      a_outTrace.clear();
+      return;
+    }
+    vx1 = vtkVec.x;
+    vy1 = vtkVec.y;
+    if (vtkVec.x == XM_NODATA || vtkVec.y == XM_NODATA)
+    {
+      deltaT /= 2;
+      if (deltaT < m_minDeltaTimeSeconds)
+      {
+        // done ?
+        bContinue = false;
+      }
+      bInDomain = false;
+    }
+    if (bInDomain)//Could be replaced with an else, removing bInDomain entirely
+    {
+      vx1 *= m_vectorMultiplier;
+      vy1 *= m_vectorMultiplier;
+
+      if (EQ_TOL(vx1, 0.0, .0001) && EQ_TOL(vy1, 0.0, .0001)) //No velocity
+      {
+        return;
+      }
+      bool bSplit = false;
+
+      mag1 = sqrt(vx1 * vx1 + vy1 * vy1);
+
+      // do we subdivide?
+
+      if (!bSplit && m_maxChangeVelocityMetersPerSecond < 0)
+      {
+        double vel = abs(mag1 - mag0);
+        if (vel > m_maxChangeVelocityMetersPerSecond)
+        {
+          bSplit = true;
+        }
+      }
+      if (!bSplit && m_maxChangeDirectionInRadians < 0)
+      {
+        // cross product of unit vectors gives the sin of the angle between
+        // the vectors
+        double dir = abs(((vx0 * vy1) - (vx1 * vy0)) / (mag0 * mag1));
+        if (dir > maxAngleChange)
+        {
+          bSplit = true;
+        }
+      }
+      if (bSplit)
+      {
+        deltaT /= 2;
+        // if (deltaT < minDeltaT) {
+        //  // done ?
+        //  bContinue = false;
+        //}
+      }
+      else
+      {
+        double segDist = Mdist(pt0.x, pt0.y, pt1.x, pt1.y);
+        m_distTraveled += segDist;
+        if (m_maxTracingDistanceMeters != -1 && m_distTraveled > m_maxTracingDistanceMeters)
+        {
+          // because our last point exceeded the exitDistance
+          // find this point by linear calculations
+          double distancePast = m_distTraveled - m_maxTracingDistanceMeters;
+          double perc = distancePast / segDist;
+          Pt3d newPt;
+          newPt.x = (pt0.x * perc) + (pt1.x * (1 - perc));
+          newPt.y = (pt0.y * perc) + (pt1.y * (1 - perc));
+
+          m_distTraveled = m_maxTracingDistanceMeters;
+          a_outTrace.push_back(newPt);
+          return;
+        }
+        if (m_maxTracingTimeSeconds != -1 && t0 > m_maxTracingTimeSeconds)
+        {
+          // done?
+          return;
+        }
+        if (t0+a_ptTime>m_time2)
+        {
+          //Time has passed the currently loaded Time Steps
+          //Interpolate to edge of time step?
+          return;
+        }
+
+        // add new pt if not identical to last
+        int size = (int)a_outTrace.size();
+        if (size > 0)
+        {
+          if (!EQ_TOL(pt1.x, a_outTrace.at(size - 1).x, XM_ZERO_TOL) ||
+            !EQ_TOL(pt1.y, a_outTrace.at(size - 1).y, XM_ZERO_TOL))
+          {
+            a_outTrace.push_back(pt1);
+          }
+        }
+        else
+        {
+          a_outTrace.push_back(pt1);
+        }
+
+        pt0 = pt1;
+        t0 += deltaT;
+        vx0 = vx1;
+        vy0 = vy1;
+        deltaT *= 1.2;
+
+        //Do we want to have maximum number of points?
+        //if (a_maxNumPts > 0)
+        //{
+        //  if (a_maxNumPts <= a_outTrace.size())
+        //  {
+        //    // We have sufficient points, give up and be done
+        //    bContinue = false;
+        //  }
+        //}
+      }
+    }
+  } // while ()
+}
+
+#ifdef 0
 ////////////////////////////////////////////////////////////////////////////////
 /// \class XmUGrid2dDataExtractorImpl
 /// \brief Implementation for XmUGrid2dDataExtractor which provides ability
@@ -660,7 +895,7 @@ XmUGrid2dDataExtractor::XmUGrid2dDataExtractor()
 XmUGrid2dDataExtractor::~XmUGrid2dDataExtractor()
 {
 } // XmUGrid2dDataExtractor::~XmUGrid2dDataExtractor
-
+#endif
 } // namespace xms
 
 #ifdef CXX_TEST

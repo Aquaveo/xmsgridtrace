@@ -70,12 +70,13 @@ public:
   virtual double GetMaxChangeDirectionInRadians() const = 0;
   virtual void SetMaxChangeDirectionInRadians(const double a_maxChangeDirection) = 0;
 
-  virtual void AddGridPointVectorsAtTime(const VecPt3d& a_vec, double a_time) = 0;
-  virtual void AddGridCellVectorsAtTime(const VecPt3d& a_vec, double a_time) = 0;
-  virtual void AddGridPointActivityAtTime(const dyn_bitset& a_vec, double a_time) = 0;
-  virtual void AddGridCellActivityAtTime(const dyn_bitset& a_vec, double a_time) = 0;
+  virtual void AddGridPointScalarsAtTime(const VecPt3d& a_scalars, xms::DynBitset& a_activity, double a_time) = 0;
+  virtual void AddGridCellScalarsAtTime(const VecPt3d& a_scalars, xms::DynBitset& a_activity, double a_time) = 0;
+  virtual void AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocationEnum a_scalarLoc, xms::DynBitset& a_activity, DataLocationEnum a_activityLoc, double a_time) = 0;
 
-  virtual void TracePoint(const Pt3d& a_pt, VecPt3d& a_outTrace) = 0;
+  virtual void TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt3d& a_outTrace, VecDbl& a_outTimes) = 0;
+  
+  virtual double GetDistanceTraveled() const = 0;
 
 private:
   XM_DISALLOW_COPY_AND_ASSIGN(XmGridTrace)
