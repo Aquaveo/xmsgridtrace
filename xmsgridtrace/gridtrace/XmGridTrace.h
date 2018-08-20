@@ -21,7 +21,8 @@
 #include <xmscore/stl/vector.h>
 
 //----- Forward declarations ---------------------------------------------------
-
+namespace xms {
+  enum DataLocationEnum;}
 //----- Namespace declaration --------------------------------------------------
 
 /// XMS Namespace
@@ -32,9 +33,6 @@ class XmUGrid;
 class dyn_bitset;
 
 //----- Constants / Enumerations -----------------------------------------------
-
-/// The location at which the data will be stored.
-enum DataLocationEnum { LOC_POINTS, LOC_CELLS, LOC_UNKNOWN };
 
 //----- Structs / Classes ------------------------------------------------------
 
@@ -70,14 +68,10 @@ public:
   virtual double GetMaxChangeDirectionInRadians() const = 0;
   virtual void SetMaxChangeDirectionInRadians(const double a_maxChangeDirection) = 0;
 
-  virtual void AddGridPointScalarsAtTime(const VecPt3d& a_scalars, xms::DynBitset& a_activity, double a_time) = 0;
-  virtual void AddGridCellScalarsAtTime(const VecPt3d& a_scalars, xms::DynBitset& a_activity, double a_time) = 0;
   virtual void AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocationEnum a_scalarLoc, xms::DynBitset& a_activity, DataLocationEnum a_activityLoc, double a_time) = 0;
 
   virtual void TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt3d& a_outTrace, VecDbl& a_outTimes) = 0;
   
-  virtual double GetDistanceTraveled() const = 0;
-
 private:
   XM_DISALLOW_COPY_AND_ASSIGN(XmGridTrace)
 
