@@ -255,15 +255,15 @@ void XmGridTraceImpl::SetMaxChangeDirectionInRadians(const double a_maxChangeDir
 //------------------------------------------------------------------------------
 void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocationEnum a_scalarLoc, xms::DynBitset& a_activity, DataLocationEnum a_activityLoc, double a_time)
 {
-  if (m_extractor1x&&m_extractor1y) {
-    m_extractor2x = XmUGrid2dDataExtractor::New(m_extractor1x);
-    m_extractor2y = XmUGrid2dDataExtractor::New(m_extractor1y);
-    m_time2 = m_time1;
+  if (m_extractor2x&&m_extractor2y) {
+    m_extractor1x = m_extractor2x;
+    m_extractor1y = m_extractor2y;
+    m_time1 = m_time2;
   }
-  m_extractor1x = XmUGrid2dDataExtractor::New(m_ugrid);
-  m_extractor1y = XmUGrid2dDataExtractor::New(m_extractor1x);
+  m_extractor2x = XmUGrid2dDataExtractor::New(m_ugrid);
+  m_extractor2y = XmUGrid2dDataExtractor::New(m_ugrid);
   
-  m_time1 = a_time;
+  m_time2 = a_time;
   std::vector<float> xx, yy;
   for (auto &pt : a_scalars) {
     xx.push_back((float)pt.x);
@@ -271,13 +271,13 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocatio
   }
   if (a_scalarLoc == DataLocationEnum::LOC_POINTS)
   {
-    m_extractor1x->SetGridPointScalars(xx, a_activity, a_activityLoc);
-    m_extractor1y->SetGridPointScalars(yy, a_activity, a_activityLoc);
+    m_extractor2x->SetGridPointScalars(xx, a_activity, a_activityLoc);
+    m_extractor2y->SetGridPointScalars(yy, a_activity, a_activityLoc);
   }
   else
   {
-    m_extractor1x->SetGridCellScalars(xx, a_activity, a_activityLoc);
-    m_extractor1y->SetGridCellScalars(yy, a_activity, a_activityLoc);
+    m_extractor2x->SetGridCellScalars(xx, a_activity, a_activityLoc);
+    m_extractor2y->SetGridCellScalars(yy, a_activity, a_activityLoc);
   }
 }
 
@@ -302,6 +302,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
   if (!extract(*m_extractor1x, *m_extractor1y, a_pt, vector))
   {
     a_outTrace.clear();
+    a_outTimes.clear();
     return;
   }
 
@@ -342,9 +343,10 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
     bool bInDomain = true;
 
     // if pt1 outside of domain, compute new deltaT to get to boundary
-    if (!extract(*m_extractor2x, *m_extractor2y, vtkVec, vector))
+    if (!extract(*m_extractor2x, *m_extractor2y, pt1, vtkVec))
     {
       a_outTrace.clear();
+      a_outTimes.clear();
       return;
     }
     vx1 = vtkVec.x;
@@ -367,6 +369,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
       if (EQ_TOL(vx1, 0.0, .0001) && EQ_TOL(vy1, 0.0, .0001)) //No velocity
       {
         a_outTrace.push_back(pt1);
+        a_outTimes.push_back(a_ptTime + elapsedTime + deltaT);
         return;
       }
       bool bSplit = false;
@@ -417,6 +420,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
 
           m_distTraveled = m_maxTracingDistanceMeters;
           a_outTrace.push_back(newPt);
+          a_outTimes.push_back(a_ptTime + elapsedTime + deltaT*perc);
           return;
         }
 
@@ -435,12 +439,12 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
         {
           a_outTrace.push_back(pt1);
         }
-
         pt0 = pt1;
         elapsedTime += deltaT;
         vx0 = vx1;
         vy0 = vy1;
         deltaT *= 1.2;
+        a_outTimes.push_back(a_ptTime + elapsedTime);
       }
     }
   } // while ()
@@ -485,30 +489,57 @@ void XmGridTraceUnitTests::testTracePoint()
   VecInt cells = { XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0 };
   BSHP<XmUGrid> ugrid = XmUGrid::New(points, cells);
   BSHP<XmGridTrace> tracer=XmGridTrace::New(ugrid);
-  const double vm = 2;
+  const double vm = 1;
   tracer->SetVectorMultiplier(vm) ;
   TS_ASSERT_EQUALS(tracer->GetVectorMultiplier(), vm);
 
-  const double tt = 2;
+  const double tt = 100;
   tracer->SetMaxTracingTimeSeconds(tt);
   TS_ASSERT_EQUALS(tracer->GetMaxTracingTimeSeconds(), tt);
 
-  const double td = 2;
+  const double td = 100;
   tracer->SetMaxTracingDistanceMeters(td);
   TS_ASSERT_EQUALS(tracer->GetMaxTracingDistanceMeters(), td);
 
-  /*GetMinDeltaTimeSeconds()  ;
-  SetMinDeltaTimeSeconds(  a_minDeltaTime) ;
+  const double dt = .1;
+  tracer->SetMinDeltaTimeSeconds(dt);
+  TS_ASSERT_EQUALS(tracer->GetMinDeltaTimeSeconds(), dt);
 
-  GetMaxChangeDistanceMeters()  ;
-  SetMaxChangeDistanceMeters(  a_maxChangeDistance) ;
+  const double cd = 100;
+  tracer->SetMaxChangeDistanceMeters(cd);
+  TS_ASSERT_EQUALS(tracer->GetMaxChangeDistanceMeters(), cd);
 
-  GetMaxChangeVelocityMetersPerSecond()  ;
-  SetMaxChangeVelocityMetersPerSecond(  a_maxChangeVelocity) ;
+  const double cv = 100;
+  tracer->SetMaxChangeVelocityMetersPerSecond(cv);
+  TS_ASSERT_EQUALS(tracer->GetMaxChangeVelocityMetersPerSecond(), cv);
 
-  GetMaxChangeDirectionInRadians()  ;
-  SetMaxChangeDirectionInRadians(  a_maxChangeDirection) = 0;*/
+  const double cdir = 100;
+  tracer->SetMaxChangeDirectionInRadians(cdir);
+  TS_ASSERT_EQUALS(tracer->GetMaxChangeDirectionInRadians(), cdir);
 
+  double time = 0;
+  VecPt3d scalars = { {1,1,0},{1,1,0},{1,1,0},{1,1,0} };
+  DynBitset pointActivity;
+  for (int i = 0; i < 4; ++i)
+  {
+    pointActivity.push_back(true);
+  }
+  tracer->AddGridScalarsAtTime(scalars, DataLocationEnum::LOC_POINTS, pointActivity, DataLocationEnum::LOC_POINTS, time);
+
+  time = 10;
+  //Uses exact same scalars/pointActivity
+  tracer->AddGridScalarsAtTime(scalars, DataLocationEnum::LOC_POINTS, pointActivity, DataLocationEnum::LOC_POINTS, time);
+  
+  VecPt3d outTrace;
+  VecDbl outTimes;
+  Pt3d startPoint = { .5,.5,0 };
+  double startTime=.5;
+  tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
+
+  VecPt3d expectedOutTrace = { {1,1,0} };
+  VecDbl expectedOutTimes= { 1 };
+  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
+  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
 } // XmGridTraceUnitTests::testTracePoint
 
 ////------------------------------------------------------------------------------
