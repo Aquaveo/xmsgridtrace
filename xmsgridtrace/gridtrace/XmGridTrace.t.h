@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /// \file
-/// \ingroup extractor
+/// \ingroup GridTrace
 /// \copyright (C) Copyright Aquaveo 2018.
 //------------------------------------------------------------------------------
 
@@ -13,32 +13,17 @@
 #include <cxxtest/TestSuite.h>
 
 // 5. Shared Headers
-#include <xmscore/misc/base_macros.h>
-#include <xmscore/misc/boost_defines.h>
-#include <xmscore/points/pt.h>
 
 // 6. Non-shared Headers
 
 ////////////////////////////////////////////////////////////////////////////////
-class XmUGrid2dDataExtractorUnitTests : public CxxTest::TestSuite
+class XmGridTraceUnitTests : public CxxTest::TestSuite
 {
 public:
-  void testPointScalarsOnly();
-  void testPointScalarCellActivity();
-  void testPointScalarPointActivity();
-  void testInvalidPointScalarsAndActivitySize();
+  void testTracePoint();
 
-  void testCellScalarsOnly();
-  void testCellScalarCellActivity();
-  void testCellScalarCellActivityIdw();
-  void testCellScalarPointActivity();
-  void testInvalidCellScalarsAndActivitySize();
+  // void testTutorial();
 
-  void testChangingScalarsAndActivity();
-
-  void testCopiedExtractor();
-
-  void testTutorial();
-}; // XmUGrid2dDataExtractorUnitTests
+}; // XmGridTraceUnitTests
 
 #endif

@@ -22,7 +22,6 @@
 #include <xmscore/math/math.h>
 #include <xmsgridtrace/gridtrace/XmUGrid2dDataExtractor.h>
 #include <xmscore/misc/xmstype.h> // XM_ZERO_TOL
-//#include <xmsgrid/ugrid/XmUGrid.h>
 //#include <xmsinterp/geometry/geoms.h>
 //#include <xmsinterp/geometry/GmTriSearch.h>
 //#include <xmsinterp/interpolate/InterpUtil.h>
@@ -70,7 +69,7 @@ class XmGridTraceImpl : public XmGridTrace
 {
 public:
   XmGridTraceImpl(BSHP<XmUGrid> a_ugrid);
-  ~XmGridTraceImpl() final {};
+  ~XmGridTraceImpl() {};
 
   double GetVectorMultiplier() const final;
   void SetVectorMultiplier(const double a_vectorMultiplier) final;
@@ -292,7 +291,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
   double deltaT = 1.00; // seconds
   double mag0 = 0, mag1 = 0;
   Pt3d pt0 = a_pt, pt1;
-  double vx0 = 0, vx1 = 0, vy0 = 0, vy1 = 0, t0 = 0;
+  double vx0 = 0, vx1 = 0, vy0 = 0, vy1 = 0, elapsedTime = 0;
   bool bContinue = true;
   Pt3d vtkVec; // Rename this variable
   Pt3d vtkPt;
@@ -323,6 +322,18 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
       {
         deltaT = dt;
       }
+    }
+     // If the change in DeltaT would push us beyond the time step, set it to hit the timestep
+    if (elapsedTime + deltaT + a_ptTime > m_time2)
+    {
+      deltaT = m_time2 - elapsedTime - a_ptTime;
+      bContinue = false; // This will be the last point traced
+    }
+    // If the change in delta time would push beyond the max tracing time, set it to hit max tracing time
+    if (m_maxTracingTimeSeconds > 0 && (elapsedTime + deltaT) > m_maxTracingTimeSeconds)
+    {
+      deltaT = m_maxTracingTimeSeconds - elapsedTime;
+      bContinue = false; // This will be the last point traced
     }
 
     // compute candidate point
@@ -355,6 +366,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
 
       if (EQ_TOL(vx1, 0.0, .0001) && EQ_TOL(vy1, 0.0, .0001)) //No velocity
       {
+        a_outTrace.push_back(pt1);
         return;
       }
       bool bSplit = false;
@@ -384,10 +396,10 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
       if (bSplit)
       {
         deltaT /= 2;
-        // if (deltaT < minDeltaT) {
-        //  // done ?
-        //  bContinue = false;
-        //}
+        if (deltaT < m_minDeltaTimeSeconds) {
+        // done, exit
+        bContinue = false;
+        }
       }
       else
       {
@@ -407,17 +419,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
           a_outTrace.push_back(newPt);
           return;
         }
-        if (m_maxTracingTimeSeconds != -1 && t0 > m_maxTracingTimeSeconds)
-        {
-          // done?
-          return;
-        }
-        if (t0+a_ptTime>m_time2)
-        {
-          //Time has passed the currently loaded Time Steps
-          //Interpolate to edge of time step?
-          return;
-        }
+
 
         // add new pt if not identical to last
         int size = (int)a_outTrace.size();
@@ -435,28 +437,24 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
         }
 
         pt0 = pt1;
-        t0 += deltaT;
+        elapsedTime += deltaT;
         vx0 = vx1;
         vy0 = vy1;
         deltaT *= 1.2;
-
-        //Do we want to have maximum number of points?
-        //if (a_maxNumPts > 0)
-        //{
-        //  if (a_maxNumPts <= a_outTrace.size())
-        //  {
-        //    // We have sufficient points, give up and be done
-        //    bContinue = false;
-        //  }
-        //}
       }
     }
   } // while ()
 }
 } // namespace xms
 
-#ifdef CXX_TESTx
-//#include <filmloop/WorldPointDrifter.t.h>
+#ifdef CXX_TEST
+#include <xmsgridtrace/gridtrace/XmGridTrace.t.h>
+
+
+#include <xmscore/testing/TestTools.h>
+#include <xmsgrid/ugrid/XmUGrid.h>
+
+using namespace xms;
 //
 //#include <shared1/feature/fline.h>
 //#include <shared1/feature/flineutl.h>
@@ -472,6 +470,46 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
 //{
 //  extern coveragelisttype g_coveragelist;
 //}
+////------------------------------------------------------------------------------
+///// \brief 
+////------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testTracePoint()
+{
+  //  3----2
+  //  | 1 /|
+  //  |  / |
+  //  | /  |
+  //  |/ 0 |
+  //  0----1
+  VecPt3d points = { { 0, 0, 0 },{ 1, 0, 0 },{ 1, 1, 0 },{ 0, 1, 0 } };
+  VecInt cells = { XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0 };
+  BSHP<XmUGrid> ugrid = XmUGrid::New(points, cells);
+  BSHP<XmGridTrace> tracer=XmGridTrace::New(ugrid);
+  const double vm = 2;
+  tracer->SetVectorMultiplier(vm) ;
+  TS_ASSERT_EQUALS(tracer->GetVectorMultiplier(), vm);
+
+  const double tt = 2;
+  tracer->SetMaxTracingTimeSeconds(tt);
+  TS_ASSERT_EQUALS(tracer->GetMaxTracingTimeSeconds(), tt);
+
+  const double td = 2;
+  tracer->SetMaxTracingDistanceMeters(td);
+  TS_ASSERT_EQUALS(tracer->GetMaxTracingDistanceMeters(), td);
+
+  /*GetMinDeltaTimeSeconds()  ;
+  SetMinDeltaTimeSeconds(  a_minDeltaTime) ;
+
+  GetMaxChangeDistanceMeters()  ;
+  SetMaxChangeDistanceMeters(  a_maxChangeDistance) ;
+
+  GetMaxChangeVelocityMetersPerSecond()  ;
+  SetMaxChangeVelocityMetersPerSecond(  a_maxChangeVelocity) ;
+
+  GetMaxChangeDirectionInRadians()  ;
+  SetMaxChangeDirectionInRadians(  a_maxChangeDirection) = 0;*/
+
+} // XmGridTraceUnitTests::testTracePoint
 
 ////------------------------------------------------------------------------------
 ///// \brief Does a flow trace and creates a new coverage given the
@@ -522,24 +560,24 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
   //------------------------------------------------------------------------------
   /// \brief    Defines the test group.
   //------------------------------------------------------------------------------
-const CxxTest::TestGroup& WorldPtDrifterExperimentalTests::group()
-{
-  return *CxxTest::TestGroup::GetGroup(CxxTest::TG_EXPERIMENTAL);
-} // WorldPtDrifterExperimentalTests::group
-  //------------------------------------------------------------------------------
-  /// \brief Uses the points in the active coverage to create a new coverage of
-  /// arcs that are a flow trace from those points
-  //------------------------------------------------------------------------------
-void WorldPtDrifterExperimentalTests::testMesh2FlowTraceCoverage()
-{
-  meshrec* mesh = GetActiveMesh2D();
-  if (!mesh)
-  {
-    XM_LOG(xmlog::error, "No active 2d mesh defined");
-    return;
-  }
-  BSHP<WorldPointDrifter> pd(new WorldPointDrifter(mesh, true));
-  iDoFlowTrace(pd);
-} // WorldPtDrifterExperimentalTests::testMesh2FlowTraceCoverage
+//const CxxTest::TestGroup& WorldPtDrifterExperimentalTests::group()
+//{
+//  return *CxxTest::TestGroup::GetGroup(CxxTest::TG_EXPERIMENTAL);
+//} // WorldPtDrifterExperimentalTests::group
+//  //------------------------------------------------------------------------------
+//  /// \brief Uses the points in the active coverage to create a new coverage of
+//  /// arcs that are a flow trace from those points
+//  //------------------------------------------------------------------------------
+//void WorldPtDrifterExperimentalTests::testMesh2FlowTraceCoverage()
+//{
+//  meshrec* mesh = GetActiveMesh2D();
+//  if (!mesh)
+//  {
+//    XM_LOG(xmlog::error, "No active 2d mesh defined");
+//    return;
+//  }
+//  BSHP<WorldPointDrifter> pd(new WorldPointDrifter(mesh, true));
+//  iDoFlowTrace(pd);
+//} // WorldPtDrifterExperimentalTests::testMesh2FlowTraceCoverage
 
 #endif

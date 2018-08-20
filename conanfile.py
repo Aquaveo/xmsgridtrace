@@ -76,7 +76,7 @@ class XmsextractorConan(ConanFile):
         self.requires("xmscore/[>=1.0.35]@aquaveo/stable")
         self.requires("xmsinterp/[>=1.0.14]@aquaveo/stable")
         self.requires("xmsgrid/[>=1.0.5]@aquaveo/stable")
-        self.requires("xmsextractor/[>=1.0.0]@aquaveo/stable")
+        # self.requires("xmsextractor/[>=1.0.0]@aquaveo/stable")
 
     def build(self):
         cmake = CMake(self)

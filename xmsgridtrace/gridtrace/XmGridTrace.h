@@ -45,7 +45,7 @@ public:
   /// \param[in] a_ugrid a ugrid
   static BSHP<XmGridTrace> New(BSHP<XmUGrid> a_ugrid);
   static BSHP<XmGridTrace> New(BSHP<XmGridTrace> a_gridTrace);
-  virtual ~XmGridTrace();
+  virtual ~XmGridTrace() {};
 
   virtual double GetVectorMultiplier() const = 0;
   virtual void SetVectorMultiplier(const double a_vectorMultiplier) = 0;
@@ -76,7 +76,7 @@ private:
   XM_DISALLOW_COPY_AND_ASSIGN(XmGridTrace)
 
 protected:
-  XmGridTrace();
+  XmGridTrace() {};
 };
 
 //----- Function prototypes ----------------------------------------------------
