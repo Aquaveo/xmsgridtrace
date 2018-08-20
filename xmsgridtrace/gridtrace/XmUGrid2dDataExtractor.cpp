@@ -214,6 +214,7 @@ void XmUGrid2dDataExtractorImpl::ExtractData(VecFlt& a_outData)
       for (size_t i = 0; i < interpIdxs.size(); ++i)
       {
         int ptIdx = interpIdxs[i];
+        std::cout << i << " Size=" << interpWeights.size()<<"\n";
         double weight = interpWeights[i];
         float scalar = m_pointScalars[ptIdx];
         interpValue += scalar * weight;
