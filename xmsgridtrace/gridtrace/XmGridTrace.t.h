@@ -20,7 +20,21 @@
 class XmGridTraceUnitTests : public CxxTest::TestSuite
 {
 public:
-  void testTracePoint();
+
+  void testBasicTracePoint();
+  void testMaxChangeDistance();
+  void testSmallScalarsTracePoint();
+  void testStrongDirectionChange();
+  void testMaxTracingTime();
+  void testMaxTracingDistance();
+  void testStartOutOfCell();
+  void testDotProduct();
+  void testBeyondTimestep();
+  void testVectorMultiplier();
+  void testMultiCell();
+  void testMaxChangeVelocity();
+  void testUniqueTimeSteps();
+  void testInactiveCell();
 
   // void testTutorial();
 
