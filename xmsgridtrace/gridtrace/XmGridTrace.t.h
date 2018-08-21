@@ -30,6 +30,7 @@ public:
   void testStartOutOfCell();
   void testDotProduct();
   void testBeyondTimestep();
+  void testBeforeTimestep();
   void testVectorMultiplier();
   void testMultiCell();
   void testMaxChangeVelocity();

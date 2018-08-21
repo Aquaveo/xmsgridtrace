@@ -321,7 +321,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
 
   m_distTraveled = 0;
 
-  if (a_ptTime > m_time2 || a_ptTime < m_time1|| //Test if it is within the time boundaries
+  if (a_ptTime > m_time2 || //Test if the time specified is after the time range
     !extract(*m_extractor1x, *m_extractor1y, a_pt, vector)) // Ensure nothing fails during extraction
   {
     a_outTrace.clear();
@@ -465,6 +465,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
         vx0 = vx1;
         vy0 = vy1;
         deltaT *= 1.2;
+        mag0 = mag1;
         a_outTimes.push_back(a_ptTime + elapsedTime);
       }
     }
@@ -717,8 +718,8 @@ void XmGridTraceUnitTests::testSmallScalarsTracePoint()
     }
   }
   else TS_FAIL("Expected trace size != actual trace size");
-  //TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
-  //TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, 0.001);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, 0.001);
 } // XmGridTraceUnitTests::testSmallScalarsTracePoint
 ////------------------------------------------------------------------------------
 ///// \brief 
@@ -999,6 +1000,26 @@ void XmGridTraceUnitTests::testBeyondTimestep()
   TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
 } // XmGridTraceUnitTests::testBeyondTimestep
+  ////------------------------------------------------------------------------------
+  ///// \brief 
+  ////------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testBeforeTimestep()
+{
+  BSHP<XmGridTrace> tracer;
+  createDefaultSingleCell(tracer);
+
+  VecPt3d outTrace;
+  VecDbl outTimes;
+  Pt3d startPoint = { .5,.5,0 };
+  double startTime = -0.1;//Just beyond the 2nd time
+
+  tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
+
+  VecPt3d expectedOutTrace = { {1,1,0} };
+  VecDbl expectedOutTimes = {.4};
+  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
+  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+} // XmGridTraceUnitTests::testBeforeTimestep
 ////------------------------------------------------------------------------------
 ///// \brief 
 ////------------------------------------------------------------------------------
@@ -1116,7 +1137,7 @@ void XmGridTraceUnitTests::testMaxChangeVelocity()
 {
   BSHP<XmGridTrace> tracer;
   createDefaultTwoCell(tracer);
-  tracer->SetMaxChangeVelocityMetersPerSecond(.1);
+  tracer->SetMaxChangeVelocityMetersPerSecond(.01);
   tracer->SetMinDeltaTimeSeconds(0.001);
 
   VecPt3d outTrace;
@@ -1129,23 +1150,44 @@ void XmGridTraceUnitTests::testMaxChangeVelocity()
   VecPt3d expectedOutTrace =
   {
     {0.60000000149011612, 0.50000000000000000, 0.00000000000000000 },
-    {0.73200000077486038, 0.50000000000000000, 0.00000000000000000 },
-    {0.90940801054239273, 0.50000000000000000, 0.00000000000000000 },
-    {1.1529537134766579, 0.50000000000000000, 0.00000000000000000 },
-    {1.4957102079987525, 0.50000000000000000, 0.00000000000000000 },
-    {1.4995898687899112, 0.50000000000000000, 0.00000000000000000 },
-    {1.4998814090045989, 0.50000000000000000, 0.00000000000000000 },
-
+    {0.66600000113248825, 0.50000000000000000, 0.00000000000000000 },
+    {0.74995200067758561, 0.50000000000000000, 0.00000000000000000 },
+    {0.80394992786645891, 0.50000000000000000, 0.00000000000000000 },
+    {0.87154669338464741, 0.50000000000000000, 0.00000000000000000 },
+    {0.95686786960840231, 0.50000000000000000, 0.00000000000000000 },
+    {1.0112451727318765, 0.50000000000000000, 0.00000000000000000 },
+    {1.0789334834771158, 0.50000000000000000, 0.00000000000000000 },
+    {1.1637975516948893, 0.50000000000000000, 0.00000000000000000 },
+    {1.2174527417415202, 0.50000000000000000, 0.00000000000000000 },
+    {1.2839153379250163, 0.50000000000000000, 0.00000000000000000 },
+    {1.3667568384715398, 0.50000000000000000, 0.00000000000000000 },
+    {1.4187699365302351, 0.50000000000000000, 0.00000000000000000 },
+    {1.4829247317645506, 0.50000000000000000, 0.00000000000000000 },
+    {1.5624845364724593, 0.50000000000000000, 0.00000000000000000 },
+    {1.6587784227485147, 0.50000000000000000, 0.00000000000000000 },
+    {1.7743310862797812, 0.50000000000000000, 0.00000000000000000 },
+    {1.9129942825173010, 0.50000000000000000, 0.00000000000000000 }
   };
   VecDbl expectedOutTimes =
   {
     	1.0000000000000000,
-    	2.2000000000000002,
-    	3.6400000000000001,
-    	5.3680000000000003,
-    	7.4416000000000002,
-    	7.4610400000000006,
-    	7.4624980000000010,
+    	1.6000000000000001,
+    	2.3200000000000003,
+    	2.7520000000000002,
+    	3.2704000000000004,
+    	3.8924800000000004,
+    	4.2657280000000002,
+    	4.7136256000000003,
+    	5.2511027200000004,
+    	5.5735889920000004,
+    	5.9605725184000002,
+    	6.4249527500800001,
+    	6.7035808890880002,
+    	7.0379346558976001,
+    	7.4391591760691202,
+    	7.9206286002749442,
+    	8.4983919093219331,
+    	9.1917078801783187
   };
   TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
@@ -1204,7 +1246,7 @@ void XmGridTraceUnitTests::testInactiveCell()
   createDefaultTwoCell(tracer);
 
   double time = 20;
-  VecPt3d scalars = { { .2,0,0 },{ .3,0,0 } };
+  VecPt3d scalars = { { .2,0,0 },{ 99999,0,0 } };
   DynBitset pointActivity;
   pointActivity.push_back(true);
   pointActivity.push_back(false);

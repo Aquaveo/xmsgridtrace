@@ -15,7 +15,6 @@ namespace py = pybind11;
 
 //----- Python Interface -------------------------------------------------------
 
-void initExtractor(py::module &m) {
-    initXmUGrid2dDataExtractor(m);
-    initXmUGrid2dPolylineDataExtractor(m);
+void initGridtrace(py::module &m) {
+  initXmGridTrace(m);
 }
