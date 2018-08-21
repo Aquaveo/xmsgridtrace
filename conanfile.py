@@ -1,17 +1,17 @@
 """
-XMSExtractor Conanfile and Support
+XMSGridtrace Conanfile and Support
 """
 import os
 from conans import ConanFile, CMake
 from conans.errors import ConanException
 
 
-class XmsextractorConan(ConanFile):
-    """XMSExtractor Conanfile"""
-    name = "xmsextractor"
+class XmsgridtraceConan(ConanFile):
+    """XMSGridtrace Conanfile"""
+    name = "xmsgridtrace"
     version = None
     license = "XMSNG Software License"
-    url = "https://github.com/Aquaveo/xmsextractor"
+    url = "https://github.com/Aquaveo/xmsgridtrace"
     description = "Grid library for XMS products"
     settings = "os", "compiler", "build_type", "arch"
     options = {
@@ -23,7 +23,7 @@ class XmsextractorConan(ConanFile):
     generators = "cmake"
     build_requires = "cxxtest/4.4@aquaveo/stable"
     exports = "CMakeLists.txt", "LICENSE", "test_files/*"
-    exports_sources = "xmsextractor/*", "test_files/*"
+    exports_sources = "xmsgridtrace/*", "test_files/*"
 
     def configure(self):
         # Set verion dynamically using XMS_VERSION env variable.
@@ -76,7 +76,7 @@ class XmsextractorConan(ConanFile):
         self.requires("xmscore/[>=1.0.35]@aquaveo/stable")
         self.requires("xmsinterp/[>=1.0.14]@aquaveo/stable")
         self.requires("xmsgrid/[>=1.0.5]@aquaveo/stable")
-        # self.requires("xmsextractor/[>=1.0.0]@aquaveo/stable")
+        # self.requires("xmsgridtrace/[>=1.0.0]@aquaveo/stable")
 
     def build(self):
         cmake = CMake(self)
@@ -91,7 +91,7 @@ class XmsextractorConan(ConanFile):
         # sucess) rebuild the library without tests.
         cmake.definitions["IS_PYTHON_BUILD"] = self.options.pybind
         cmake.definitions["BUILD_TESTING"] = self.options.testing
-        cmake.definitions["XMSEXTRACTOR_TEST_PATH"] = "test_files"
+        cmake.definitions["XMSGRIDTRACE_TEST_PATH"] = "test_files"
         cmake.configure(source_folder=".")
         cmake.build()
 
@@ -110,7 +110,7 @@ class XmsextractorConan(ConanFile):
                 print("***********(0.0)*************")
 
     def package(self):
-        self.copy("*.h", dst="include/xmsextractor", src="xmsextractor")
+        self.copy("*.h", dst="include/xmsgridtrace", src="xmsgridtrace")
         self.copy("*.lib", dst="lib", keep_path=False)
         self.copy("*.pyd", dst="lib", keep_path=False)
         self.copy("*.dll", dst="bin", keep_path=False)
@@ -121,6 +121,6 @@ class XmsextractorConan(ConanFile):
 
     def package_info(self):
         if self.settings.build_type == 'Debug':
-            self.cpp_info.libs = ["xmsextractor_d"]
+            self.cpp_info.libs = ["xmsgridtrace_d"]
         else:
-            self.cpp_info.libs = ["xmsextractor"]
+            self.cpp_info.libs = ["xmsgridtrace"]
