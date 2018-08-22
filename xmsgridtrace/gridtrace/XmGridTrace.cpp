@@ -107,6 +107,7 @@ public:
 
   void TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt3d& a_outTrace, VecDbl& a_outTimes) final;
 
+  std::string GetExitMessage() final;
 private:
 
   BSHP<XmUGrid> m_ugrid;
@@ -126,6 +127,7 @@ private:
   double m_time2;
   double m_distTraveled;
 
+  std::string m_exitMessage;
 protected:
   XmGridTraceImpl();
 };
@@ -268,12 +270,21 @@ void XmGridTraceImpl::SetMaxChangeDirectionInRadians(const double a_maxChangeDir
   m_maxChangeDirectionInRadians = a_maxChangeDirection;
 } // XmGridTraceImpl::SetMaxChangeDirectionInRadians
 //------------------------------------------------------------------------------
-/// \brief 
-/// \param[in] a_scalars
-/// \param[in] a_scalarLoc
-/// \param[in] a_activity
-/// \param[in] a_activityLoc
-/// \param[in] a_time
+/// \brief returns a message describing what caused trace to exit
+//------------------------------------------------------------------------------
+std::string XmGridTraceImpl::GetExitMessage()
+{
+  return m_exitMessage;
+} // XmGridTraceImpl::GetExitMessage
+//------------------------------------------------------------------------------
+/// \brief Assigns velocity vectors to each point or cell for a time step,
+///        keeping the previous step, and dropping the one before that
+///        for a maximum of two time steps.
+/// \param[in] a_scalars The velocity vectors
+/// \param[in] a_scalarLoc Whether the vectors are assigned to cells or points
+/// \param[in] a_activity Whether each cell or point is active
+/// \param[in] a_activityLoc Whether the activities are assigned to cells or points
+/// \param[in] a_time The time of the scalars
 //------------------------------------------------------------------------------
 void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocationEnum a_scalarLoc, xms::DynBitset& a_activity, DataLocationEnum a_activityLoc, double a_time)
 {
@@ -305,11 +316,14 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocatio
 
 //------------------------------------------------------------------------------
 /// \brief Runs the Grid Trace for a point
-/// \param[in] a_pt The point to process
-/// \param[out] a_outTrace the resultant trace
+/// \param[in] a_pt The starting point of the trace
+/// \param[in] a_ptTime The starting time of the trace
+/// \param[out] a_outTrace the resultant positions at each step
+/// \param[out] a_outTimes the resultant times at each step
 //------------------------------------------------------------------------------
 void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt3d& a_outTrace, VecDbl& a_outTimes)
 {
+  m_exitMessage.clear();
   double deltaT = 1.00;
   double mag0 = 0, mag1 = 0;
   Pt3d pt0 = a_pt, pt1;
@@ -326,6 +340,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
   {
     a_outTrace.clear();
     a_outTimes.clear();
+    m_exitMessage = "Error occurred while extracting point0.";
     return;
   }
 
@@ -345,6 +360,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
       if (deltaT > dt)
       {
         deltaT = dt;
+        m_exitMessage = "Change distance was greater than the max change distance.";
       }
     }
      // If the change in DeltaT would push us beyond the time step, set it to hit the timestep
@@ -352,12 +368,14 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
     {
       deltaT = m_time2 - elapsedTime - a_ptTime;
       bContinue = false; // This will be the last point traced
+      m_exitMessage = "The point has traveled beyond, or reached the second time step.";
     }
     // If the change in delta time would push beyond the max tracing time, set it to hit max tracing time
     if (m_maxTracingTime > 0 && (elapsedTime + deltaT) > m_maxTracingTime)
     {
       deltaT = m_maxTracingTime - elapsedTime;
       bContinue = false; // This will be the last point traced
+      m_exitMessage = "Exceeded or reached max tracing time.";
     }
 
     // compute candidate point
@@ -370,6 +388,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
     {
       a_outTrace.clear();
       a_outTimes.clear();
+      m_exitMessage = "Error occurred while extracting point1";
       return;
     }
     vx1 = vtkVec.x;
@@ -383,6 +402,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
         bContinue = false;
       }
       bInDomain = false;
+      m_exitMessage = "Point has traveled out of domain.";
     }
     if (bInDomain)//Could be replaced with an else, removing bInDomain entirely
     {
@@ -393,6 +413,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
       {
         a_outTrace.push_back(pt1);
         a_outTimes.push_back(a_ptTime + elapsedTime + deltaT);
+        m_exitMessage = "Velocity has gone to zero.";
         return;
       }
       bool bSplit = false;
@@ -407,6 +428,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
         if (changeVel > m_maxChangeVelocity)
         {
           bSplit = true;
+          m_exitMessage = "Point has exceeded max change velocity.";
         }
       }
       if (!bSplit && m_maxChangeDirectionInRadians > 0)
@@ -415,6 +437,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
         if (dir < maxAngleChange)
         {
           bSplit = true;
+          m_exitMessage = "Point has exceeded max change direction.";
         }
       }
       if (bSplit)
@@ -423,6 +446,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
         if (m_minDeltaTime>0 && deltaT < m_minDeltaTime) {
         // done, exit
           bContinue = false;
+          m_exitMessage += " Delta time was less than min delta time.";
         }
       }
       else
@@ -442,6 +466,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
           m_distTraveled = m_maxTracingDistance;
           a_outTrace.push_back(newPt);
           a_outTimes.push_back(a_ptTime + elapsedTime + deltaT*perc);
+          m_exitMessage = "Point has reached or exceeded the max tracing distance.";
           return;
         }
 
@@ -470,7 +495,8 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
       }
     }
   } // while ()
-}
+}// XmGridTraceImpl::TracePoint
+
 } // namespace xms
 
 #ifdef CXX_TEST
@@ -1193,7 +1219,7 @@ void XmGridTraceUnitTests::testMaxChangeVelocity()
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
 } // XmGridTraceUnitTests::testMaxChangeVelocity
   ////------------------------------------------------------------------------------
-  ///// \brief 
+  ///// \brief Test behavior for unique timesteps
   ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testUniqueTimeSteps()
 {
@@ -1274,4 +1300,175 @@ void XmGridTraceUnitTests::testInactiveCell()
   TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
 } // XmGridTraceUnitTests::testInactiveCell
+
+  ////------------------------------------------------------------------------------
+  ///// \brief 2nd cell is inactive in the 2nd time step.
+  /////        Thus it does not pull as hard. Also once the point reaches the 2nd cell
+  /////        It stops entirely.
+  ////------------------------------------------------------------------------------
+  //! [snip_test_Example_XmGridTrace]
+void XmGridTraceUnitTests::testTutorial()
+{
+// Graph with scalar vectors indicated
+//  ->   ->   
+//  6----7----8|
+//  |    |    |v
+//  |    |    |
+//  |    |    |
+// ^|    |    |
+// |3----4----5|
+//  |    |    |v
+//  |    |    |
+//  |    |    |
+// ^|    |    |
+// |0----1----2
+//      <-   <--
+  // Step 1: Create the grid
+  VecPt3d points = { { 0, 0, 0 },{ 1, 0, 0 },{ 2, 0, 0 },
+  { 0, 1, 0 },{ 1, 1, 0 },{ 2, 1, 0 },
+  { 0, 2, 0 },{ 1, 2, 0 },{ 2, 2, 0 } };
+  VecInt cells = { XMU_QUAD, 4, 0, 1, 4, 3,
+    XMU_QUAD, 4, 1, 2, 5, 4,
+    XMU_QUAD, 4, 3, 4, 7, 6,
+    XMU_QUAD, 4, 4, 5, 8, 7 };
+  BSHP<XmUGrid> ugrid = XmUGrid::New(points, cells);
+
+  // Step 2: Create the tracer from the grid
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(ugrid);
+
+  // Step 3: Set up the constraints on the tracer
+  tracer->SetVectorMultiplier(2);
+  tracer->SetMaxTracingTime(-1);
+  tracer->SetMaxTracingDistance(-1);
+  tracer->SetMinDeltaTime(.01);
+  tracer->SetMaxChangeDistance(-1);
+  tracer->SetMaxChangeVelocity(-1);
+  tracer->SetMaxChangeDirectionInRadians(XM_PI/4);
+
+  // Step 4: Set up the velocity vectors for both time steps. Insert timesteps sequentially
+  double time = 0;
+  // Scalars are set such that they circle around the edge of the graph in a clockwise direction
+  // Z component is not used in scalars
+  VecPt3d scalars1 = { {  0,1,0 },{ -.1,0,0 },{ -1,0,0 },
+                        { 0,.1,0 },{ 0,0,0 },{ 0,-.1,0 },
+                        { 1,0,0 },{ .1,0,0 },{ 0,-1,0 } };
+  DynBitset pointActivity;
+  for (int i = 0; i < 9; ++i)
+  {
+    pointActivity.push_back(true);
+  }
+  tracer->AddGridScalarsAtTime(scalars1, DataLocationEnum::LOC_POINTS, pointActivity, DataLocationEnum::LOC_POINTS, time);
+
+  // For the second timestep scalars are doubled to indicate an increase in magnitude
+  VecPt3d scalars2 = { { 0, 2, 0 }, { -.2, 0, 0 }, { -2, 0, 0 },
+  { 0, .2, 0 }, { 0, 0, 0 }, { 0, -.2, 0 },
+  { 2, 0, 0 }, { .2, 0, 0 }, { 0, -2, 0 } };
+  time = 20;
+  //Uses exact same scalars/pointActivity
+  tracer->AddGridScalarsAtTime(scalars2, DataLocationEnum::LOC_POINTS, pointActivity, DataLocationEnum::LOC_POINTS, time);
+
+  VecPt3d outTrace;
+  VecDbl outTimes;
+  Pt3d startPoint = { .5,.5,0 };
+  double startTime = 0;
+
+  // Step 5: Trace the point
+  tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
+  // show the cause for termination by calling GetExitMessage
+  std::cout << tracer->GetExitMessage();
+
+  // Expected values for this simulation
+  VecPt3d expectedOutTrace =
+  {
+    {0.50000000000000000, 1.0000000000000000, 0.00000000000000000 },
+    {0.50000000000000000, 1.1200000017881393, 0.00000000000000000 },
+    {0.53456000030040740, 1.2640000039339065, 0.00000000000000000 },
+    {0.62579839980602259, 1.4248560696840287, 0.00000000000000000 },
+    {0.80199470469951617, 1.5800449616670609, 0.00000000000000000 },
+    {0.94632845836162560, 1.6293150183343887, 0.00000000000000000 },
+    {1.0402846849699019, 1.6373281367006303, 0.00000000000000000 },
+    {1.1472504158079146, 1.5651544803712847, 0.00000000000000000 },
+    {1.2370959665244674, 1.2485795668556596, 0.00000000000000000 },
+    {1.2385772879726333, 0.94273878892304253, 0.00000000000000000 },
+    {1.2297136294173598, 0.90580859573314998, 0.00000000000000000 },
+    {1.2122173790015884, 0.86313880687418509, 0.00000000000000000 },
+    {1.1817106747737798, 0.81583501926251323, 0.00000000000000000 },
+    {1.1324496713360110, 0.76723049824903200, 0.00000000000000000 },
+    {1.0577354028413335, 0.72471685409086017, 0.00000000000000000 },
+    {1.0047192334446176, 0.71359772104412966, 0.00000000000000000 },
+    {0.98817196089457493, 0.71332506104505522, 0.00000000000000000 },
+    {0.96911638582933346, 0.72152562927776709, 0.00000000000000000 },
+    {0.94851735000630433, 0.74722015264477248, 0.00000000000000000 },
+    {0.92842034109139471, 0.79861914461770400, 0.00000000000000000 },
+    {0.91286950804867839, 0.88437515311067516, 0.00000000000000000 },
+    {0.90877298871107015, 1.0096391794656658, 0.00000000000000000 },
+    {0.91043593221516006, 1.0253775908423850, 0.00000000000000000 },
+    {0.91568967807780244, 1.0439194172594926, 0.00000000000000000 },
+    {0.92660047554198333, 1.0648644324632297, 0.00000000000000000 },
+    {0.94593741784920182, 1.0867457980926745, 0.00000000000000000 },
+    {0.97696949591428361, 1.1060859196501687, 0.00000000000000000 },
+    {0.99973993573211661, 1.1110292212109496, 0.00000000000000000 },
+    {1.0068893789793629, 1.1110459673861270, 0.00000000000000000 },
+    {1.0149376563463044, 1.1057224796930476, 0.00000000000000000 },
+    {1.0233556900628904, 1.0918715198565245, 0.00000000000000000 },
+    {1.0309794568274058, 1.0658836083904653, 0.00000000000000000 },
+    {1.0356400049385772, 1.0245185443710483, 0.00000000000000000 },
+    {1.0356400049385772, 0.98345074281050004, 0.00000000000000000 },
+    {1.0324579995161467, 0.97659806728847354, 0.00000000000000000 },
+    {1.0270584765667421, 0.96910904010524646, 0.00000000000000000 },
+    {1.0185055195813666, 0.96161720471242595, 0.00000000000000000 },
+    {1.0057528021503028, 0.95546872928834325, 0.00000000000000000 },
+    {0.99687546944961780, 0.95432190512724435, 0.00000000000000000 },
+    {0.98669577925926177, 0.96179642714433222, 0.00000000000000000 },
+    {0.98511175523589067, 0.97026018371234346, 0.00000000000000000 }
+  };
+  VecDbl expectedOutTimes =
+  {
+    0.50000000000000000,
+    1.1000000000000001,
+    1.8200000000000001,
+    2.6840000000000002,
+    3.7208000000000001,
+    4.3428800000000001,
+    4.7161280000000003,
+    5.1640256000000004,
+    5.7015027200000006,
+    6.0239889920000005,
+    6.4109725184000004,
+    6.8753527500800002,
+    7.4326090280960004,
+    8.1013165617151994,
+    8.9037656020582396,
+    9.3852350262640627,
+    9.5296758535258093,
+    9.7030048462399066,
+    9.9109996374968219,
+    10.160593387005122,
+    10.460105886415080,
+    10.819520885707030,
+    11.250818884857370,
+    11.768376483837779,
+    12.389445602614270,
+    13.134728545146059,
+    14.029068076184206,
+    14.565671794807095,
+    14.726652910393961,
+    14.919830249098201,
+    15.151643055543289,
+    15.429818423277395,
+    15.763628864558321,
+    16.164201394095432,
+    16.644888429539964,
+    17.221712872073404,
+    17.913902203113533,
+    18.744529400361685,
+    19.242905718710578,
+    19.840957300729247,
+    20.000000000000000
+  };
+  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
+  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+} // XmGridTraceUnitTests::testTutorial
+  //! [snip_test_Example_XmGridTrace]
+
 #endif

@@ -72,6 +72,7 @@ public:
 
   virtual void TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt3d& a_outTrace, VecDbl& a_outTimes) = 0;
   
+  virtual std::string GetExitMessage() = 0;
 private:
   XM_DISALLOW_COPY_AND_ASSIGN(XmGridTrace)
 
