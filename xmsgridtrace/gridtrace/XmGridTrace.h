@@ -50,20 +50,20 @@ public:
   virtual double GetVectorMultiplier() const = 0;
   virtual void SetVectorMultiplier(const double a_vectorMultiplier) = 0;
 
-  virtual double GetMaxTracingTimeSeconds() const = 0;
-  virtual void SetMaxTracingTimeSeconds(const double a_maxTracingTime) = 0;
+  virtual double GetMaxTracingTime() const = 0;
+  virtual void SetMaxTracingTime(const double a_maxTracingTime) = 0;
 
-  virtual double GetMaxTracingDistanceMeters() const = 0;
-  virtual void SetMaxTracingDistanceMeters(const double a_maxTracingDistance) = 0;
+  virtual double GetMaxTracingDistance() const = 0;
+  virtual void SetMaxTracingDistance(const double a_maxTracingDistance) = 0;
 
-  virtual double GetMinDeltaTimeSeconds() const = 0;
-  virtual void SetMinDeltaTimeSeconds(const double a_minDeltaTime) = 0;
+  virtual double GetMinDeltaTime() const = 0;
+  virtual void SetMinDeltaTime(const double a_minDeltaTime) = 0;
 
-  virtual double GetMaxChangeDistanceMeters() const = 0;
-  virtual void SetMaxChangeDistanceMeters(const double a_maxChangeDistance) = 0;
+  virtual double GetMaxChangeDistance() const = 0;
+  virtual void SetMaxChangeDistance(const double a_maxChangeDistance) = 0;
 
-  virtual double GetMaxChangeVelocityMetersPerSecond() const = 0;
-  virtual void SetMaxChangeVelocityMetersPerSecond(const double a_maxChangeVelocity) = 0;
+  virtual double GetMaxChangeVelocity() const = 0;
+  virtual void SetMaxChangeVelocity(const double a_maxChangeVelocity) = 0;
 
   virtual double GetMaxChangeDirectionInRadians() const = 0;
   virtual void SetMaxChangeDirectionInRadians(const double a_maxChangeDirection) = 0;
