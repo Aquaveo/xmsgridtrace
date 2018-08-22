@@ -85,20 +85,20 @@ public:
   double GetVectorMultiplier() const final;
   void SetVectorMultiplier(const double a_vectorMultiplier) final;
 
-  double GetMaxTracingTimeSeconds() const final;
-  void SetMaxTracingTimeSeconds(const double a_maxTracingTime) final;
+  double GetMaxTracingTime() const final;
+  void SetMaxTracingTime(const double a_maxTracingTime) final;
 
-  double GetMaxTracingDistanceMeters() const final;
-  void SetMaxTracingDistanceMeters(const double a_maxTracingDistance) final;
+  double GetMaxTracingDistance() const final;
+  void SetMaxTracingDistance(const double a_maxTracingDistance) final;
 
-  double GetMinDeltaTimeSeconds() const final;
-  void SetMinDeltaTimeSeconds(const double a_minDeltaTime) final;
+  double GetMinDeltaTime() const final;
+  void SetMinDeltaTime(const double a_minDeltaTime) final;
 
-  double GetMaxChangeDistanceMeters() const final;
-  void SetMaxChangeDistanceMeters(const double a_maxChangeDistance) final;
+  double GetMaxChangeDistance() const final;
+  void SetMaxChangeDistance(const double a_maxChangeDistance) final;
 
-  double GetMaxChangeVelocityMetersPerSecond() const final;
-  void SetMaxChangeVelocityMetersPerSecond(const double a_maxChangeVelocity) final;
+  double GetMaxChangeVelocity() const final;
+  void SetMaxChangeVelocity(const double a_maxChangeVelocity) final;
 
   double GetMaxChangeDirectionInRadians() const final;
   void SetMaxChangeDirectionInRadians(const double a_maxChangeDirection) final;
@@ -111,11 +111,11 @@ private:
 
   BSHP<XmUGrid> m_ugrid;
   double m_vectorMultiplier; //a_vectorMultiplier
-  double m_maxTracingTimeSeconds; // a_exitSpecifiedTime?
-  double m_maxTracingDistanceMeters; // a_exitDistance?
-  double m_minDeltaTimeSeconds; // a_minDeltaT
-  double m_maxChangeDistanceMeters;// a_maxChangeDist
-  double m_maxChangeVelocityMetersPerSecond; // a_maxChangeVel
+  double m_maxTracingTime; // a_exitSpecifiedTime?
+  double m_maxTracingDistance; // a_exitDistance?
+  double m_minDeltaTime; // a_minDeltaT
+  double m_maxChangeDistance;// a_maxChangeDist
+  double m_maxChangeVelocity; // a_maxChangeVel
   double m_maxChangeDirectionInRadians; // a_maxChangeDir
 
   BSHP<XmUGrid2dDataExtractor> m_extractor1x;
@@ -167,87 +167,87 @@ void XmGridTraceImpl::SetVectorMultiplier(const double a_vectorMultiplier)
   m_vectorMultiplier = a_vectorMultiplier;
 } // XmGridTraceImpl::GetVectorMultiplier
 //------------------------------------------------------------------------------
-/// \brief Returns the Max Tracing Time in seconds
+/// \brief Returns the Max Tracing Time 
 //------------------------------------------------------------------------------
-double XmGridTraceImpl::GetMaxTracingTimeSeconds() const
+double XmGridTraceImpl::GetMaxTracingTime() const
 {
-  return m_maxTracingTimeSeconds;
-} // XmGridTraceImpl::GetMaxTracingTimeSeconds
+  return m_maxTracingTime;
+} // XmGridTraceImpl::GetMaxTracingTime
 //------------------------------------------------------------------------------
-/// \brief Sets the max tracing time in seconds
-/// \param[in] a_maxTracingTime the new max tracing time in seconds
+/// \brief Sets the max tracing time 
+/// \param[in] a_maxTracingTime the new max tracing time 
 //------------------------------------------------------------------------------
-void XmGridTraceImpl::SetMaxTracingTimeSeconds(const double a_maxTracingTime)
+void XmGridTraceImpl::SetMaxTracingTime(const double a_maxTracingTime)
 {
-  m_maxTracingTimeSeconds = a_maxTracingTime;
-} // XmGridTraceImpl::SetMaxTracingTimeSeconds
+  m_maxTracingTime = a_maxTracingTime;
+} // XmGridTraceImpl::SetMaxTracingTime
 //------------------------------------------------------------------------------
-/// \brief Returns the Max Tracing Distance in meters
+/// \brief Returns the Max Tracing Distance 
 //------------------------------------------------------------------------------
-double XmGridTraceImpl::GetMaxTracingDistanceMeters() const
+double XmGridTraceImpl::GetMaxTracingDistance() const
 {
-  return m_maxTracingDistanceMeters;
-} // XmGridTraceImpl::GetMaxTracingDistanceMeters
+  return m_maxTracingDistance;
+} // XmGridTraceImpl::GetMaxTracingDistance
 //------------------------------------------------------------------------------
-/// \brief Sets the max tracing distance in meters
-/// \param[in] a_maxTracingDistance the new max tracing distance in meters
+/// \brief Sets the max tracing distance 
+/// \param[in] a_maxTracingDistance the new max tracing distance 
 //------------------------------------------------------------------------------
-void XmGridTraceImpl::SetMaxTracingDistanceMeters(const double a_maxTracingDistance)
+void XmGridTraceImpl::SetMaxTracingDistance(const double a_maxTracingDistance)
 {
-  m_maxTracingDistanceMeters = a_maxTracingDistance;
-} // XmGridTraceImpl::SetMaxTracingDistanceMeters
+  m_maxTracingDistance = a_maxTracingDistance;
+} // XmGridTraceImpl::SetMaxTracingDistance
 //------------------------------------------------------------------------------
-/// \brief Returns the min delta time in seconds
+/// \brief Returns the min delta time 
 //------------------------------------------------------------------------------
-double XmGridTraceImpl::GetMinDeltaTimeSeconds() const
+double XmGridTraceImpl::GetMinDeltaTime() const
 {
-  return m_minDeltaTimeSeconds;
-} // XmGridTraceImpl::GetMinDeltaTimeSeconds
+  return m_minDeltaTime;
+} // XmGridTraceImpl::GetMinDeltaTime
 //------------------------------------------------------------------------------
-/// \brief Sets the min delta time in seconds
-/// \param[in] a_minDeltaTime the new min delta time in seconds
+/// \brief Sets the min delta time 
+/// \param[in] a_minDeltaTime the new min delta time 
 //------------------------------------------------------------------------------
-void XmGridTraceImpl::SetMinDeltaTimeSeconds(const double a_minDeltaTime)
+void XmGridTraceImpl::SetMinDeltaTime(const double a_minDeltaTime)
 {
   if (a_minDeltaTime <= 0) // Must have an exit condition to avoid infinite loops
   {
-    m_minDeltaTimeSeconds = XM_ZERO_TOL;
+    m_minDeltaTime = XM_ZERO_TOL;
   }
   else
   {
-    m_minDeltaTimeSeconds = a_minDeltaTime;
+    m_minDeltaTime = a_minDeltaTime;
   }
-} // XmGridTraceImpl::SetMinDeltaTimeSeconds
+} // XmGridTraceImpl::SetMinDeltaTime
 //------------------------------------------------------------------------------
-/// \brief Returns the max change distance in meters
+/// \brief Returns the max change distance 
 //------------------------------------------------------------------------------
-double XmGridTraceImpl::GetMaxChangeDistanceMeters() const
+double XmGridTraceImpl::GetMaxChangeDistance() const
 {
-  return m_maxChangeDistanceMeters;
-} // XmGridTraceImpl::GetMaxChangeDistanceMeters
+  return m_maxChangeDistance;
+} // XmGridTraceImpl::GetMaxChangeDistance
 //------------------------------------------------------------------------------
-/// \brief Sets the max change distance in meters
-/// \param[in] a_maxChangeDistance the new max change distance in meters
+/// \brief Sets the max change distance 
+/// \param[in] a_maxChangeDistance the new max change distance 
 //------------------------------------------------------------------------------
-void XmGridTraceImpl::SetMaxChangeDistanceMeters(const double a_maxChangeDistance)
+void XmGridTraceImpl::SetMaxChangeDistance(const double a_maxChangeDistance)
 {
-  m_maxChangeDistanceMeters = a_maxChangeDistance;
-} // XmGridTraceImpl::SetMaxChangeDistanceMeters
+  m_maxChangeDistance = a_maxChangeDistance;
+} // XmGridTraceImpl::SetMaxChangeDistance
 //------------------------------------------------------------------------------
-/// \brief Returns the max change in velcoity in meters per second
+/// \brief Returns the max change in velcoity
 //------------------------------------------------------------------------------
-double XmGridTraceImpl::GetMaxChangeVelocityMetersPerSecond() const
+double XmGridTraceImpl::GetMaxChangeVelocity() const
 {
-  return m_maxChangeVelocityMetersPerSecond;
-} // XmGridTraceImpl::GetMaxChangeVelocityMetersPerSecond
+  return m_maxChangeVelocity;
+} // XmGridTraceImpl::GetMaxChangeVelocity
 //------------------------------------------------------------------------------
-/// \brief Sets the max change in velocity in meters per seconds
-/// \param[in] a_maxChangeVelocity the new max change in velocity in meters per second
+/// \brief Sets the max change in velocity
+/// \param[in] a_maxChangeVelocity the new max change in velocity
 //------------------------------------------------------------------------------
-void XmGridTraceImpl::SetMaxChangeVelocityMetersPerSecond(const double a_maxChangeVelocity)
+void XmGridTraceImpl::SetMaxChangeVelocity(const double a_maxChangeVelocity)
 {
-  m_maxChangeVelocityMetersPerSecond = a_maxChangeVelocity;
-} // XmGridTraceImpl::SetMaxChangeVelocityMetersPerSecond
+  m_maxChangeVelocity = a_maxChangeVelocity;
+} // XmGridTraceImpl::SetMaxChangeVelocity
 //------------------------------------------------------------------------------
 /// \brief Returns the max change in direction in radians
 //------------------------------------------------------------------------------
@@ -310,7 +310,7 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocatio
 //------------------------------------------------------------------------------
 void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt3d& a_outTrace, VecDbl& a_outTimes)
 {
-  double deltaT = 1.00; // seconds
+  double deltaT = 1.00;
   double mag0 = 0, mag1 = 0;
   Pt3d pt0 = a_pt, pt1;
   double vx0 = 0, vx1 = 0, vy0 = 0, vy1 = 0, elapsedTime = 0;
@@ -336,11 +336,11 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
 
   while (bContinue)
   {
-    if (m_maxChangeDistanceMeters > 0)
+    if (m_maxChangeDistance > 0)
     {
       // make sure deltaT is small enough to not go past the max dist
-      double d2 = m_maxChangeDistanceMeters * m_maxChangeDistanceMeters;
-      double denom = (vx0 * vx0) + (vy0 * vy0) + (m_maxChangeDistanceMeters * XM_ZERO_TOL);
+      double d2 = m_maxChangeDistance * m_maxChangeDistance;
+      double denom = (vx0 * vx0) + (vy0 * vy0) + (m_maxChangeDistance * XM_ZERO_TOL);
       double dt = sqrt(d2 / denom);
       if (deltaT > dt)
       {
@@ -354,9 +354,9 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
       bContinue = false; // This will be the last point traced
     }
     // If the change in delta time would push beyond the max tracing time, set it to hit max tracing time
-    if (m_maxTracingTimeSeconds > 0 && (elapsedTime + deltaT) > m_maxTracingTimeSeconds)
+    if (m_maxTracingTime > 0 && (elapsedTime + deltaT) > m_maxTracingTime)
     {
-      deltaT = m_maxTracingTimeSeconds - elapsedTime;
+      deltaT = m_maxTracingTime - elapsedTime;
       bContinue = false; // This will be the last point traced
     }
 
@@ -377,7 +377,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
     if (vtkVec.x == XM_NODATA || vtkVec.y == XM_NODATA)
     {
       deltaT /= 2;
-      if (m_minDeltaTimeSeconds>0 && deltaT < m_minDeltaTimeSeconds)
+      if (m_minDeltaTime>0 && deltaT < m_minDeltaTime)
       {
         // done ?
         bContinue = false;
@@ -401,10 +401,10 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
 
       // do we subdivide?
 
-      if (!bSplit && m_maxChangeVelocityMetersPerSecond > 0)
+      if (!bSplit && m_maxChangeVelocity > 0)
       {
         double changeVel = abs(mag1 - mag0);
-        if (changeVel > m_maxChangeVelocityMetersPerSecond)
+        if (changeVel > m_maxChangeVelocity)
         {
           bSplit = true;
         }
@@ -420,7 +420,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
       if (bSplit)
       {
         deltaT /= 2;
-        if (m_minDeltaTimeSeconds>0 && deltaT < m_minDeltaTimeSeconds) {
+        if (m_minDeltaTime>0 && deltaT < m_minDeltaTime) {
         // done, exit
           bContinue = false;
         }
@@ -429,17 +429,17 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
       {
         double segDist = Mdist(pt0.x, pt0.y, pt1.x, pt1.y);
         m_distTraveled += segDist;
-        if (m_maxTracingDistanceMeters != -1 && m_distTraveled > m_maxTracingDistanceMeters)
+        if (m_maxTracingDistance != -1 && m_distTraveled > m_maxTracingDistance)
         {
           // because our last point exceeded the exitDistance
           // find this point by linear calculations
-          double distancePast = m_distTraveled - m_maxTracingDistanceMeters;
+          double distancePast = m_distTraveled - m_maxTracingDistance;
           double perc = distancePast / segDist;
           Pt3d newPt;
           newPt.x = (pt0.x * perc) + (pt1.x * (1 - perc));
           newPt.y = (pt0.y * perc) + (pt1.y * (1 - perc));
 
-          m_distTraveled = m_maxTracingDistanceMeters;
+          m_distTraveled = m_maxTracingDistance;
           a_outTrace.push_back(newPt);
           a_outTimes.push_back(a_ptTime + elapsedTime + deltaT*perc);
           return;
@@ -515,24 +515,24 @@ namespace
     TS_ASSERT_EQUALS(a_tracer->GetVectorMultiplier(), vm);
 
     const double tt = 100;
-    a_tracer->SetMaxTracingTimeSeconds(tt);
-    TS_ASSERT_EQUALS(a_tracer->GetMaxTracingTimeSeconds(), tt);
+    a_tracer->SetMaxTracingTime(tt);
+    TS_ASSERT_EQUALS(a_tracer->GetMaxTracingTime(), tt);
 
     const double td = 100;
-    a_tracer->SetMaxTracingDistanceMeters(td);
-    TS_ASSERT_EQUALS(a_tracer->GetMaxTracingDistanceMeters(), td);
+    a_tracer->SetMaxTracingDistance(td);
+    TS_ASSERT_EQUALS(a_tracer->GetMaxTracingDistance(), td);
 
     const double dt = .1;
-    a_tracer->SetMinDeltaTimeSeconds(dt);
-    TS_ASSERT_EQUALS(a_tracer->GetMinDeltaTimeSeconds(), dt);
+    a_tracer->SetMinDeltaTime(dt);
+    TS_ASSERT_EQUALS(a_tracer->GetMinDeltaTime(), dt);
 
     const double cd = 100;
-    a_tracer->SetMaxChangeDistanceMeters(cd);
-    TS_ASSERT_EQUALS(a_tracer->GetMaxChangeDistanceMeters(), cd);
+    a_tracer->SetMaxChangeDistance(cd);
+    TS_ASSERT_EQUALS(a_tracer->GetMaxChangeDistance(), cd);
 
     const double cv = 100;
-    a_tracer->SetMaxChangeVelocityMetersPerSecond(cv);
-    TS_ASSERT_EQUALS(a_tracer->GetMaxChangeVelocityMetersPerSecond(), cv);
+    a_tracer->SetMaxChangeVelocity(cv);
+    TS_ASSERT_EQUALS(a_tracer->GetMaxChangeVelocity(), cv);
 
     const double cdir = 1.5*XM_PI;
     a_tracer->SetMaxChangeDirectionInRadians(cdir);
@@ -569,19 +569,19 @@ namespace
     a_tracer->SetVectorMultiplier(vm);
 
     const double tt = 100;
-    a_tracer->SetMaxTracingTimeSeconds(tt);
+    a_tracer->SetMaxTracingTime(tt);
 
     const double td = 100;
-    a_tracer->SetMaxTracingDistanceMeters(td);
+    a_tracer->SetMaxTracingDistance(td);
 
     const double dt = .1;
-    a_tracer->SetMinDeltaTimeSeconds(dt);
+    a_tracer->SetMinDeltaTime(dt);
 
     const double cd = 100;
-    a_tracer->SetMaxChangeDistanceMeters(cd);
+    a_tracer->SetMaxChangeDistance(cd);
 
     const double cv = 100;
-    a_tracer->SetMaxChangeVelocityMetersPerSecond(cv);
+    a_tracer->SetMaxChangeVelocity(cv);
 
     const double cdir = 1.5*XM_PI;
     a_tracer->SetMaxChangeDirectionInRadians(cdir);
@@ -639,7 +639,7 @@ void XmGridTraceUnitTests::testMaxChangeDistance()
 {
   BSHP<XmGridTrace> tracer;
   createDefaultSingleCell(tracer);
-  tracer->SetMaxChangeDistanceMeters(.25);
+  tracer->SetMaxChangeDistance(.25);
 
   VecPt3d outTrace;
   VecDbl outTimes;
@@ -730,7 +730,7 @@ void XmGridTraceUnitTests::testStrongDirectionChange()
   createDefaultSingleCell(tracer);
 
   tracer->SetMaxChangeDirectionInRadians(XM_PI*.2);
-  tracer->SetMinDeltaTimeSeconds(-1);
+  tracer->SetMinDeltaTime(-1);
   //Push on different scalars
   double time = 0;
   VecPt3d scalars = { { 0,1,0 },{ -1,0,0 },{ 0,-1,0 },{ 1,0,0 } };
@@ -829,8 +829,8 @@ void XmGridTraceUnitTests::testMaxTracingTime()
   createDefaultSingleCell(tracer);
 
   tracer->SetMaxChangeDirectionInRadians(XM_PI*.2);
-  tracer->SetMinDeltaTimeSeconds(-1);
-  tracer->SetMaxTracingTimeSeconds(5);
+  tracer->SetMinDeltaTime(-1);
+  tracer->SetMaxTracingTime(5);
   //Push on different scalars
   double time = 0;
   VecPt3d scalars = { { 0,1,0 },{ -1,0,0 },{ 0,-1,0 },{ 1,0,0 } };
@@ -903,8 +903,8 @@ void XmGridTraceUnitTests::testMaxTracingDistance()
   createDefaultSingleCell(tracer);
 
   tracer->SetMaxChangeDirectionInRadians(XM_PI*.2);
-  tracer->SetMinDeltaTimeSeconds(-1);
-  tracer->SetMaxTracingDistanceMeters(1.0);
+  tracer->SetMinDeltaTime(-1);
+  tracer->SetMaxTracingDistance(1.0);
   //Push on different scalars
   double time = 0;
   VecPt3d scalars = { { 0,1,0 },{ -1,0,0 },{ 0,-1,0 },{ 1,0,0 } };
@@ -1029,7 +1029,7 @@ void XmGridTraceUnitTests::testVectorMultiplier()
   createDefaultSingleCell(tracer);
 
   tracer->SetMaxChangeDirectionInRadians(XM_PI*.2);
-  tracer->SetMinDeltaTimeSeconds(-1);
+  tracer->SetMinDeltaTime(-1);
   tracer->SetVectorMultiplier(0.5);
   //Push on different scalars
   double time = 0;
@@ -1137,8 +1137,8 @@ void XmGridTraceUnitTests::testMaxChangeVelocity()
 {
   BSHP<XmGridTrace> tracer;
   createDefaultTwoCell(tracer);
-  tracer->SetMaxChangeVelocityMetersPerSecond(.01);
-  tracer->SetMinDeltaTimeSeconds(0.001);
+  tracer->SetMaxChangeVelocity(.01);
+  tracer->SetMinDeltaTime(0.001);
 
   VecPt3d outTrace;
   VecDbl outTimes;
@@ -1274,74 +1274,4 @@ void XmGridTraceUnitTests::testInactiveCell()
   TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
 } // XmGridTraceUnitTests::testInactiveCell
-
-////------------------------------------------------------------------------------
-///// \brief Does a flow trace and creates a new coverage given the
-///// WorldPointDrifter
-///// \param a_ WorldPointDrifter class that is set up with a mesh 2d or a UGrid
-////------------------------------------------------------------------------------
-//static void iDoFlowTrace(BSHP<WorldPointDrifter> a_)
-//{
-//  coveragerec* cov = feGetActiveCoverage();
-//  if (!cov)
-//  {
-//    XM_LOG(xmlog::error, "No active coverage defined");
-//    return;
-//  }
-//
-//  double dir(1);
-//  gnGetFloat(&dir, 2, -1, 1, "Direction (1 - forward, -1 - backward):", "Flow Direction");
-//  double outputSpacing(1);
-//  gnGetFloat(&outputSpacing, 2, 1e-7, 100000, "Spacing:", "Arc Vertex Spacing");
-//  double maxDist(10000);
-//  gnGetFloat(&maxDist, 2, 1e-7, 100000, "Max dist:", "Max Trace Distance");
-//
-//  std::stringstream covName;
-//  covName << "Flow Trace";
-//  coveragerec* aCov = feNewFeatureCoverage(&g_coveragelist, true, NULL, false, covName.str());
-//  BSHP<GmPolyLinePtRedistributer> redist = GmPolyLinePtRedistributer::New();
-//  VecPt3d trace;
-//  fpointrec* fpt = cov->pointlist.list;
-//  for (; fpt; fpt = fpt->next)
-//  {
-//    // AKZ testing tolerance
-//    double maxChangeDist = 1;          // AML had 0.01
-//    double maxChangeDirInRadians = .1; // AML had 0.01
-//                                       //
-//    trace = a_->Run(fpt->location, dir, 0.1, maxChangeDist, -1, maxChangeDirInRadians, -1, maxDist);
-//    trace = redist->Redistribute(trace, outputSpacing);
-//    feCreateArcFromMpoints(aCov, trace);
-//  }
-//
-//  // double tol = gmXyTol(false, 0);
-//  // feCleanFeatureObjects(true, tol, true, true, tol, false, false, aCov, tol);
-//} // iDoFlowTrace
-  ////////////////////////////////////////////////////////////////////////////////
-  /// \class WorldPtDrifterExperimentalTests
-  /// \brief Exposes methods for doing a flow trace on a UGrid or a mesh. This
-  /// is not exposed in the interface.
-  ////////////////////////////////////////////////////////////////////////////////
-  //------------------------------------------------------------------------------
-  /// \brief    Defines the test group.
-  //------------------------------------------------------------------------------
-//const CxxTest::TestGroup& WorldPtDrifterExperimentalTests::group()
-//{
-//  return *CxxTest::TestGroup::GetGroup(CxxTest::TG_EXPERIMENTAL);
-//} // WorldPtDrifterExperimentalTests::group
-//  //------------------------------------------------------------------------------
-//  /// \brief Uses the points in the active coverage to create a new coverage of
-//  /// arcs that are a flow trace from those points
-//  //------------------------------------------------------------------------------
-//void WorldPtDrifterExperimentalTests::testMesh2FlowTraceCoverage()
-//{
-//  meshrec* mesh = GetActiveMesh2D();
-//  if (!mesh)
-//  {
-//    XM_LOG(xmlog::error, "No active 2d mesh defined");
-//    return;
-//  }
-//  BSHP<WorldPointDrifter> pd(new WorldPointDrifter(mesh, true));
-//  iDoFlowTrace(pd);
-//} // WorldPtDrifterExperimentalTests::testMesh2FlowTraceCoverage
-
 #endif
