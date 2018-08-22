@@ -1301,12 +1301,12 @@ void XmGridTraceUnitTests::testInactiveCell()
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
 } // XmGridTraceUnitTests::testInactiveCell
 
-  ////------------------------------------------------------------------------------
-  ///// \brief 2nd cell is inactive in the 2nd time step.
-  /////        Thus it does not pull as hard. Also once the point reaches the 2nd cell
-  /////        It stops entirely.
-  ////------------------------------------------------------------------------------
-  //! [snip_test_Example_XmGridTrace]
+////------------------------------------------------------------------------------
+///// \brief 2nd cell is inactive in the 2nd time step.
+/////        Thus it does not pull as hard. Also once the point reaches the 2nd cell
+/////        It stops entirely.
+////------------------------------------------------------------------------------
+//! [snip_test_Example_XmGridTrace]
 void XmGridTraceUnitTests::testTutorial()
 {
 // Graph with scalar vectors indicated
@@ -1469,6 +1469,6 @@ void XmGridTraceUnitTests::testTutorial()
   TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
 } // XmGridTraceUnitTests::testTutorial
-  //! [snip_test_Example_XmGridTrace]
+//! [snip_test_Example_XmGridTrace]
 
 #endif
