@@ -35,6 +35,7 @@ public:
   void testMaxChangeVelocity();
   void testUniqueTimeSteps();
   void testInactiveCell();
+  void testStartInactiveCell();
   void testTutorial();
 
 }; // XmGridTraceUnitTests
