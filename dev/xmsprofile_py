@@ -7,8 +7,8 @@ compiler=Visual Studio
 compiler.version=14
 build_type=Release
 [options]
-xmscore:xms=True
-xmsinterp:xms=True
-xmsgridtrace:xms=True
+xmsgridtrace:xms=False
+xmsgridtrace:testing=False
+xmsgridtrace:pybind=True
 [build_requires]
 [env]
