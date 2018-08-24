@@ -21,9 +21,9 @@ std::string version() {
 
 //------ Primary Module --------------------------------------------------------
 PYBIND11_MODULE(xmsgridtrace_py, m) {
-    m.doc() = "Python bindings for xmsgrid"; // optional module docstring
+    m.doc() = "Python bindings for xmsgridtrace"; // optional module docstring
     m.def("version", &version,
-          "Get current version of xmsgrid Python bindings.");
+          "Get current version of xmsgridtrace Python bindings.");
 
     // Extractor module
     py::module modGridtrace = m.def_submodule("gridtrace");
