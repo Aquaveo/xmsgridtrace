@@ -2,7 +2,7 @@
 # Gridtrace Tutorial {#Gridtrace_Tutorial}
 
 ## Introduction {#Intro_Gridtrace}
-The purpose of this tutorial is to provide explanation on how to use the class defined in xmsgridtrace to trace a given point through a velocity vector field grid. The exampl provided in this tutorial refers to a test case that is in the xmsgridtrace/gridtrace/XmGridTrace.cpp source file.
+The purpose of this tutorial is to provide explanation on how to use the class defined in xmsgridtrace to trace a given point through a velocity vector field grid. The example provided in this tutorial refers to a test case that is in the xmsgridtrace/gridtrace/XmGridTrace.cpp source file.
 
 ## Example - Simple Gridtrace {#Example_Simple_Gridtrace}
 This is the "hello world" example for using the gridtrace library.

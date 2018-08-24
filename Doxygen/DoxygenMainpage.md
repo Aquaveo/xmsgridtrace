@@ -28,7 +28,7 @@ xmsgridtrace includes the following functionality:
 * Flow trace of a point between 2 velocity vector time steps on an XmGrid.
 * The velocity vectors can be assigned to either the points or to the cells.
 
-The following tutorials are available:
+The following tutorial is available:
 
 * [Gridrace tutorial](Gridrace_Tutorial.md)
 
