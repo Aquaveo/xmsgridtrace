@@ -8,7 +8,7 @@
 
 //----- Included files ---------------------------------------------------------
 #include <pybind11/pybind11.h>
-#include <xmsextractor/python/extractor/extractor_py.h>
+#include <xmsgridtrace/python/gridtrace/gridtrace_py.h>
 
 //----- Namespace declaration --------------------------------------------------
 namespace py = pybind11;

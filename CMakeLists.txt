@@ -1,11 +1,17 @@
 set(CMAKE_CXX_STANDARD 11)
-set(POSITION_INDEPENDENT_CODE True)
 cmake_minimum_required(VERSION 3.1.2)
 cmake_policy(SET CMP0015 NEW) # Link Directory Pathing
 set(CMAKE_DEBUG_POSTFIX _d)
 
+if (APPLE)  
+  set(CMAKE_POSITION_INDEPENDENT_CODE False)
+else()
+  set(CMAKE_POSITION_INDEPENDENT_CODE True)
+endif()
+
 set(BUILD_TESTING NO CACHE BOOL "Enable/Disable testing")
 set(IS_CONDA_BUILD NO CACHE BOOL "Set this if you want to make a conda package.")
+set(PYTHON_TARGET_VERSION 3.6 CACHE STRING "Version of python to link to for python wrapping.")
 set(CONDA_PREFIX "" CACHE PATH "Path to the conda environment used to build.")
 set(IS_PYTHON_BUILD NO CACHE BOOL "Set this if you want to build the python bindings.")
 set(XMSGRIDTRACE_TEST_PATH "../../test_files/" CACHE PATH "Path to test files for testing")
@@ -111,8 +117,15 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_NAME} rt)
 endif()
 
+#Pybind11
 if(IS_PYTHON_BUILD)
-    find_package(PythonLibs REQUIRED)
+      # linux and mac builds for conan (on TRAVISCI) use a docker that has python
+    # 2.7 as system python. We do not have control over that docker image so we
+    # can't change this and it is fine for building conan packages and checking
+    # that we don't have errors in the python wrapping. We have conda recipes
+    # for building python packages that target other versions of python.
+    find_package(PythonLibs ${PYTHON_TARGET_VERSION} EXACT REQUIRED)
+    
     message("PYTHON_INCLUDE: ${PYTHON_INCLUDE_DIRS}")
     message("PYTHON_LIBS: ${PYTHON_LIBRARIES}")
 

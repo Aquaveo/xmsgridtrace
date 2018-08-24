@@ -538,7 +538,7 @@ XmUGrid2dDataExtractor::~XmUGrid2dDataExtractor()
 
 } // namespace xms
 
-#ifdef CXX_TESTx
+#ifdef CXX_TEST
 //------------------------------------------------------------------------------
 // Unit Tests
 //------------------------------------------------------------------------------

@@ -26,7 +26,7 @@ class XmsgridtraceConan(ConanFile):
     exports_sources = "xmsgridtrace/*", "test_files/*"
 
     def configure(self):
-        # Set verion dynamically using XMS_VERSION env variable.
+        # Set version dynamically using XMS_VERSION env variable.
         self.version = self.env.get('XMS_VERSION', 'master')
 
         # Raise ConanExceptions for Unsupported Versions
@@ -45,11 +45,6 @@ class XmsgridtraceConan(ConanFile):
         self.options['xmsgrid'].xms = self.options.xms
         self.options['xmsgrid'].pybind = self.options.pybind
         self.options['xmsgrid'].testing = self.options.testing
-
-        if s_compiler != "Visual Studio" and s_compiler != "apple-clang":
-            self.options['boost'].fPIC = True
-        elif s_compiler == "apple-clang":
-            self.options['boost'].fPIC = False
 
         if s_compiler == "apple-clang" and s_os == 'Linux':
             raise ConanException("Clang on Linux is not supported.")
@@ -73,10 +68,10 @@ class XmsgridtraceConan(ConanFile):
             self.requires("pybind11/2.2.2@aquaveo/stable")
 
         # Use the dev version of XMSCore, XMSInterp, and XMSGrid
-        self.requires("xmscore/[>=1.0.35]@aquaveo/stable")
-        self.requires("xmsinterp/[>=1.0.14]@aquaveo/stable")
-        self.requires("xmsgrid/[>=1.0.5]@aquaveo/stable")
-        # self.requires("xmsgridtrace/[>=1.0.0]@aquaveo/stable")
+        self.requires("xmscore/[>=1.0.37]@aquaveo/stable")
+        self.requires("xmsinterp/[>=1.0.16]@aquaveo/stable")
+        self.requires("xmsgrid/[>=1.0.8]@aquaveo/stable")
+        # self.requires("xmsextractor/[>=1.0.0]@aquaveo/stable")
 
     def build(self):
         cmake = CMake(self)
@@ -92,6 +87,7 @@ class XmsgridtraceConan(ConanFile):
         cmake.definitions["IS_PYTHON_BUILD"] = self.options.pybind
         cmake.definitions["BUILD_TESTING"] = self.options.testing
         cmake.definitions["XMSGRIDTRACE_TEST_PATH"] = "test_files"
+        cmake.definitions["PYTHON_TARGET_VERSION"] = self.env.get("PYTHON_TARGET_VERSION", "3.6")
         cmake.configure(source_folder=".")
         cmake.build()
 
