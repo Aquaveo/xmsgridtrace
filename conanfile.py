@@ -46,9 +46,9 @@ class XmsgridtraceConan(ConanFile):
         self.options['xmsgrid'].pybind = self.options.pybind
         self.options['xmsgrid'].testing = self.options.testing
 
-        #self.options['xmsextractor'].xms = self.options.xms
-        #self.options['xmsextractor'].pybind = self.options.pybind
-        #self.options['xmsextractor'].testing = self.options.testing
+        self.options['xmsextractor'].xms = self.options.xms
+        self.options['xmsextractor'].pybind = self.options.pybind
+        self.options['xmsextractor'].testing = self.options.testing
 
         if s_compiler == "apple-clang" and s_os == 'Linux':
             raise ConanException("Clang on Linux is not supported.")
@@ -75,7 +75,7 @@ class XmsgridtraceConan(ConanFile):
         self.requires("xmscore/[>=1.0.37]@aquaveo/stable")
         self.requires("xmsinterp/[>=1.0.16]@aquaveo/stable")
         self.requires("xmsgrid/[>=1.0.8]@aquaveo/stable")
-        # self.requires("xmsextractor/[>=0.0.1]@aquaveo/stable")
+        self.requires("xmsextractor/[>=0.0.1]@aquaveo/stable")
 
     def build(self):
         cmake = CMake(self)

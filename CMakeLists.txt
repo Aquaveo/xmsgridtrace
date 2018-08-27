@@ -49,16 +49,10 @@ link_directories(${EXT_LIB_DIRS})
 # Static library sources
 set(xmsgridtrace_sources
   xmsgridtrace/gridtrace/XmGridTrace.cpp
-  xmsgridtrace/gridtrace/XmUGrid2dDataExtractor.cpp
-  xmsgridtrace/gridtrace/XmUGrid2dPolylineDataExtractor.cpp
-  xmsgridtrace/gridtrace/XmUGridTriangles2d.cpp
 )
 
 set(xmsgridtrace_headers
   xmsgridtrace/gridtrace/XmGridTrace.h
-  xmsgridtrace/gridtrace/XmUGrid2dDataExtractor.h
-  xmsgridtrace/gridtrace/XmUGrid2dPolylineDataExtractor.h
-  xmsgridtrace/gridtrace/XmUGridTriangles2d.h
 )
 
 # Pybind11 sources
