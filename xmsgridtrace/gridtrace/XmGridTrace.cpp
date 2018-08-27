@@ -20,8 +20,8 @@
 #include <xmscore/misc/XmError.h>
 #include <xmscore/misc/XmLog.h>
 #include <xmscore/math/math.h>
-#include <xmsgridtrace/gridtrace/XmUGrid2dDataExtractor.h>
-#include <xmsgridtrace/gridtrace/XmUGrid2dPolylineDataExtractor.h>
+#include <xmsextractor/extractor/XmUGrid2dDataExtractor.h>
+#include <xmsextractor/extractor/XmUGrid2dPolylineDataExtractor.h>
 #include <xmscore/misc/xmstype.h> // XM_ZERO_TOL
 
 // 6. Non-shared code headers

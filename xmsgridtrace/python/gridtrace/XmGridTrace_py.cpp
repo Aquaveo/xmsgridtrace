@@ -15,7 +15,7 @@
 #include <xmscore/stl/vector.h>
 #include <xmsgrid/ugrid/XmUGrid.h>
 #include <xmsgridtrace/gridtrace/XmGridTrace.h>
-#include <xmsgridtrace/gridtrace/XmUGrid2dDataExtractor.h>
+#include <xmsextractor/extractor/XmUGrid2dDataExtractor.h>
 
 //----- Namespace declaration --------------------------------------------------
 namespace py = pybind11;
