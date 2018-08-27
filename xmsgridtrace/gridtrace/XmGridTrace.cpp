@@ -23,9 +23,6 @@
 #include <xmsgridtrace/gridtrace/XmUGrid2dDataExtractor.h>
 #include <xmsgridtrace/gridtrace/XmUGrid2dPolylineDataExtractor.h>
 #include <xmscore/misc/xmstype.h> // XM_ZERO_TOL
-//#include <xmsinterp/geometry/geoms.h>
-//#include <xmsinterp/geometry/GmTriSearch.h>
-//#include <xmsinterp/interpolate/InterpUtil.h>
 
 // 6. Non-shared code headers
 
@@ -624,7 +621,7 @@ namespace
     time = 10;
     //Uses exact same scalars/pointActivity
     a_tracer->AddGridScalarsAtTime(scalars, DataLocationEnum::LOC_POINTS, pointActivity, DataLocationEnum::LOC_POINTS, time);
-  }
+  } // createDefaultSingleCell
   void createDefaultTwoCell(BSHP<XmGridTrace>& a_tracer)
   {
     // clang-format off
@@ -1155,7 +1152,7 @@ void XmGridTraceUnitTests::testVectorMultiplier()
     {0.50886902895577013, 0.47838753608466128, 0.00000000000000000 },
     {0.49867742691962913, 0.48264835153512164, 0.00000000000000000 },
     {0.49224616907898289, 0.49014090685121131, 0.00000000000000000 },
-    {0.49175783605462037, 0.49422637094165467, 0.00000000000000000 },
+    {0.49175783605462037, 0.49422637094165467, 0.00000000000000000 }
   };
   VecDbl expectedOutTimes =
   {
@@ -1175,7 +1172,7 @@ void XmGridTraceUnitTests::testVectorMultiplier()
     8.0649268264960003,
     8.7336343601152002,
     9.5360834004582404,
-    10.000000000000000,
+    10.000000000000000
   };
   TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
@@ -1215,8 +1212,7 @@ void XmGridTraceUnitTests::testMultiCell()
     5.3680000000000003, 
     7.4416000000000002, 
     9.9299199999999992,
-      9.9683860530914945
-
+    9.9683860530914945
   };
   TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
@@ -1284,7 +1280,7 @@ void XmGridTraceUnitTests::testMaxChangeVelocity()
     7.9206286002749442,
     8.4983919093219331,
     9.1917078801783187,
-      9.6267364611093829
+    9.6267364611093829
   };
   TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
@@ -1329,7 +1325,7 @@ void XmGridTraceUnitTests::testUniqueTimeSteps()
     12.199999999999999,
     13.640000000000001,
     15.368000000000000,
-      16.627525378316030
+    16.627525378316030
   };
   TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
@@ -1425,7 +1421,7 @@ void XmGridTraceUnitTests::testTutorial()
 // ^|    |    |
 // |0----1----2
 //      <-   <--
-  // Step 1: Create the grid
+// Step 1: Create the grid
   VecPt3d points = { { 0, 0, 0 },{ 1, 0, 0 },{ 2, 0, 0 },
   { 0, 1, 0 },{ 1, 1, 0 },{ 2, 1, 0 },
   { 0, 2, 0 },{ 1, 2, 0 },{ 2, 2, 0 } };
@@ -1513,7 +1509,7 @@ void XmGridTraceUnitTests::testTutorial()
     {1.0467397711865176, 0.96499504248441559, 0.00000000000000000 },
     {1.0390576209755447, 0.95473758230148376, 0.00000000000000000 },
     {1.0276444556154691, 0.94488898976070590, 0.00000000000000000 },
-    {1.0208791233912420, 0.94149540451099356, 0.00000000000000000 },
+    {1.0208791233912420, 0.94149540451099356, 0.00000000000000000 }
   };
   VecDbl expectedOutTimes =
   {
@@ -1548,7 +1544,7 @@ void XmGridTraceUnitTests::testTutorial()
     17.279020479725595,
     18.244907173246794,
     19.403971205472232,
-    20.000000000000000,
+    20.000000000000000
   };
   TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
   TS_ASSERT_EQUALS(expectedOutTimes, outTimes);

@@ -44,7 +44,6 @@ public:
   /// \brief Construct XmGridTrace for a UGrid.
   /// \param[in] a_ugrid a ugrid
   static BSHP<XmGridTrace> New(BSHP<XmUGrid> a_ugrid);
-  static BSHP<XmGridTrace> New(BSHP<XmGridTrace> a_gridTrace);
   virtual ~XmGridTrace() {};
 
   virtual double GetVectorMultiplier() const = 0;
