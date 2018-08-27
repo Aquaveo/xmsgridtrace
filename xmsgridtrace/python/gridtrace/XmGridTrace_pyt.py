@@ -29,6 +29,7 @@ class TestXmGridTrace(unittest.TestCase):
         tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,10)
         return tracer
     def create_default_two_cell(self):
+        """Create a default two cell"""
         points = [ ( 0, 0, 0 ),( 1, 0, 0 ),( 1, 1, 0 ),( 0, 1, 0 ),( 2, 0, 0 ),( 2, 1, 0 ) ]
         cells = [ XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 0, 1, 2, 3, XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 1, 4, 5, 2 ]
         ugrid = XmUGrid(points,cells)
@@ -47,6 +48,7 @@ class TestXmGridTrace(unittest.TestCase):
         tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_CELLS,point_activity,data_location_enum.LOC_CELLS,10)
         return tracer
     def test_basic_trace_point(self):
+        """test basic tracing functionality"""
         tracer=self.create_default_single_cell()
         start_time=.5
 
@@ -57,6 +59,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_max_change_distance(self):
+        """test max change distance functionality"""
         tracer=self.create_default_single_cell()
         start_time=.5
         tracer.set_max_change_distance(.25)
@@ -71,6 +74,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_small_scalars_trace_point(self):
+        """test functionality with small scalars"""
         tracer=self.create_default_single_cell()
         start_time=.5
         tracer.set_max_change_distance(.25)
@@ -90,6 +94,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times,result_tuple[1])
     def test_strong_direction_change(self):
+        """test functionality with strong changes in direction"""
         tracer=self.create_default_single_cell()
         tracer.set_max_change_direction_in_radians(np.pi*.2)
         tracer.set_min_delta_time(-1)
@@ -171,6 +176,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_max_tracing_time(self):
+        """test functionality of max tracing time"""
         tracer=self.create_default_single_cell()
         tracer.set_max_change_direction_in_radians(np.pi*.2)
         tracer.set_min_delta_time(-1)
@@ -223,6 +229,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_max_tracing_distance(self):
+        """test functionality of max tracing distance"""
         tracer=self.create_default_single_cell()
         tracer.set_max_change_direction_in_radians(np.pi*.2)
         tracer.set_min_delta_time(-1)
@@ -259,6 +266,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0],6)
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])    
     def test_start_out_of_cell(self):
+        """test functionality of starting outside of cell"""
         tracer=self.create_default_single_cell()
         start_time=.5
 
@@ -269,6 +277,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_equal(0,len(result_tuple[0]))
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_beyond_timestep(self):
+        """test functionality of starting beyond the time step"""
         tracer=self.create_default_single_cell()
         start_time=10.1
 
@@ -279,6 +288,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_equal(0,len(result_tuple[0]))
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_before_timestep(self):
+        """test functionality of starting before the time step"""
         tracer=self.create_default_single_cell()
         start_time=-0.1
 
@@ -289,6 +299,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_vector_multiplier(self):
+        """test functionality of vector multiplier"""
         tracer=self.create_default_single_cell()
         tracer.set_max_change_direction_in_radians(np.pi*.2)
         tracer.set_min_delta_time(-1)
@@ -339,6 +350,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])    
     def test_multi_cell(self):
+        """test default functionality of multiple cells"""
         tracer=self.create_default_two_cell()
         start_time=0
 
@@ -363,6 +375,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_max_change_velocity(self):
+        """test functionality of max change in velocity"""
         tracer=self.create_default_two_cell()
         tracer.set_max_change_velocity(.01)
         tracer.set_min_delta_time(.001)
@@ -413,6 +426,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_unique_time_steps(self):
+        """test functionality of unique time steps"""
         tracer=self.create_default_two_cell()
         start_time=10
 
@@ -439,6 +453,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_inactive_cell(self):
+        """test functionality of inactive cells"""
         tracer=self.create_default_two_cell()
         start_time=10
 
@@ -462,6 +477,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_start_inactive_cell(self):
+        """test functionality of starting in an inactive cell"""
         tracer=self.create_default_two_cell()
         start_time=10
 
@@ -479,6 +495,7 @@ class TestXmGridTrace(unittest.TestCase):
         np.testing.assert_equal(0,len(result_tuple[0]))
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_tutorial(self):
+        """A test to serve as a tutorial"""
     #  ->   ->   
     #  6----7----8|
     #  |    |    |v

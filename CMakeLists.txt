@@ -46,7 +46,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR})
 include_directories(${EXT_INCLUDE_DIRS})
 link_directories(${EXT_LIB_DIRS})
 
-# Static library sources
+# Sources
 set(xmsgridtrace_sources
   xmsgridtrace/gridtrace/XmGridTrace.cpp
 )
@@ -83,10 +83,10 @@ if (BUILD_TESTING)
 
    set(CXXTEST_TESTGEN_ARGS --xunit-printer --have-eh)
    file(GLOB_RECURSE test_headers ${CMAKE_CURRENT_LIST_DIR}/xmsgridtrace/*.t.h)
-   CXXTEST_ADD_TEST(
-     runner runner.cpp ${test_headers}
-   )
-   target_link_libraries(runner ${PROJECT_NAME})
+      CXXTEST_ADD_TEST(
+        runner runner.cpp ${test_headers}
+      )
+      target_link_libraries(runner ${PROJECT_NAME})
  endif()
 endif ()
 
@@ -143,27 +143,27 @@ if(IS_PYTHON_BUILD)
       ${xmsgridtrace_py} ${xmsgridtrace_py_headers}
     )
     target_include_directories(xmsgridtrace_py
-        PRIVATE
+      PRIVATE
           ${EXT_LIBS}
           PYTHON_INCLUDE_DIRS
     )
     target_link_libraries(xmsgridtrace_py
-      PRIVATE
-        ${EXT_LIBS}
-        ${PROJECT_NAME}
-    )
+    PRIVATE
+      ${EXT_LIBS}
+      ${PROJECT_NAME}
+  )
     set_target_properties(xmsgridtrace_py PROPERTIES
-      LINKER_LANGUAGE CXX
-    )
+    LINKER_LANGUAGE CXX
+  )
 
-    execute_process(COMMAND python -c "import os; print('${PYTHON_SITE_PACKAGES}'.replace('${CONDA_PREFIX}' + os.sep, ''))" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_TRIMMED OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND python -c "import os; print('${PYTHON_SITE_PACKAGES}'.replace('${CONDA_PREFIX}' + os.sep, ''))" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES_TRIMMED OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    # Install recipe
-    install(
+  # Install recipe
+  install(
       TARGETS xmsgridtrace_py
       ARCHIVE DESTINATION ${PYTHON_SITE_PACKAGES_TRIMMED}
       LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES_TRIMMED}
-    )
+  )
 
 endif()
 

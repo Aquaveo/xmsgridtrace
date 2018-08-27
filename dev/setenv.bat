@@ -1,7 +1,7 @@
 @echo off
 set XMS_VERSION=1.0.0
 set CONAN_VISUAL_VERSIONS=14
-set CONAN_REFERENCE=xmsextractor/%XMS_VERSION%
+set CONAN_REFERENCE=xmsgridtrace/%XMS_VERSION%
 set CONAN_USERNAME=aquaveo
 set CONAN_CHANNEL=testing
 set CONAN_GCC_VERSIONS=5

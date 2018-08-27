@@ -11,12 +11,14 @@ if __name__ == "__main__":
 
     # Add environment variables to build definitions
     XMS_VERSION = os.environ.get('XMS_VERSION', None)
+    python_target_version = os.environ.get('PYTHON_TARGET_VERSION', "3.6")
 
     for settings, options, env_vars, build_requires, reference in builder.items:
         # General Options
         env_vars.update({
             'XMS_VERSION': XMS_VERSION,
-            'VERBOSE': 1
+            'VERBOSE': 1,
+            'PYTHON_TARGET_VERSION': python_target_version
         })
 
         # Require c++11 compatibility
@@ -33,7 +35,7 @@ if __name__ == "__main__":
                 or int(settings['compiler.version']) > 12) \
                 and settings['arch'] == "x86_64"):
             pybind_options = dict(options)
-            pybind_options.update({'xmsextractor:pybind': True})
+            pybind_options.update({'xmsgridtrace:pybind': True})
             pybind_updated_builds.append([settings, pybind_options, env_vars, build_requires])
 
         pybind_updated_builds.append([settings, options, env_vars, build_requires])
@@ -42,9 +44,11 @@ if __name__ == "__main__":
     xms_updated_builds = []
     for settings, options, env_vars, build_requires, reference in builder.items:
         # xms option
-        if settings['compiler'] == 'Visual Studio' and 'MD' in settings['compiler.runtime']:
+        if settings['compiler'] == 'Visual Studio' \
+                and 'MD' in settings['compiler.runtime'] \
+                and int(settings['compiler.version']) < 13:
             xms_options = dict(options)
-            xms_options.update({'xmsextractor:xms': True})
+            xms_options.update({'xmsgridtrace:xms': True})
             xms_updated_builds.append([settings, xms_options, env_vars, build_requires])
         xms_updated_builds.append([settings, options, env_vars, build_requires])
     builder.builds = xms_updated_builds
@@ -52,9 +56,9 @@ if __name__ == "__main__":
     testing_updated_builds = []
     for settings, options, env_vars, build_requires, reference in builder.items:
         # testing option
-        if not options.get('xmsextractor:xms', False) and not options.get('xmsextractor:pybind', False):
+        if not options.get('xmsgridtrace:xms', False) and not options.get('xmsgridtrace:pybind', False):
             testing_options = dict(options)
-            testing_options.update({'xmsextractor:testing': True})
+            testing_options.update({'xmsgridtrace:testing': True})
             testing_updated_builds.append([settings, testing_options, env_vars, build_requires])
         testing_updated_builds.append([settings, options, env_vars, build_requires])
     builder.builds = testing_updated_builds

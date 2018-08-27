@@ -1,22 +1,24 @@
 env:
- global:
+  global:
    # TRAVIS_BRANCH is tag name if tag provided else branch name
    - XMS_VERSION: $TRAVIS_BRANCH
-   - CONAN_REFERENCE: "xmsextractor/${XMS_VERSION}"
+   - CONAN_REFERENCE: "xmsgridtrace/${XMS_VERSION}"
    - CONAN_USERNAME: "aquaveo"
    - CONAN_CHANNEL: "stable"
    - CONAN_LOGIN_USERNAME: $CONAN_USER_SECRET
    - CONAN_PASSWORD: $CONAN_PASSWORD_SECRET
    - CONAN_REMOTES: $AQUAVEO_CONAN
-   - GH_REPO_NAME: xmsextractor
+   - GH_REPO_NAME: xmsgridtrace
    - DOXYFILE: $TRAVIS_BUILD_DIR/Doxygen/Doxyfile
-   - GH_REPO_REF: github.com/Aquaveo/xmsextractor.git
-
+   - GH_REPO_REF: github.com/Aquaveo/xmsgridtrace.git
+   - PYTHON_TARGET_VERSION: 2.7
+     
 linux: &linux
    os: linux
    sudo: required
    language: python
-   python: "3.6"
+   python:
+     - 2.7
    services:
      - docker
 osx: &osx
@@ -52,6 +54,7 @@ jobs:
    include:
       # --- TEST STAGE ------------------------------------------------------------------------------------------------
       - stage: test
+        if: branch = master
         addons:
           apt:
             packages:
@@ -70,39 +73,21 @@ jobs:
       # GCC 5
       - stage: test
         <<: *linux
-        env: CONAN_GCC_VERSIONS=5 CONAN_DOCKER_IMAGE=lasote/conangcc5 CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86
-      - stage: test
-        <<: *linux
         env: CONAN_GCC_VERSIONS=5 CONAN_DOCKER_IMAGE=lasote/conangcc5 CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86_64
-      - stage: test
-        <<: *linux
-        env: CONAN_GCC_VERSIONS=5 CONAN_DOCKER_IMAGE=lasote/conangcc5 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86
       - stage: test
         <<: *linux
         env: CONAN_GCC_VERSIONS=5 CONAN_DOCKER_IMAGE=lasote/conangcc5 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86_64
       # GCC 6
       - stage: test
         <<: *linux
-        env: CONAN_GCC_VERSIONS=6 CONAN_DOCKER_IMAGE=lasote/conangcc6 CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86
-      - stage: test
-        <<: *linux
         env: CONAN_GCC_VERSIONS=6 CONAN_DOCKER_IMAGE=lasote/conangcc6 CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86_64
-      - stage: test
-        <<: *linux
-        env: CONAN_GCC_VERSIONS=6 CONAN_DOCKER_IMAGE=lasote/conangcc6 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86
       - stage: test
         <<: *linux
         env: CONAN_GCC_VERSIONS=6 CONAN_DOCKER_IMAGE=lasote/conangcc6 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86_64
       # GCC 7
       - stage: test
         <<: *linux
-        env: CONAN_GCC_VERSIONS=7 CONAN_DOCKER_IMAGE=lasote/conangcc7 CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86
-      - stage: test
-        <<: *linux
         env: CONAN_GCC_VERSIONS=7 CONAN_DOCKER_IMAGE=lasote/conangcc7 CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86_64
-      - stage: test
-        <<: *linux
-        env: CONAN_GCC_VERSIONS=7 CONAN_DOCKER_IMAGE=lasote/conangcc7 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86
       - stage: test
         <<: *linux
         env: CONAN_GCC_VERSIONS=7 CONAN_DOCKER_IMAGE=lasote/conangcc7 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86_64
@@ -110,15 +95,7 @@ jobs:
       - stage: test
         <<: *osx
         osx_image: xcode9.2
-        env: CONAN_APPLE_CLANG_VERSIONS=9.0 CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86
-      - stage: test
-        <<: *osx
-        osx_image: xcode9.2
         env: CONAN_APPLE_CLANG_VERSIONS=9.0 CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86_64
-      - stage: test
-        <<: *osx
-        osx_image: xcode9.2
-        env: CONAN_APPLE_CLANG_VERSIONS=9.0 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86
       - stage: test
         <<: *osx
         osx_image: xcode9.2
@@ -129,15 +106,7 @@ jobs:
       # GCC 5
       - stage: deploy
         <<: *linux
-        env: CONAN_GCC_VERSIONS=5 CONAN_DOCKER_IMAGE=lasote/conangcc5 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86
-        after_success: true
-      - stage: deploy
-        <<: *linux
         env: CONAN_GCC_VERSIONS=5 CONAN_DOCKER_IMAGE=lasote/conangcc5 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86_64
-        after_success: true
-      - stage: deploy
-        <<: *linux
-        env: CONAN_GCC_VERSIONS=5 CONAN_DOCKER_IMAGE=lasote/conangcc5 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86
         after_success: true
       - stage: deploy
         <<: *linux
@@ -146,15 +115,7 @@ jobs:
       # GCC 6
       - stage: deploy
         <<: *linux
-        env: CONAN_GCC_VERSIONS=6 CONAN_DOCKER_IMAGE=lasote/conangcc6 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86
-        after_success: true
-      - stage: deploy
-        <<: *linux
         env: CONAN_GCC_VERSIONS=6 CONAN_DOCKER_IMAGE=lasote/conangcc6 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86_64
-        after_success: true
-      - stage: deploy
-        <<: *linux
-        env: CONAN_GCC_VERSIONS=6 CONAN_DOCKER_IMAGE=lasote/conangcc6 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86
         after_success: true
       - stage: deploy
         <<: *linux
@@ -163,15 +124,7 @@ jobs:
       # GCC 7
       - stage: deploy
         <<: *linux
-        env: CONAN_GCC_VERSIONS=7 CONAN_DOCKER_IMAGE=lasote/conangcc7 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86
-        after_success: true
-      - stage: deploy
-        <<: *linux
         env: CONAN_GCC_VERSIONS=7 CONAN_DOCKER_IMAGE=lasote/conangcc7 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86_64
-        after_success: true
-      - stage: deploy
-        <<: *linux
-        env: CONAN_GCC_VERSIONS=7 CONAN_DOCKER_IMAGE=lasote/conangcc7 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86
         after_success: true
       - stage: deploy
         <<: *linux
@@ -181,17 +134,7 @@ jobs:
       - stage: deploy
         <<: *osx
         osx_image: xcode9.2
-        env: CONAN_APPLE_CLANG_VERSIONS=9.0 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86
-        after_success: true
-      - stage: deploy
-        <<: *osx
-        osx_image: xcode9.2
         env: CONAN_APPLE_CLANG_VERSIONS=9.0 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Debug CONAN_ARCHS=x86_64
-        after_success: true
-      - stage: deploy
-        <<: *osx
-        osx_image: xcode9.2
-        env: CONAN_APPLE_CLANG_VERSIONS=9.0 CONAN_UPLOAD=$AQUAVEO_CONAN CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86
         after_success: true
       - stage: deploy
         <<: *osx
