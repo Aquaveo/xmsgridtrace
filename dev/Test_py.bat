@@ -6,7 +6,7 @@ echo xmsextractor_py.cp35-win_amd64.pyd
 pause
 
 echo on
-pip install numpy
+python -m pip install numpy
 pushd .
 cd ..\build_py\lib
 python -m unittest discover -v -p *_pyt.py -s ../../xmsgridtrace/python/gridtrace
