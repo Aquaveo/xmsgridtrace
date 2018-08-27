@@ -8,11 +8,8 @@ import numpy as np
 
 class TestXmGridTrace(unittest.TestCase):
     """XmGridTrace tests"""
-    def get_dir_as_cos_theta(a_vx0, a_vy0, a_vx1, a_vy1):
-        mag0 = math.sqrt(a_vx0 * a_vx0 + a_vy0 * a_vy0);
-        mag1 = math.sqrt(a_vx1 * a_vx1 + a_vy1 * a_vy1);
-        return (a_vx0*a_vx1 + a_vy0*a_vy1) / (mag0 * mag1);
-    def create_default_single_cell():
+    def create_default_single_cell(self):
+        """Create a default single cell"""
         points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
         cells = [XmUGrid.xmugrid_celltype_enum.XMU_TRIANGLE, 3, 0, 1, 2,
                  XmUGrid.xmugrid_celltype_enum.XMU_TRIANGLE, 3, 2, 3, 0]
@@ -25,13 +22,13 @@ class TestXmGridTrace(unittest.TestCase):
         tracer.set_min_delta_time(.1)
         tracer.set_max_change_distance(100)
         tracer.set_max_change_velocity(100)
-        tracer.set_max_change_direction_in_radians(1.5*pi)
+        tracer.set_max_change_direction_in_radians(1.5*np.pi)
         scalars = [(1,1,0),(1,1,0),(1,1,0),(1,1,0)]
         point_activity = [True]*4
         tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
         tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,10)
         return tracer
-    def create_default_two_cell():
+    def create_default_two_cell(self):
         points = [ ( 0, 0, 0 ),( 1, 0, 0 ),( 1, 1, 0 ),( 0, 1, 0 ),( 2, 0, 0 ),( 2, 1, 0 ) ]
         cells = [ XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 0, 1, 2, 3, XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 1, 4, 5, 2 ]
         ugrid = XmUGrid(points,cells)
@@ -43,24 +40,24 @@ class TestXmGridTrace(unittest.TestCase):
         tracer.set_min_delta_time(.1)
         tracer.set_max_change_distance(100)
         tracer.set_max_change_velocity(100)
-        tracer.set_max_change_direction_in_radians(1.5*pi)
+        tracer.set_max_change_direction_in_radians(1.5*np.pi)
         scalars = [ ( .1,0,0 ),( .2,0,0 ) ]
         point_activity = [True]*2
         tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_CELLS,point_activity,data_location_enum.LOC_CELLS,0)
         tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_CELLS,point_activity,data_location_enum.LOC_CELLS,10)
         return tracer
     def test_basic_trace_point(self):
-        tracer=create_default_single_cell()
+        tracer=self.create_default_single_cell()
         start_time=.5
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
         
         expected_out_trace = [(.5,.5,0),(1,1,0)]
         expected_out_times = [.5,1]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_max_change_distance(self):
-        tracer=create_default_single_cell()
+        tracer=self.create_default_single_cell()
         start_time=.5
         tracer.set_max_change_distance(.25)
 
@@ -71,10 +68,10 @@ class TestXmGridTrace(unittest.TestCase):
                              ( 0.85355336849618890, 0.85355336849618890, 0.00000000000000000 ),
                              (1,1,0)]
         expected_out_times = [.5, 0.67677668424809445, 0.85355336849618890, 1]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_small_scalars_trace_point(self):
-        tracer=create_default_single_cell()
+        tracer=self.create_default_single_cell()
         start_time=.5
         tracer.set_max_change_distance(.25)
         scalars = [(.1,.1,0),(.1,.1,0),(.1,.1,0),(.1,.1,0)]
@@ -90,11 +87,11 @@ class TestXmGridTrace(unittest.TestCase):
                              ( 0.86400000542402267, 0.86400000542402267, 0  ),
                              (1,1,0)]
         expected_out_times = [.5, 1.5, 2.7, 4.14, 5.5]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times,result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_times,result_tuple[1])
     def test_strong_direction_change(self):
-        tracer=create_default_single_cell()
-        tracer.set_max_change_direction_in_radians(pi*.2)
+        tracer=self.create_default_single_cell()
+        tracer.set_max_change_direction_in_radians(np.pi*.2)
         tracer.set_min_delta_time(-1)
         start_time=.5
 
@@ -105,14 +102,39 @@ class TestXmGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((0,0,0),start_time)
 
-        expected_out_trace =     [( 0,0,0 ),
-                            (0.00000000000000000, 0.25000000000000000, 0.00000000000000000 ),
-                            (0.074999999999999997, 0.47499999999999998, 0.00000000000000000 ),
-                            (0.21900000214576720, 0.63699999570846555, 0.00000000000000000 ),
-                            (0.30928799843788146, 0.66810399758815764, 0.00000000000000000 ),
-                            (0.40229310507774352, 0.67396399235725402, 0.00000000000000000 ),
-                            (0.48679361495018003, 0.65024498560905453, 0.00000000000000000 ),
-                            (0.50183556502673621, 0.63763372523131490, 0.00000000000000000 )]
+        expected_out_trace =     [  ( 0,0,0 ),
+                                    (0.00000000000000000, 0.25000000000000000, 0.00000000000000000 ),
+                                    (0.074999999999999997, 0.47499999999999998, 0.00000000000000000 ),
+                                    (0.21900000214576720, 0.63699999570846555, 0.00000000000000000 ),
+                                    (0.30928799843788146, 0.66810399758815764, 0.00000000000000000 ),
+                                    (0.40229310507774352, 0.67396399235725402, 0.00000000000000000 ),
+                                    (0.48679361495018003, 0.65024498560905453, 0.00000000000000000 ),
+                                    (0.54780151323509219, 0.59909560095787040, 0.00000000000000000 ),
+                                    (0.55928876277122497, 0.56619817004051198, 0.00000000000000000 ),
+                                    (0.56114558691518779, 0.53247499044700608, 0.00000000000000000 ),
+                                    (0.55189971330840681, 0.50228363992173752, 0.00000000000000000 ),
+                                    (0.53269911067322617, 0.48131557500677169, 0.00000000000000000 ),
+                                    (0.52076836142536975, 0.47806150355091476, 0.00000000000000000 ),
+                                    (0.50886902895577013, 0.47838753608466128, 0.00000000000000000 ),
+                                    (0.49867742691962913, 0.48264835153512164, 0.00000000000000000 ),
+                                    (0.49224616907898289, 0.49014090685121131, 0.00000000000000000 ),
+                                    (0.49173935940609609, 0.49438094923206660, 0.00000000000000000 ),
+                                    (0.49250246625151450, 0.49839053740482164, 0.00000000000000000 ),
+                                    (0.49454361321306389, 0.50154755045413602, 0.00000000000000000 ),
+                                    (0.49745717820065949, 0.50317358562752867, 0.00000000000000000 ),
+                                    (0.49888395770889871, 0.50301615091938545, 0.00000000000000000 ),
+                                    (0.50012160117661586, 0.50244704462921241, 0.00000000000000000 ),
+                                    (0.50095740046883197, 0.50152383477622209, 0.00000000000000000 ),
+                                    (0.50107955145675120, 0.50098875888952354, 0.00000000000000000 ),
+                                    (0.50105605626599747, 0.50045352403892940, 0.00000000000000000 ),
+                                    (0.50086894918345870, 0.49998474718699493, 0.00000000000000000 ),
+                                    (0.50053945884260675, 0.49966662451478433, 0.00000000000000000 ),
+                                    (0.50034430627617277, 0.49962054739305783, 0.00000000000000000 ),
+                                    (0.50015012042108842, 0.49962997721910873, 0.00000000000000000 ),
+                                    (0.49998265395837810, 0.49970077747304897, 0.00000000000000000 ),
+                                    (0.49987374966305814, 0.49982308521808211, 0.00000000000000000 ),
+                                    (0.49986302487024292, 0.49988726006383088, 0.00000000000000000 ),
+                                    (0.49986815504448728, 0.49994012045071656, 0.00000000000000000 )]
         expected_out_times = [.5,
                             0.75000000000000000, 
                             1.0500000000000000, 
@@ -146,11 +168,11 @@ class TestXmGridTrace(unittest.TestCase):
                             9.5766343633804656,
                             9.7883171816902319,
                             10.000000000000000]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_max_tracing_time(self):
-        tracer=create_default_single_cell()
-        tracer.set_max_change_direction_in_radians(pi*.2)
+        tracer=self.create_default_single_cell()
+        tracer.set_max_change_direction_in_radians(np.pi*.2)
         tracer.set_min_delta_time(-1)
         tracer.set_max_tracing_time(5)
 
@@ -198,11 +220,11 @@ class TestXmGridTrace(unittest.TestCase):
                                 5.0180417002291202,
                                 5.2587764123320317,
                                 5.5]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_max_tracing_distance(self):
-        tracer=create_default_single_cell()
-        tracer.set_max_change_direction_in_radians(pi*.2)
+        tracer=self.create_default_single_cell()
+        tracer.set_max_change_direction_in_radians(np.pi*.2)
         tracer.set_min_delta_time(-1)
         tracer.set_max_tracing_distance(1.0)
         start_time=.5
@@ -214,39 +236,15 @@ class TestXmGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((0,0,0),start_time)
 
-        expected_out_trace =     [( 0,0,0 ),
-                            (0.00000000000000000, 0.25000000000000000, 0.00000000000000000 ),
-                            (0.074999999999999997, 0.47499999999999998, 0.00000000000000000 ),
-                            (0.21900000214576720, 0.63699999570846555, 0.00000000000000000 ),
-                            (0.30928799843788146, 0.66810399758815764, 0.00000000000000000 ),
-                            (0.40229310507774352, 0.67396399235725402, 0.00000000000000000 ),
-                            (0.48679361495018003, 0.65024498560905453, 0.00000000000000000 ),
-                            (0.54780151323509219, 0.59909560095787040, 0.00000000000000000 ),
-                            (0.55928876277122497, 0.56619817004051198, 0.00000000000000000 ),
-                            (0.56114558691518779, 0.53247499044700608, 0.00000000000000000 ),
-                            (0.55189971330840681, 0.50228363992173752, 0.00000000000000000 ),
-                            (0.53269911067322617, 0.48131557500677169, 0.00000000000000000 ),
-                            (0.52076836142536975, 0.47806150355091476, 0.00000000000000000 ),
-                            (0.50886902895577013, 0.47838753608466128, 0.00000000000000000 ),
-                            (0.49867742691962913, 0.48264835153512164, 0.00000000000000000 ),
-                            (0.49224616907898289, 0.49014090685121131, 0.00000000000000000 ),
-                            (0.49173935940609609, 0.49438094923206660, 0.00000000000000000 ),
-                            (0.49250246625151450, 0.49839053740482164, 0.00000000000000000 ),
-                            (0.49454361321306389, 0.50154755045413602, 0.00000000000000000 ),
-                            (0.49745717820065949, 0.50317358562752867, 0.00000000000000000 ),
-                            (0.49888395770889871, 0.50301615091938545, 0.00000000000000000 ),
-                            (0.50012160117661586, 0.50244704462921241, 0.00000000000000000 ),
-                            (0.50095740046883197, 0.50152383477622209, 0.00000000000000000 ),
-                            (0.50107955145675120, 0.50098875888952354, 0.00000000000000000 ),
-                            (0.50105605626599747, 0.50045352403892940, 0.00000000000000000 ),
-                            (0.50086894918345870, 0.49998474718699493, 0.00000000000000000 ),
-                            (0.50053945884260675, 0.49966662451478433, 0.00000000000000000 ),
-                            (0.50034430627617277, 0.49962054739305783, 0.00000000000000000 ),
-                            (0.50015012042108842, 0.49962997721910873, 0.00000000000000000 ),
-                            (0.49998265395837810, 0.49970077747304897, 0.00000000000000000 ),
-                            (0.49987374966305814, 0.49982308521808211, 0.00000000000000000 ),
-                            (0.49986302487024292, 0.49988726006383088, 0.00000000000000000 ),
-                            (0.49986815504448728, 0.49994012045071656, 0.00000000000000000 )]
+
+        expected_out_trace =     [  ( 0,0,0 ),
+                                    ( 0.00000000000000000, 0.25000000000000000, 0.00000000000000000 ),
+                                    ( 0.074999999999999997, 0.47499999999999998, 0.00000000000000000 ),
+                                    ( 0.21900000214576720, 0.63699999570846555, 0.00000000000000000 ),
+                                    ( 0.30928799843788146, 0.66810399758815764, 0.00000000000000000 ),
+                                    ( 0.40229310507774352, 0.67396399235725402, 0.00000000000000000 ),
+                                    ( 0.48679361495018003, 0.65024498560905453, 0.00000000000000000 ),
+                                    ( 0.50183556502673621, 0.63763372523131490, 0.00000000000000000 )]
         expected_out_times = [  .5,
                                 0.75000000000000000,
                                 1.0500000000000000,
@@ -255,48 +253,44 @@ class TestXmGridTrace(unittest.TestCase):
                                 1.8852000000000002,
                                 2.1962400000000004,
                                 2.4774609356360582]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        print(len(result_tuple[0]))
+        print(" Length of Expected:")
+        print(len(expected_out_trace))
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0],6)
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])    
     def test_start_out_of_cell(self):
-        tracer=create_default_single_cell()
+        tracer=self.create_default_single_cell()
         start_time=.5
 
         result_tuple = tracer.trace_point((-1,0,0),start_time)
         
         expected_out_trace = []
         expected_out_times = []
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_equal(0,len(result_tuple[0]))
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
-    def test_dot_product(self):
-        np.testing.assert_array_equal(getDirAsCosTheta(0, 1, 1, 0), 0, .1) # 90 degree angle
-        np.testing.assert_array_equal(getDirAsCosTheta(0, 1, 1, 1), .707, .1) # 45 degree angle
-        np.testing.assert_array_equal(getDirAsCosTheta(0, 1, 0, -1), -1, .1) # 180 degree angle
-        np.testing.assert_array_equal(getDirAsCosTheta(1, 1, -1, -1), -1, .1) # 180 degree angle
-        np.testing.assert_array_equal(getDirAsCosTheta(2, 5, 3, 6), .9965, .1) # almost 0 degree angle
-        np.testing.assert_array_equal(getDirAsCosTheta(0, 1, 0, 1), 1, .1) # 0 degree angle
     def test_beyond_timestep(self):
-        tracer=create_default_single_cell()
+        tracer=self.create_default_single_cell()
         start_time=10.1
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
         
         expected_out_trace = []
         expected_out_times = []
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_equal(0,len(result_tuple[0]))
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_before_timestep(self):
-        tracer=create_default_single_cell()
+        tracer=self.create_default_single_cell()
         start_time=-0.1
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
         
         expected_out_trace = [ ( .5,.5,0 ), (1,1,0)]
         expected_out_times = [-.1,.4]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_vector_multiplier(self):
-        tracer=create_default_single_cell()
-        tracer.set_max_change_direction_in_radians(pi*.2)
+        tracer=self.create_default_single_cell()
+        tracer.set_max_change_direction_in_radians(np.pi*.2)
         tracer.set_min_delta_time(-1)
         tracer.set_vector_multiplier(0.5)
         start_time=.5
@@ -342,10 +336,10 @@ class TestXmGridTrace(unittest.TestCase):
                                 8.7336343601152002,
                                 9.5360834004582404,
                                 10.000000000000000]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])    
     def test_multi_cell(self):
-        tracer=create_default_two_cell()
+        tracer=self.create_default_two_cell()
         start_time=0
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
@@ -366,10 +360,10 @@ class TestXmGridTrace(unittest.TestCase):
                                 7.4416000000000002, 
                                 9.9299199999999992,
                                 9.9683860530914945]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_max_change_velocity(self):
-        tracer=create_default_two_cell()
+        tracer=self.create_default_two_cell()
         tracer.set_max_change_velocity(.01)
         tracer.set_min_delta_time(.001)
         start_time=0
@@ -416,10 +410,10 @@ class TestXmGridTrace(unittest.TestCase):
                                 8.4983919093219331,
                                 9.1917078801783187,
                                 9.6267364611093829]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_unique_time_steps(self):
-        tracer=create_default_two_cell()
+        tracer=self.create_default_two_cell()
         start_time=10
 
         
@@ -442,10 +436,10 @@ class TestXmGridTrace(unittest.TestCase):
                                 13.640000000000001,
                                 15.368000000000000,
                                 16.627525378316030]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_inactive_cell(self):
-        tracer=create_default_two_cell()
+        tracer=self.create_default_two_cell()
         start_time=10
 
         
@@ -459,20 +453,16 @@ class TestXmGridTrace(unittest.TestCase):
         
         expected_out_trace = [  ( .5,.5,0 ),
                                 (0.70000000298023224, 0.50000000000000000, 0.00000000000000000 ),
-                                (0.95200000226497650, 0.50000000000000000, 0.00000000000000000 ),
-                                (1.2734079944372176, 0.50000000000000000, 0.00000000000000000 ),
-                                (1.6897536998434066, 0.50000000000000000, 0.00000000000000000 ),
-                                (2,.5,0)]
+                                (0.93040000677108770, 0.50000000000000000, 0.00000000000000000 ),
+                                (0.99788877571821222, 0.50000000000000000, 0.00000000000000000 )]
         expected_out_times = [  10,
                                 11.000000000000000,
                                 12.199999999999999,
-                                13.640000000000001,
-                                15.368000000000000,
-                                16.627525378316030]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+                                12.560000000000000]
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_start_inactive_cell(self):
-        tracer=create_default_two_cell()
+        tracer=self.create_default_two_cell()
         start_time=10
 
         
@@ -486,7 +476,7 @@ class TestXmGridTrace(unittest.TestCase):
         
         expected_out_trace = []
         expected_out_times = []
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_equal(0,len(result_tuple[0]))
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
     def test_tutorial(self):
     #  ->   ->   
@@ -522,7 +512,7 @@ class TestXmGridTrace(unittest.TestCase):
         tracer.set_min_delta_time(.01)
         tracer.set_max_change_distance(-1)
         tracer.set_max_change_velocity(-1)
-        tracer.set_max_change_direction_in_radians(.25*pi)
+        tracer.set_max_change_direction_in_radians(.25*np.pi)
         # Step 4: Set up the velocity vectors for both time steps. Insert timesteps sequentially
         # For this case Scalars are set such that they circle around the edge of the graph in a clockwise direction
         # Z component is not used in scalars
@@ -540,11 +530,11 @@ class TestXmGridTrace(unittest.TestCase):
         start_time=0
         start_point = (.5,.5,0)
         result_tuple=tracer.trace_point(start_point,start_time)
-        # show the cause for termination by calling GetExitMessage
-        print(tracer.GetExitMessage())
+        # show the cause for termination by calling get_exit_message
+        print(tracer.get_exit_message())
 
         # Expected values for this simulation
-        exected_out_trace = [   (0.50000000000000000, 0.50000000000000000, 0.00000000000000000 ),
+        expected_out_trace = [   (0.50000000000000000, 0.50000000000000000, 0.00000000000000000 ),
                                 (0.50000000000000000, 1.2500000000000000, 0.00000000000000000 ),
                                 (0.54457812566426578, 1.3391562513285316, 0.00000000000000000 ),
                                 (0.61632493250262921, 1.4354984729093498, 0.00000000000000000 ),
@@ -608,5 +598,5 @@ class TestXmGridTrace(unittest.TestCase):
                                 18.244907173246794,
                                 19.403971205472232,
                                 20.000000000000000]
-        np.testing.assert_array_equal(expected_out_trace,result_tuple[0])
+        np.testing.assert_array_almost_equal(expected_out_trace,result_tuple[0])
         np.testing.assert_array_equal(expected_out_times,result_tuple[1])
