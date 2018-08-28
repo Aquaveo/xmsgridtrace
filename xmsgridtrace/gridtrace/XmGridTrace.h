@@ -19,10 +19,10 @@
 #include <xmscore/misc/boost_defines.h>
 #include <xmscore/misc/DynBitset.h>
 #include <xmscore/stl/vector.h>
+#include <xmsextractor/extractor/XmUGrid2dDataExtractor.h>
 
 //----- Forward declarations ---------------------------------------------------
-namespace xms {
-  enum DataLocationEnum;}
+
 //----- Namespace declaration --------------------------------------------------
 
 /// XMS Namespace
