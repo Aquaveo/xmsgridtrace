@@ -700,8 +700,8 @@ void XmGridTraceUnitTests::testBasicTracePoint()
 
   VecPt3d expectedOutTrace = { {.5,.5,0}, {1,1,0} };
   VecDbl expectedOutTimes= { .5, 1 };
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testTracePoint
 ////------------------------------------------------------------------------------
 ///// \brief Speed is limited to .25. It doesnt reach the edge because it goes below min delta time
@@ -733,8 +733,8 @@ void XmGridTraceUnitTests::testMaxChangeDistance()
     0.85355336849618890,
     1
   };
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMaxChangeDistance
   ////------------------------------------------------------------------------------
   ///// \brief 
@@ -1048,8 +1048,8 @@ void XmGridTraceUnitTests::testStartOutOfCell()
 
   VecPt3d expectedOutTrace = {};
   VecDbl expectedOutTimes = {};
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testStartOutOfCell
 ////------------------------------------------------------------------------------
 ///// \brief 
@@ -1080,8 +1080,8 @@ void XmGridTraceUnitTests::testBeyondTimestep()
 
   VecPt3d expectedOutTrace = {};
   VecDbl expectedOutTimes = {};
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testBeyondTimestep
   ////------------------------------------------------------------------------------
   ///// \brief 
@@ -1100,8 +1100,8 @@ void XmGridTraceUnitTests::testBeforeTimestep()
 
   VecPt3d expectedOutTrace = { { .5,.5,0 }, {1,1,0} };
   VecDbl expectedOutTimes = {-.1,.4};
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testBeforeTimestep
 ////------------------------------------------------------------------------------
 ///// \brief 
@@ -1214,8 +1214,8 @@ void XmGridTraceUnitTests::testMultiCell()
     9.9299199999999992,
     9.9683860530914945
   };
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMultiCell
   ////------------------------------------------------------------------------------
   ///// \brief Testing what happens when the maximum change in velocity is low
@@ -1282,8 +1282,8 @@ void XmGridTraceUnitTests::testMaxChangeVelocity()
     9.1917078801783187,
     9.6267364611093829
   };
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMaxChangeVelocity
   ////------------------------------------------------------------------------------
   ///// \brief Test behavior for unique timesteps
@@ -1327,8 +1327,8 @@ void XmGridTraceUnitTests::testUniqueTimeSteps()
     15.368000000000000,
     16.627525378316030
   };
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testUniqueTimeSteps
 ////------------------------------------------------------------------------------
 ///// \brief 2nd cell is inactive in the 2nd time step.
@@ -1368,8 +1368,8 @@ void XmGridTraceUnitTests::testInactiveCell()
     12.199999999999999,
     12.560000000000000
   };
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testInactiveCell
 ////------------------------------------------------------------------------------
 ///// \brief The point starts in an inactive cell, and doesnt move
@@ -1395,8 +1395,8 @@ void XmGridTraceUnitTests::testStartInactiveCell()
 
   VecPt3d expectedOutTrace = {};
   VecDbl expectedOutTimes = {};
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testStartInactiveCell
 ////------------------------------------------------------------------------------
 ///// \brief 2nd cell is inactive in the 2nd time step.
@@ -1545,8 +1545,8 @@ void XmGridTraceUnitTests::testTutorial()
     19.403971205472232,
     20.000000000000000
   };
-  TS_ASSERT_EQUALS(expectedOutTrace, outTrace);
-  TS_ASSERT_EQUALS(expectedOutTimes, outTimes);
+  TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
+  TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testTutorial
 //! [snip_test_Example_XmGridTrace]
 
