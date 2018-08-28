@@ -1,9 +1,9 @@
-[![Build Status](https://travis-ci.org/Aquaveo/xmsextractor.svg?branch=master)](https://travis-ci.org/Aquaveo/xmsextractor)
-[![Build status](https://ci.appveyor.com/api/projects/status/tkgmhrs31cc4l3ph?svg=true)](https://ci.appveyor.com/project/Aquaveo/xmsextractor)
+[![Build Status](https://travis-ci.org/Aquaveo/xmsgridtrace.svg?branch=master)](https://travis-ci.org/Aquaveo/xmsgridtrace)
+[![Build status](https://ci.appveyor.com/api/projects/status/tkgmhrs31cc4l3ph?svg=true)](https://ci.appveyor.com/project/Aquaveo/xmsgridtrace)
 
-XMSExtractor
+XMSGridtrace
 ========
-Scalar extractor library for XMS products
+Grid point tracer for XMS products.
 
 Prerequisites
 --------------
@@ -49,4 +49,4 @@ For Windows:
 Documentation
 -------------
 
-See: [xmsextractor documentation](https://aquaveo.github.io/xmsextractor/)
+See: [xmsgridtrace documentation](https://aquaveo.github.io/xmsgridtrace/)
