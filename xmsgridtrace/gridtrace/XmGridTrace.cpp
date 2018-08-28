@@ -423,7 +423,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
 
     if (!bSplit && m_maxChangeVelocity > 0)
     {
-      double changeVel = abs(mag1 - mag0);
+      double changeVel = fabs(mag1 - mag0);
       if (changeVel > m_maxChangeVelocity)
       {
         bSplit = true;
@@ -535,9 +535,9 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt, double a
     XM_LOG(xmlog::warning, "The given time is before the first time step.");
     a_currentTime = m_time1;
   }
-  double totalTime = abs(m_time1 - m_time2);
-  double perc1 = abs(a_currentTime - m_time1) / totalTime;
-  double perc2 = abs(a_currentTime - m_time2) / totalTime;
+  double totalTime = fabs(m_time1 - m_time2);
+  double perc1 = fabs(a_currentTime - m_time1) / totalTime;
+  double perc2 = fabs(a_currentTime - m_time2) / totalTime;
   a_data.x = dataOutx1[0] * perc1 + dataOutx2[0] * perc2;
   a_data.y = dataOuty1[0] * perc1 + dataOuty2[0] * perc2;
   return true;
