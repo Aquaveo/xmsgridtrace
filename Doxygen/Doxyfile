@@ -2078,9 +2078,9 @@ SKIP_FUNCTION_MACROS   = YES
 # run, you must also specify the path to the tagfile here.
 
 TAGFILES               = xmscore.tag=https://aquaveo.github.io/xmscore/ \
-                         xmscore.tag=https://aquaveo.github.io/xmsinterp/ \
-                         xmscore.tag=https://aquaveo.github.io/xmsgrid/ \
-                         xmscore.tag=https://aquaveo.github.io/xmsextractor/
+                         xmsinterp.tag=https://aquaveo.github.io/xmsinterp/ \
+                         xmsgrid.tag=https://aquaveo.github.io/xmsgrid/ \
+                         xmsextractor.tag=https://aquaveo.github.io/xmsextractor/
 
 # When a file name is specified after GENERATE_TAGFILE, doxygen will create a
 # tag file that is based on the input files it reads. See section "Linking to

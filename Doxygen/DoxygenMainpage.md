@@ -1,5 +1,7 @@
 xmsgridtrace {#mainpage}
 ============
+xmsgridtrace {#mainpage}
+============
 \tableofcontents
 
 xmsgridtrace {#xmsgridtrace}
@@ -30,7 +32,7 @@ xmsgridtrace includes the following functionality:
 
 The following tutorial is available:
 
-* [Gridrace tutorial](Gridrace_Tutorial.md)
+* [Gridrace tutorial](Gridtrace_Tutorial.md)
 
 Testing {#XmsgridtraceTesting}
 -------

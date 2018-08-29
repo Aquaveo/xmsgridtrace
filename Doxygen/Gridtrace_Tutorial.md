@@ -9,7 +9,7 @@ This is the "hello world" example for using the gridtrace library.
 
 This example shows how to trace a point through a simple grid. The testing code for this example is in XmGridTraceUnitTests::testTutorial. A picture of the example is shown below. Notice that the UGrid is 4 simple squares from (0,0) to (2,2) with each square having a side length of 1. The velocity vectors are mapped to the points.
 
-![Simple XmUGrid with 4 Cells and 9 Velocity Vectors x](xmsgridtrace_tutorial.png)
+![Simple XmUGrid with 4 Cells and 9 Velocity Vectors x](images/xmsgridtrace_tutorial.png)
 
 The basic steps to trace a point through a velocity vector field are as follows:
 1. Create the grid
