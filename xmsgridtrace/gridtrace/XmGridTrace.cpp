@@ -728,9 +728,9 @@ void XmGridTraceUnitTests::testMaxChangeDistance()
   TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMaxChangeDistance
-  ////------------------------------------------------------------------------------
-  ///// \brief test with small scalars to create more points
-  ////------------------------------------------------------------------------------
+////------------------------------------------------------------------------------
+///// \brief test with small scalars to create more points
+////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testSmallScalarsTracePoint()
 {
   BSHP<XmGridTrace> tracer;
@@ -967,9 +967,9 @@ void XmGridTraceUnitTests::testMaxTracingTime()
   TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMaxTracingTime
-  ////------------------------------------------------------------------------------
-  ///// \brief test setting the max tracing distance
-  ////------------------------------------------------------------------------------
+////------------------------------------------------------------------------------
+///// \brief test setting the max tracing distance
+////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testMaxTracingDistance()
 {
   BSHP<XmGridTrace> tracer;
@@ -1075,9 +1075,9 @@ void XmGridTraceUnitTests::testBeyondTimestep()
   TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testBeyondTimestep
-  ////------------------------------------------------------------------------------
-  ///// \brief test the behavior when starting before the first timestep
-  ////------------------------------------------------------------------------------
+////------------------------------------------------------------------------------
+///// \brief test the behavior when starting before the first timestep
+////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testBeforeTimestep()
 {
   BSHP<XmGridTrace> tracer;
@@ -1209,11 +1209,11 @@ void XmGridTraceUnitTests::testMultiCell()
   TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMultiCell
-  ////------------------------------------------------------------------------------
-  ///// \brief Testing what happens when the maximum change in velocity is low
-  ////         It reaches a point of high acceleration, and then the delta time
-  ////         decreases until it goes below the minimum delta time.
-  ////------------------------------------------------------------------------------
+////------------------------------------------------------------------------------
+///// \brief Testing what happens when the maximum change in velocity is low
+////         It reaches a point of high acceleration, and then the delta time
+////         decreases until it goes below the minimum delta time.
+////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testMaxChangeVelocity()
 {
   BSHP<XmGridTrace> tracer;
@@ -1277,9 +1277,9 @@ void XmGridTraceUnitTests::testMaxChangeVelocity()
   TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMaxChangeVelocity
-  ////------------------------------------------------------------------------------
-  ///// \brief Test behavior for unique timesteps
-  ////------------------------------------------------------------------------------
+////------------------------------------------------------------------------------
+///// \brief Test behavior for unique timesteps
+////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testUniqueTimeSteps()
 {
   BSHP<XmGridTrace> tracer;
