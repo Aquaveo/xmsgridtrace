@@ -48,42 +48,49 @@ public:
   virtual ~XmGridTrace();
 
   /// \brief Returns the vector multiplier
+  /// \return the vector multiplier
   virtual double GetVectorMultiplier() const = 0;
   /// \brief Sets the vector multiplier
   /// \param[in] a_vectorMultiplier the new vector multiplier
   virtual void SetVectorMultiplier(const double a_vectorMultiplier) = 0;
 
   /// \brief Returns the Max Tracing Time
+  /// \return the max tracing time
   virtual double GetMaxTracingTime() const = 0;
   /// \brief Sets the max tracing time
   /// \param[in] a_maxTracingTime the new max tracing time
   virtual void SetMaxTracingTime(const double a_maxTracingTime) = 0;
 
   /// \brief Returns the Max Tracing Distance
+  /// \return the max tracing distance
   virtual double GetMaxTracingDistance() const = 0;
   /// \brief Sets the max tracing distance
   /// \param[in] a_maxTracingDistance the new max tracing distance
   virtual void SetMaxTracingDistance(const double a_maxTracingDistance) = 0;
 
   /// \brief Returns the min delta time
+  /// \return the minimum time between trace steps
   virtual double GetMinDeltaTime() const = 0;
   /// \brief Sets the min delta time
   /// \param[in] a_minDeltaTime the new min delta time
   virtual void SetMinDeltaTime(const double a_minDeltaTime) = 0;
 
   /// \brief Returns the max change distance
+  /// \return the maximum change in distance between trace steps
   virtual double GetMaxChangeDistance() const = 0;
   /// \brief Sets the max change distance
   /// \param[in] a_maxChangeDistance the new max change distance
   virtual void SetMaxChangeDistance(const double a_maxChangeDistance) = 0;
 
   /// \brief Returns the max change in velcoity
+  /// \return the maximum change in velocity between trace steps
   virtual double GetMaxChangeVelocity() const = 0;
   /// \brief Sets the max change in velocity
   /// \param[in] a_maxChangeVelocity the new max change in velocity
   virtual void SetMaxChangeVelocity(const double a_maxChangeVelocity) = 0;
 
   /// \brief Returns the max change in direction in radians
+  /// \return the maximum change in direction between trace steps
   virtual double GetMaxChangeDirectionInRadians() const = 0;
   /// \brief Sets the max change in direction in radians
   /// \param[in] a_maxChangeDirection the new max change in direction in radians
@@ -114,6 +121,7 @@ public:
                           VecDbl& a_outTimes) = 0;
 
   /// \brief returns a message describing what caused trace to exit
+  /// \return the exit message of the last TracePoint operation
   virtual std::string GetExitMessage() = 0;
 
 private:
