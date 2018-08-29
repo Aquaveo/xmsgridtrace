@@ -496,11 +496,10 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt
   } // while ()
 }// XmGridTraceImpl::TracePoint
  //------------------------------------------------------------------------------
- /// \brief Runs the Grid Trace for a point
- /// \param[in] a_pt The starting point of the trace
- /// \param[in] a_ptTime The starting time of the trace
- /// \param[out] a_outTrace the resultant positions at each step
- /// \param[out] a_outTimes the resultant times at each step
+ /// \brief Returns the velocity scalar for a given point and time
+ /// \param[in] a_pt The point
+ /// \param[in] a_currentTime The time at extraction
+ /// \param[out] a_data the resultant velocity scalar
  //------------------------------------------------------------------------------
 bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt, double a_currentTime, xms::Pt3d& a_data) const
 {
@@ -552,23 +551,12 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt, double a
 #include <xmsgrid/ugrid/XmUGrid.h>
 
 using namespace xms;
-//
-//#include <shared1/feature/fline.h>
-//#include <shared1/feature/flineutl.h>
-//#include <Shared1/general/gen_ask.h>
-//#include <Shared1/general/gen_messages.h>
-////#include <Shared1/testing/TestTools.h>
-//#include <xmsinterp/geometry/GmPolyLinePtRedistributer.h>
-//
-//#include <mesh2d/Mesh2dTree.h>
-//#include <ugrid_module/UGridModuleTree.h>
-
-//namespace xms
-//{
-//  extern coveragelisttype g_coveragelist;
-//}
 namespace
 {
+  //------------------------------------------------------------------------------
+  /// \brief Returns a tracer for a default cell
+  /// \param[out] a_tracer The tracer for a default cell
+  //------------------------------------------------------------------------------
   void createDefaultSingleCell(BSHP<XmGridTrace>& a_tracer)
   {
     //  3----2
@@ -622,6 +610,10 @@ namespace
     //Uses exact same scalars/pointActivity
     a_tracer->AddGridScalarsAtTime(scalars, DataLocationEnum::LOC_POINTS, pointActivity, DataLocationEnum::LOC_POINTS, time);
   } // createDefaultSingleCell
+  //------------------------------------------------------------------------------
+  /// \brief Returns a tracer for two default cells
+  /// \param[out] a_tracer The tracer for two default cells
+  //------------------------------------------------------------------------------
   void createDefaultTwoCell(BSHP<XmGridTrace>& a_tracer)
   {
     // clang-format off
@@ -684,7 +676,7 @@ namespace xms
   bool gmEqualPointsXYZ(const Pt3d& pt1, const Pt3d& pt2, double tol);
 }
 ////------------------------------------------------------------------------------
-///// \brief 
+///// \brief test the basic functionality of trace point
 ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testBasicTracePoint()
 {
@@ -737,7 +729,7 @@ void XmGridTraceUnitTests::testMaxChangeDistance()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMaxChangeDistance
   ////------------------------------------------------------------------------------
-  ///// \brief 
+  ///// \brief test with small scalars to create more points
   ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testSmallScalarsTracePoint()
 {
@@ -795,7 +787,7 @@ void XmGridTraceUnitTests::testSmallScalarsTracePoint()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, 0.001);
 } // XmGridTraceUnitTests::testSmallScalarsTracePoint
 ////------------------------------------------------------------------------------
-///// \brief 
+///// \brief test behavior when having large changes in direction
 ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testStrongDirectionChange()
 {
@@ -900,7 +892,7 @@ void XmGridTraceUnitTests::testStrongDirectionChange()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testStrongDirectionChange
 ////------------------------------------------------------------------------------
-///// \brief 
+///// \brief test setting max tracing time
 ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testMaxTracingTime()
 {
@@ -976,7 +968,7 @@ void XmGridTraceUnitTests::testMaxTracingTime()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMaxTracingTime
   ////------------------------------------------------------------------------------
-  ///// \brief 
+  ///// \brief test setting the max tracing distance
   ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testMaxTracingDistance()
 {
@@ -1032,7 +1024,7 @@ void XmGridTraceUnitTests::testMaxTracingDistance()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testMaxTracingDistance
 ////------------------------------------------------------------------------------
-///// \brief 
+///// \brief test behavior when starting point is out of the cell
 ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testStartOutOfCell()
 {
@@ -1052,7 +1044,7 @@ void XmGridTraceUnitTests::testStartOutOfCell()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testStartOutOfCell
 ////------------------------------------------------------------------------------
-///// \brief 
+///// \brief test the angle function
 ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testDotProduct()
 {
@@ -1064,7 +1056,7 @@ void XmGridTraceUnitTests::testDotProduct()
   TS_ASSERT_DELTA(getDirAsCosTheta(0, 1, 0, 1), 1, .1);//0 degree angle
 } // XmGridTraceUnitTests::testDotProduct
 ////------------------------------------------------------------------------------
-///// \brief 
+///// \brief test behavior when starting beyond the second time step
 ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testBeyondTimestep()
 {
@@ -1084,7 +1076,7 @@ void XmGridTraceUnitTests::testBeyondTimestep()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testBeyondTimestep
   ////------------------------------------------------------------------------------
-  ///// \brief 
+  ///// \brief test the behavior when starting before the first timestep
   ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testBeforeTimestep()
 {
@@ -1104,7 +1096,7 @@ void XmGridTraceUnitTests::testBeforeTimestep()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testBeforeTimestep
 ////------------------------------------------------------------------------------
-///// \brief 
+///// \brief test behavior of the vector multiplier
 ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testVectorMultiplier()
 {
@@ -1178,7 +1170,7 @@ void XmGridTraceUnitTests::testVectorMultiplier()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testVectorMultiplier
 ////------------------------------------------------------------------------------
-///// \brief 
+///// \brief test behavior of multiple cells
 ////------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testMultiCell()
 {
