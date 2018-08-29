@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['gridtrace_5ftutorial',['Gridtrace_Tutorial',['../md__gridtrace__tutorial.html',1,'']]]
+  ['2d_20ugrid_20tutorial',['2D UGrid Tutorial',['https://aquaveo.github.io/xmsgrid/md__two_d__tutorial.html',1,'']]]
 ];

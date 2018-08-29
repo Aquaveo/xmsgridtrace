@@ -70,6 +70,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 </div><!-- top -->
@@ -103,47 +104,31 @@ $(document).ready(function(){initNavTree('_xm_grid_trace_8cpp.html','');});
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a> &#124;
-<a href="#namespaces">Namespaces</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#namespaces">Namespaces</a>  </div>
   <div class="headertitle">
 <div class="title">XmGridTrace.cpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;<a class="el" href="_xm_grid_trace_8h_source.html">xmsgridtrace/gridtrace/XmGridTrace.h</a>&gt;</code><br/>
 <code>#include &lt;sstream&gt;</code><br/>
-<code>#include &lt;xmscore/misc/XmError.h&gt;</code><br/>
-<code>#include &lt;xmscore/misc/XmLog.h&gt;</code><br/>
-<code>#include &lt;xmscore/math/math.h&gt;</code><br/>
-<code>#include &lt;xmsextractor/extractor/XmUGrid2dDataExtractor.h&gt;</code><br/>
-<code>#include &lt;xmsextractor/extractor/XmUGrid2dPolylineDataExtractor.h&gt;</code><br/>
-<code>#include &lt;xmscore/misc/xmstype.h&gt;</code><br/>
+<code>#include &lt;<a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmscore.tag:https://aquaveo.github.io/xmscore//" href="https://aquaveo.github.io/xmscore/math_8h.html">xmscore/math/math.h</a>&gt;</code><br/>
+<code>#include &lt;<a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmscore.tag:https://aquaveo.github.io/xmscore//" href="https://aquaveo.github.io/xmscore/_xm_error_8h.html">xmscore/misc/XmError.h</a>&gt;</code><br/>
+<code>#include &lt;<a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmscore.tag:https://aquaveo.github.io/xmscore//" href="https://aquaveo.github.io/xmscore/_xm_log_8h.html">xmscore/misc/XmLog.h</a>&gt;</code><br/>
+<code>#include &lt;<a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmscore.tag:https://aquaveo.github.io/xmscore//" href="https://aquaveo.github.io/xmscore/xmstype_8h.html">xmscore/misc/xmstype.h</a>&gt;</code><br/>
+<code>#include &lt;<a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmsextractor.tag:https://aquaveo.github.io/xmsextractor//" href="https://aquaveo.github.io/xmsextractor/_xm_u_grid2d_data_extractor_8h.html">xmsextractor/extractor/XmUGrid2dDataExtractor.h</a>&gt;</code><br/>
+<code>#include &lt;<a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmsextractor.tag:https://aquaveo.github.io/xmsextractor//" href="https://aquaveo.github.io/xmsextractor/_xm_u_grid2d_polyline_data_extractor_8h.html">xmsextractor/extractor/XmUGrid2dPolylineDataExtractor.h</a>&gt;</code><br/>
+<code>#include &lt;<a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmsinterp.tag:https://aquaveo.github.io/xmsinterp/" href="https://aquaveo.github.io/xmsinterp/geoms_8h.html">xmsinterp/geometry/geoms.h</a>&gt;</code><br/>
 <code>#include &lt;<a class="el" href="_xm_grid_trace_8t_8h_source.html">xmsgridtrace/gridtrace/XmGridTrace.t.h</a>&gt;</code><br/>
-<code>#include &lt;xmscore/testing/TestTools.h&gt;</code><br/>
-<code>#include &lt;xmsgrid/ugrid/XmUGrid.h&gt;</code><br/>
+<code>#include &lt;<a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmscore.tag:https://aquaveo.github.io/xmscore//" href="https://aquaveo.github.io/xmscore/_test_tools_8h.html">xmscore/testing/TestTools.h</a>&gt;</code><br/>
+<code>#include &lt;<a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmsgrid.tag:https://aquaveo.github.io/xmsgrid//" href="https://aquaveo.github.io/xmsgrid/_xm_u_grid_8h.html">xmsgrid/ugrid/XmUGrid.h</a>&gt;</code><br/>
 </div>
 <p><a href="_xm_grid_trace_8cpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classxms_1_1_xm_grid_trace_impl.html">xms::XmGridTraceImpl</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">XMS Namespace.  <a href="classxms_1_1_xm_grid_trace_impl.html#details">More...</a><br/></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
-<tr class="memitem:namespacexms"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmscore.tag:https://aquaveo.github.io/xmsextractor//" href="https://aquaveo.github.io/xmsextractor/namespacexms.html">xms</a></td></tr>
+<tr class="memitem:namespacexms"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmscore.tag:https://aquaveo.github.io/xmscore//" href="https://aquaveo.github.io/xmscore/namespacexms.html">xms</a></td></tr>
 <tr class="memdesc:namespacexms"><td class="mdescLeft">&#160;</td><td class="mdescRight">XMS Namespace. <br/></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:a8c3a08ccd01c4230e7498d793a9d90cd"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a8c3a08ccd01c4230e7498d793a9d90cd"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>xms::gmEqualPointsXYZ</b> (double x1, double y1, double z1, double x2, double y2, double z2, double tolerance)</td></tr>
-<tr class="separator:a8c3a08ccd01c4230e7498d793a9d90cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a326b40120fd0517c654d9a94a963e83e"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a326b40120fd0517c654d9a94a963e83e"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>xms::gmEqualPointsXYZ</b> (const <a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmscore.tag:https://aquaveo.github.io/xmsextractor//" href="https://aquaveo.github.io/xmsextractor/namespacexms.html#a33ae0c78e599c46ba59bce7f2b32d7ab">Pt3d</a> &amp;pt1, const <a class="elRef" doxygen="/home/travis/build/Aquaveo/xmsgridtrace/Doxygen/xmscore.tag:https://aquaveo.github.io/xmsextractor//" href="https://aquaveo.github.io/xmsextractor/namespacexms.html#a33ae0c78e599c46ba59bce7f2b32d7ab">Pt3d</a> &amp;pt2, double tol)</td></tr>
-<tr class="separator:a326b40120fd0517c654d9a94a963e83e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section copyright"><dt>Copyright</dt><dd>(C) Copyright Aquaveo 2018. </dd></dl>
@@ -155,7 +140,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>xms::gmEqualPointsXYZ
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="dir_f2a7c4785167a03acdea84e289101f3f.html">xmsgridtrace</a></li><li class="navelem"><a class="el" href="dir_cca3fbda72add2535b500d82f826dca9.html">gridtrace</a></li><li class="navelem"><a class="el" href="_xm_grid_trace_8cpp.html">XmGridTrace.cpp</a></li>
-    <li class="footer">Generated on Wed Aug 29 2018 16:08:15 for xmsgridtrace by
+    <li class="footer">Generated on Wed Aug 29 2018 21:46:24 for xmsgridtrace by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.6 </li>
   </ul>

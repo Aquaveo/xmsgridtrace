@@ -1,6 +1,6 @@
 var classxms_1_1_xm_grid_trace =
 [
-    [ "~XmGridTrace", "classxms_1_1_xm_grid_trace.html#a334afedfc8c86d331bff3246ce2cb149", null ],
+    [ "~XmGridTrace", "classxms_1_1_xm_grid_trace.html#ac3f846ac297a77704eac1162cdafd1e3", null ],
     [ "XmGridTrace", "classxms_1_1_xm_grid_trace.html#a06c60f1901ec7d9f9d1c0e29c5417dad", null ],
     [ "AddGridScalarsAtTime", "classxms_1_1_xm_grid_trace.html#aa49e10cd28178db041fe1e66565485e3", null ],
     [ "GetExitMessage", "classxms_1_1_xm_grid_trace.html#a6418b70a63464bd19fe8aad240738ced", null ],

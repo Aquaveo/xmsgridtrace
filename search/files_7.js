@@ -1,9 +1,24 @@
 var searchData=
 [
-  ['map_2eh',['map.h',['https://aquaveo.github.io/xmsextractor/map_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/map_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/map_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/map_8h.html',1,'(Global Namespace)']]],
-  ['math_2ecpp',['math.cpp',['https://aquaveo.github.io/xmsextractor/math_8cpp.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/math_8cpp.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/math_8cpp.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/math_8cpp.html',1,'(Global Namespace)']]],
-  ['math_2eh',['math.h',['https://aquaveo.github.io/xmsextractor/math_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/math_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/math_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/math_8h.html',1,'(Global Namespace)']]],
-  ['math_2et_2eh',['math.t.h',['https://aquaveo.github.io/xmsextractor/math_8t_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/math_8t_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/math_8t_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/math_8t_8h.html',1,'(Global Namespace)']]],
-  ['misc_5fpy_2ecpp',['misc_py.cpp',['https://aquaveo.github.io/xmsextractor/misc__py_8cpp.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/misc__py_8cpp.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/misc__py_8cpp.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/misc__py_8cpp.html',1,'(Global Namespace)']]],
-  ['misc_5fpy_2eh',['misc_py.h',['https://aquaveo.github.io/xmsextractor/misc__py_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/misc__py_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/misc__py_8h.html',1,'(Global Namespace)'],['https://aquaveo.github.io/xmsextractor/misc__py_8h.html',1,'(Global Namespace)']]]
+  ['interpbase_2eh',['InterpBase.h',['https://aquaveo.github.io/xmsinterp/_interp_base_8h.html',1,'']]],
+  ['interpbase_5fpy_2ecpp',['InterpBase_py.cpp',['https://aquaveo.github.io/xmsinterp/_interp_base__py_8cpp.html',1,'']]],
+  ['interpct_2ecpp',['InterpCt.cpp',['https://aquaveo.github.io/xmsinterp/_interp_ct_8cpp.html',1,'']]],
+  ['interpct_2eh',['InterpCt.h',['https://aquaveo.github.io/xmsinterp/_interp_ct_8h.html',1,'']]],
+  ['interpidw_2ecpp',['InterpIdw.cpp',['https://aquaveo.github.io/xmsinterp/_interp_idw_8cpp.html',1,'']]],
+  ['interpidw_2eh',['InterpIdw.h',['https://aquaveo.github.io/xmsinterp/_interp_idw_8h.html',1,'']]],
+  ['interpidw_2et_2eh',['InterpIdw.t.h',['https://aquaveo.github.io/xmsinterp/_interp_idw_8t_8h.html',1,'']]],
+  ['interpidw_5fpy_2ecpp',['InterpIdw_py.cpp',['https://aquaveo.github.io/xmsinterp/_interp_idw__py_8cpp.html',1,'']]],
+  ['interplinear_2ecpp',['InterpLinear.cpp',['https://aquaveo.github.io/xmsinterp/_interp_linear_8cpp.html',1,'']]],
+  ['interplinear_2eh',['InterpLinear.h',['https://aquaveo.github.io/xmsinterp/_interp_linear_8h.html',1,'']]],
+  ['interplinear_2et_2eh',['InterpLinear.t.h',['https://aquaveo.github.io/xmsinterp/_interp_linear_8t_8h.html',1,'']]],
+  ['interplinear_5fpy_2ecpp',['InterpLinear_py.cpp',['https://aquaveo.github.io/xmsinterp/_interp_linear__py_8cpp.html',1,'']]],
+  ['interpnatneigh_2ecpp',['InterpNatNeigh.cpp',['https://aquaveo.github.io/xmsinterp/_interp_nat_neigh_8cpp.html',1,'']]],
+  ['interpnatneigh_2eh',['InterpNatNeigh.h',['https://aquaveo.github.io/xmsinterp/_interp_nat_neigh_8h.html',1,'']]],
+  ['interpnatneigh_2et_2eh',['InterpNatNeigh.t.h',['https://aquaveo.github.io/xmsinterp/_interp_nat_neigh_8t_8h.html',1,'']]],
+  ['interpolate_5fpy_2ecpp',['interpolate_py.cpp',['https://aquaveo.github.io/xmsinterp/interpolate__py_8cpp.html',1,'']]],
+  ['interpolate_5fpy_2eh',['interpolate_py.h',['https://aquaveo.github.io/xmsinterp/interpolate__py_8h.html',1,'']]],
+  ['interpsignals_2ecpp',['InterpSignals.cpp',['https://aquaveo.github.io/xmsinterp/_interp_signals_8cpp.html',1,'']]],
+  ['interpsignals_2eh',['InterpSignals.h',['https://aquaveo.github.io/xmsinterp/_interp_signals_8h.html',1,'']]],
+  ['interputil_2ecpp',['InterpUtil.cpp',['https://aquaveo.github.io/xmsinterp/_interp_util_8cpp.html',1,'']]],
+  ['interputil_2eh',['InterpUtil.h',['https://aquaveo.github.io/xmsinterp/_interp_util_8h.html',1,'']]]
 ];

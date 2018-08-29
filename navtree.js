@@ -1,10 +1,9 @@
 var NAVTREE =
 [
   [ "xmsgridtrace", "index.html", [
+    [ "xmsgridtrace ", "index.html#mainpage", null ],
     [ "xmsgridtrace ", "index.html#xmsgridtrace", [
       [ "Introduction", "index.html#Intro_Gridtrace", null ],
-      [ "License ", "index.html#License", null ],
-      [ "Features ", "index.html#Features", null ],
       [ "Testing ", "index.html#XmsgridtraceTesting", null ],
       [ "The Code ", "index.html#XmsgridtraceTheCode", [
         [ "Namespaces", "index.html#XmsgridtraceNamespaces", null ],
@@ -12,9 +11,14 @@ var NAVTREE =
       ] ],
       [ "\"xmsgridtrace\" Name ", "index.html#xmsgridtraceName", null ]
     ] ],
-    [ "index", "https://aquaveo.github.io/xmsextractor/index.html", null ],
-    [ "index", "https://aquaveo.github.io/xmsextractor/index.html", null ],
-    [ "index", "https://aquaveo.github.io/xmsextractor/index.html", null ],
+    [ "index", "https://aquaveo.github.io/xmscore/index.html", null ],
+    [ "Interpolation_Tutorial", "https://aquaveo.github.io/xmsinterp/md__interpolation__tutorial.html", null ],
+    [ "index", "https://aquaveo.github.io/xmsinterp/index.html", null ],
+    [ "UGrid File IO Tutorial", "https://aquaveo.github.io/xmsgrid/md__file_i_o__tutorial.html", null ],
+    [ "3D UGrid Tutorial", "https://aquaveo.github.io/xmsgrid/md__three_d__tutorial.html", null ],
+    [ "2D UGrid Tutorial", "https://aquaveo.github.io/xmsgrid/md__two_d__tutorial.html", null ],
+    [ "index", "https://aquaveo.github.io/xmsgrid/index.html", null ],
+    [ "Extractor_Tutorial", "https://aquaveo.github.io/xmsextractor/md__extractor__tutorial.html", null ],
     [ "index", "https://aquaveo.github.io/xmsextractor/index.html", null ],
     [ "Gridtrace_Tutorial", "md__gridtrace__tutorial.html", [
       [ "Gridtrace Tutorial", "md__gridtrace__tutorial.html#Gridtrace_Tutorial", [
@@ -31,7 +35,11 @@ var NAVTREE =
       ] ]
     ] ],
     [ "Files", null, [
-      [ "File List", "files.html", "files" ]
+      [ "File List", "files.html", "files" ],
+      [ "File Members", "globals.html", [
+        [ "All", "globals.html", null ],
+        [ "Variables", "globals_vars.html", null ]
+      ] ]
     ] ]
   ] ]
 ];

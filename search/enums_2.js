@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['xmresult',['xmresult',['https://aquaveo.github.io/xmsextractor/namespacexms.html#a1503071e7b25b13081f9f478658a1046',1,'xms::xmresult()'],['https://aquaveo.github.io/xmsextractor/namespacexms.html#a1503071e7b25b13081f9f478658a1046',1,'xms::xmresult()'],['https://aquaveo.github.io/xmsextractor/namespacexms.html#a1503071e7b25b13081f9f478658a1046',1,'xms::xmresult()'],['https://aquaveo.github.io/xmsextractor/namespacexms.html#a1503071e7b25b13081f9f478658a1046',1,'xms::xmresult()']]]
+  ['messagetypeenum',['MessageTypeEnum',['https://aquaveo.github.io/xmscore/namespacexmlog.html#a7f66c92bb821241cbb29fb07d7bce588',1,'xmlog']]]
 ];

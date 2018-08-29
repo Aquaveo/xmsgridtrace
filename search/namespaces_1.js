@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['xmlog',['xmlog',['https://aquaveo.github.io/xmsextractor/namespacexmlog.html',1,'']]],
-  ['xms',['xms',['https://aquaveo.github.io/xmsextractor/namespacexms.html',1,'']]]
+  ['xmlog',['xmlog',['https://aquaveo.github.io/xmscore/namespacexmlog.html',1,'']]],
+  ['xms',['xms',['https://aquaveo.github.io/xmscore/namespacexms.html',1,'']]]
 ];

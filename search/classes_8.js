@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['testobserver',['TestObserver',['https://aquaveo.github.io/xmsextractor/classpython_1_1misc_1_1observer__pyt_1_1_test_observer.html',1,'python::misc::observer_pyt']]]
+  ['observer',['Observer',['https://aquaveo.github.io/xmscore/classxms_1_1_observer.html',1,'xms']]],
+  ['observerintermediatetests',['ObserverIntermediateTests',['https://aquaveo.github.io/xmscore/class_observer_intermediate_tests.html',1,'']]]
 ];
