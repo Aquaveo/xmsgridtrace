@@ -25,52 +25,216 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
 
 void initXmGridTrace(py::module &m) {
     py::class_<xms::XmGridTrace, boost::shared_ptr<xms::XmGridTrace>> gridtrace(m, "XmGridTrace");
-    gridtrace
-        .def(py::init([](boost::shared_ptr<xms::XmUGrid> a_ugrid) {
+    gridtrace.def(py::init([](boost::shared_ptr<xms::XmUGrid> a_ugrid) {
             return boost::shared_ptr<xms::XmGridTrace>(xms::XmGridTrace::New(a_ugrid));
-        }))
-        //  virtual double GetVectorMultiplier() const = 0;
-        .def("get_vector_multiplier", &xms::XmGridTrace::GetVectorMultiplier, "Gets the vector multiplier")
-        // virtual void SetVectorMultiplier(const double a_vectorMultiplier) = 0;
-        .def("set_vector_multiplier", &xms::XmGridTrace::SetVectorMultiplier, "Sets the vector multiplier")
-        // virtual double GetMaxTracingTime() const = 0;
-        .def("get_max_tracing_time", &xms::XmGridTrace::GetMaxTracingTime, "Gets the max tracing time")
-        // virtual void SetMaxTracingTime(const double a_maxTracingTime) = 0;
-        .def("set_max_tracing_time", &xms::XmGridTrace::SetMaxTracingTime, "Sets the max tracing time")
-        // virtual double GetMaxTracingDistance() const = 0;
-        .def("get_max_tracing_distance", &xms::XmGridTrace::GetMaxTracingDistance, "Gets the max tracing distance")
-        // virtual void SetMaxTracingDistance(const double a_maxTracingDistance) = 0;
-        .def("set_max_tracing_distance", &xms::XmGridTrace::SetMaxTracingDistance, "Sets the max tracing distance")
-        // virtual double GetMinDeltaTime() const = 0;
-        .def("get_min_delta_time", &xms::XmGridTrace::GetMinDeltaTime, "Gets the minimum delta time")
-        // virtual void SetMinDeltaTime(const double a_minDeltaTime) = 0;
-        .def("set_min_delta_time", &xms::XmGridTrace::SetMinDeltaTime, "Sets the minimum delta time")
-        // virtual double GetMaxChangeDistance() const = 0;
-        .def("get_max_change_distance", &xms::XmGridTrace::GetMaxChangeDistance, "Gets the maximum change in distance")
-        // virtual void SetMaxChangeDistance(const double a_maxChangeDistance) = 0;
-        .def("set_max_change_distance", &xms::XmGridTrace::SetMaxChangeDistance, "Sets the maximum change in distance")
-        // virtual double GetMaxChangeVelocity() const = 0;
-        .def("get_max_change_velocity", &xms::XmGridTrace::GetMaxChangeVelocity, "Gets the maximum changee in velocity")
-        // virtual void SetMaxChangeVelocity(const double a_maxChangeVelocity) = 0;
-        .def("set_max_change_velocity", &xms::XmGridTrace::SetMaxChangeVelocity, "Sets the maximum changee in velocity")
-        // virtual double GetMaxChangeDirectionInRadians() const = 0;
-        .def("get_max_change_direction_in_radians", &xms::XmGridTrace::GetMaxChangeDirectionInRadians, "Gets the max change in direction in radians")
-        // virtual void SetMaxChangeDirectionInRadians(const double a_maxChangeDirection) = 0;
-        .def("set_max_change_direction_in_radians", &xms::XmGridTrace::SetMaxChangeDirectionInRadians, "Sets the max change in direction in radians")
-        // virtual void AddGridScalarsAtTime(const VecPt3d& a_scalars, DataLocationEnum a_scalarLoc, xms::DynBitset& a_activity, DataLocationEnum a_activityLoc, double a_time) = 0;
-        .def("add_grid_scalars_at_time", [](xms::XmGridTrace &self, py::iterable a_scalars,
+        }));
+
+  // ---------------------------------------------------------------------------
+  // function: get_vector_multiplier
+  // ---------------------------------------------------------------------------
+  const char* get_vector_multiplier_doc = R"pydoc(
+      Gets the vector multiplier
+
+      Returns:
+          float: The vector multiplier
+  )pydoc";
+  gridtrace.def("get_vector_multiplier", &xms::XmGridTrace::GetVectorMultiplier,
+    get_vector_multiplier_doc);
+  // ---------------------------------------------------------------------------
+  // function: set_vector_multiplier
+  // ---------------------------------------------------------------------------
+  const char* set_vector_multiplier_doc = R"pydoc(
+      Sets the vector multiplier
+
+      Args:
+          vector_multiplier (float): The new vector multiplier
+  )pydoc";
+  gridtrace.def("set_vector_multiplier", &xms::XmGridTrace::SetVectorMultiplier, 
+    set_vector_multiplier_doc, py::arg("vector_multiplier"));
+  // ---------------------------------------------------------------------------
+  // function: get_max_tracing_time
+  // ---------------------------------------------------------------------------
+  const char* get_max_tracing_time_doc = R"pydoc(
+      Gets the max tracing time
+
+      Returns:
+          float: The max tracing time
+  )pydoc";
+  gridtrace.def("get_max_tracing_time", &xms::XmGridTrace::GetMaxTracingTime,
+    get_max_tracing_time_doc);
+  // ---------------------------------------------------------------------------
+  // function: set_max_tracing_time
+  // ---------------------------------------------------------------------------
+  const char* set_max_tracing_time_doc = R"pydoc(
+      Sets the max tracing time
+
+      Args:
+          max_tracing_time (float): The new max tracing time
+  )pydoc";
+  gridtrace.def("set_max_tracing_time", &xms::XmGridTrace::SetMaxTracingTime,
+    set_max_tracing_time_doc, py::arg("max_tracing_time"));
+  // ---------------------------------------------------------------------------
+  // function: get_max_tracing_distance
+  // ---------------------------------------------------------------------------
+  const char* get_max_tracing_distance_doc = R"pydoc(
+      Gets the max tracing distance
+
+      Returns:
+          float: The max tracing distance
+  )pydoc";
+  gridtrace.def("get_max_tracing_distance", 
+    &xms::XmGridTrace::GetMaxTracingDistance, get_max_tracing_distance_doc);
+  // ---------------------------------------------------------------------------
+  // function: set_max_tracing_distance
+  // ---------------------------------------------------------------------------
+  const char* set_max_tracing_distance_doc = R"pydoc(
+      Sets the max tracing distance
+
+      Args:
+          max_tracing_distance (float): The new max tracing distance
+  )pydoc";
+  gridtrace.def("set_max_tracing_distance", 
+    &xms::XmGridTrace::SetMaxTracingDistance, set_max_tracing_distance_doc,
+    py::arg("max_tracing_distance"));
+  // ---------------------------------------------------------------------------
+  // function: get_min_delta_time
+  // ---------------------------------------------------------------------------
+  const char* get_min_delta_time_doc = R"pydoc(
+      Gets the minimum delta time"
+
+      Returns:
+          float: The min delta time
+  )pydoc";
+  gridtrace.def("get_min_delta_time", &xms::XmGridTrace::GetMinDeltaTime, 
+    get_min_delta_time_doc);
+  // ---------------------------------------------------------------------------
+  // function: set_min_delta_time
+  // ---------------------------------------------------------------------------
+  const char* set_min_delta_time_doc = R"pydoc(
+      Sets the minimum delta time"
+
+      Args:
+          min_delta_time (float): The new min delta time
+  )pydoc";
+  gridtrace.def("set_min_delta_time", &xms::XmGridTrace::SetMinDeltaTime, 
+    set_min_delta_time_doc, py::arg("min_delta_time"));
+  // ---------------------------------------------------------------------------
+  // function: get_max_change_distance
+  // ---------------------------------------------------------------------------
+  const char* get_max_change_distance_doc = R"pydoc(
+      Gets the maximum change in distance
+
+      Returns:
+          float: The maximum change in distance
+  )pydoc";
+  gridtrace.def("get_max_change_distance", 
+    &xms::XmGridTrace::GetMaxChangeDistance, get_max_change_distance_doc);
+  // ---------------------------------------------------------------------------
+  // function: set_max_change_distance
+  // ---------------------------------------------------------------------------
+  const char* set_max_change_distance_doc = R"pydoc(
+      Sets the maximum change in distance
+
+      Args:
+          maximum_change_distance (float): The new maximum change in distance
+  )pydoc";
+  gridtrace.def("set_max_change_distance", 
+    &xms::XmGridTrace::SetMaxChangeDistance, set_max_change_distance_doc,
+    py::arg("set_max_change_distance_doc"));
+  // ---------------------------------------------------------------------------
+  // function: get_max_change_velocity
+  // ---------------------------------------------------------------------------
+  const char* get_max_change_velocity_doc = R"pydoc(
+      Gets the maximum change in velocity
+
+      Returns:
+          float: The maximum change in velocity
+  )pydoc";
+  gridtrace.def("get_max_change_velocity", 
+    &xms::XmGridTrace::GetMaxChangeVelocity, get_max_change_velocity_doc);
+  // ---------------------------------------------------------------------------
+  // function: set_max_change_velocity
+  // ---------------------------------------------------------------------------
+  const char* set_max_change_velocity_doc = R"pydoc(
+      Sets the maximum change in velocity
+
+      Args:
+          maximum_change_velocity (float): The new maximum change in velocity
+  )pydoc";
+  gridtrace.def("set_max_change_velocity",
+    &xms::XmGridTrace::SetMaxChangeVelocity, set_max_change_velocity_doc, 
+    py::arg("maximum_change_velocity"));
+  // ---------------------------------------------------------------------------
+  // function: get_max_change_direction_in_radians
+  // ---------------------------------------------------------------------------
+  const char* get_max_change_direction_in_radians_doc = R"pydoc(
+      Gets the maximum change in direction in radians
+
+      Returns:
+          float: The new maximum change in direction
+  )pydoc";
+  gridtrace.def("get_max_change_direction_in_radians", 
+    &xms::XmGridTrace::GetMaxChangeDirectionInRadians,
+    get_max_change_direction_in_radians_doc);
+  // ---------------------------------------------------------------------------
+  // function: set_max_change_direction_in_radians
+  // ---------------------------------------------------------------------------
+  const char* set_max_change_direction_in_radians_doc = R"pydoc(
+      Sets the maximum change in direction in radians
+
+      Args:
+          maximum_change_direction (float): The new maximum change in direction
+  )pydoc";
+  gridtrace.def("set_max_change_direction_in_radians", 
+    &xms::XmGridTrace::SetMaxChangeDirectionInRadians, 
+    set_max_change_direction_in_radians_doc, 
+    py::arg("maximum_change_direction"));
+  // ---------------------------------------------------------------------------
+  // function: add_grid_scalars_at_time
+  // ---------------------------------------------------------------------------
+  const char* add_grid_scalars_at_time_doc = R"pydoc(
+      Adds a grid scalar with a time to the tracer
+
+      Args:
+          scalars (iterable): The velocity vectors
+          scalar_loc (data_location_enum): Whether the vectors are assigned to 
+            cells or points
+          activity (iterable): Whether each cell or point is active
+          activity_loc (data_location_enum): Whether the activities are assigned 
+            to cells or points
+          time (float): The time of the scalars
+  )pydoc";
+  gridtrace.def("add_grid_scalars_at_time", [](xms::XmGridTrace &self, 
+          py::iterable a_scalars,
           xms::DataLocationEnum a_scalarLoc,
           py::iterable a_activity,
           xms::DataLocationEnum a_activityLoc,
           double a_time) {
-            boost::shared_ptr<xms::VecPt3d> scalars = xms::VecPt3dFromPyIter(a_scalars);
+            boost::shared_ptr<xms::VecPt3d> scalars = 
+              xms::VecPt3dFromPyIter(a_scalars);
             xms::DynBitset activity = xms::DynamicBitsetFromPyIter(a_activity);
-            self.AddGridScalarsAtTime(*scalars, a_scalarLoc, activity, a_activityLoc, a_time);
+            self.AddGridScalarsAtTime(*scalars, a_scalarLoc, activity, 
+              a_activityLoc, a_time);
             return;
-          }, "adds a grid scalar with a time to the tracer", py::arg("scalars"), py::arg("scalar_loc"), py::arg("activity"), py::arg("activity_loc"), py::arg("time")
-        )
-        // virtual void TracePoint(const Pt3d& a_pt, const double& a_ptTime, VecPt3d& a_outTrace, VecDbl& a_outTimes) = 0;
-          .def("trace_point", [](xms::XmGridTrace &self, py::iterable a_pt, double a_ptTime) -> py::iterable {
+          }, add_grid_scalars_at_time_doc, py::arg("scalars"), 
+          py::arg("scalar_loc"), py::arg("activity"), py::arg("activity_loc"),
+           py::arg("time"));
+  // ---------------------------------------------------------------------------
+  // function: trace_point
+  // ---------------------------------------------------------------------------
+  const char* trace_point_doc = R"pydoc(
+      Runs the Grid Trace for a point
+
+      Args:
+          a_pt (iterable): The starting point of the trace
+          a_ptTime (float): The starting time of the trace
+
+      Returns:
+          iterable: The resultant positions at each step, and the resultant 
+            times at each step
+  )pydoc";
+  gridtrace.def("trace_point", [](xms::XmGridTrace &self, py::iterable a_pt, 
+    double a_ptTime) -> py::iterable {
           xms::Pt3d point = xms::Pt3dFromPyIter(a_pt);
           xms::VecPt3d outTrace;
           xms::VecDbl outTimes;
@@ -78,10 +242,18 @@ void initXmGridTrace(py::module &m) {
           py::iterable resultTrace = xms::PyIterFromVecPt3d(outTrace);
           py::iterable resultTimes = xms::PyIterFromVecDbl(outTimes);
           return py::make_tuple(resultTrace, resultTimes);
-        }, "Runs the Grid Trace for a point", py::arg("a_pt"), py::arg("a_ptTime"))
-        // virtual std::string GetExitMessage() = 0;
-        .def("get_exit_message", &xms::XmGridTrace::GetExitMessage,"returns a message describing what caused trace to exit")
-        ;
+        }, trace_point_doc, py::arg("a_pt"), py::arg("a_ptTime"));
+  // ---------------------------------------------------------------------------
+  // function: get_exit_message
+  // ---------------------------------------------------------------------------
+  const char* get_exit_message_doc = R"pydoc(
+      returns a message describing what caused trace to exit
+
+      Returns:
+          str: message describing what caused trace to exit
+  )pydoc";
+  gridtrace.def("get_exit_message", &xms::XmGridTrace::GetExitMessage,
+    get_exit_message_doc);
 
     // DataLocationEnum
     py::enum_<xms::DataLocationEnum>(m, "data_location_enum",
