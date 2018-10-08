@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.1.2)
 cmake_policy(SET CMP0015 NEW) # Link Directory Pathing
 set(CMAKE_DEBUG_POSTFIX _d)
 
+project(xmsgridtrace C CXX)
+
 if (APPLE)  
   set(CMAKE_POSITION_INDEPENDENT_CODE False)
 else()
@@ -14,10 +16,9 @@ set(IS_CONDA_BUILD NO CACHE BOOL "Set this if you want to make a conda package."
 set(PYTHON_TARGET_VERSION 3.6 CACHE STRING "Version of python to link to for python wrapping.")
 set(CONDA_PREFIX "" CACHE PATH "Path to the conda environment used to build.")
 set(IS_PYTHON_BUILD NO CACHE BOOL "Set this if you want to build the python bindings.")
-set(XMSGRIDTRACE_TEST_PATH "../../test_files/" CACHE PATH "Path to test files for testing")
+set(XMS_TEST_PATH ${PROJECT_SOURCE_DIR}/test_files/ CACHE PATH "Path to test files for testing")
 set(XMS_VERSION "\"99.99.99\"" CACHE STRING "Library Version")
 
-project(xmsgridtrace C CXX)
 
 add_definitions(-DXMS_VERSION=\"${XMS_VERSION}\")
 
@@ -100,7 +101,7 @@ set(xmsgridtrace_py_headers
 
 # Tests
 if (BUILD_TESTING)
- add_definitions(-DXMSGRIDTRACE_TEST_PATH="${XMSGRIDTRACE_TEST_PATH}/")
+ add_definitions(-DXMS_TEST_PATH="${XMS_TEST_PATH}/")
  add_definitions(-DCXX_TEST -DCXXTEST4)
 
  list(APPEND xmsgridtrace_sources
