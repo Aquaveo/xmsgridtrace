@@ -3,13 +3,13 @@
    :width: 250px
    :align: right
 
-*******************
-XmsMesh |version|
-*******************
+**********************
+XmsGridtrace |version|
+**********************
 
 **Last Updated:** October 5, 2018
 
-The xmsgrid library is a grid library for other aquaveo products. This library contains classes used to create grids.
+The xmsgridtrace library is a particle tracing library for other aquaveo products.
 
 .. note::
 
