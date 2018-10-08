@@ -15,8 +15,11 @@ set(PYTHON_TARGET_VERSION 3.6 CACHE STRING "Version of python to link to for pyt
 set(CONDA_PREFIX "" CACHE PATH "Path to the conda environment used to build.")
 set(IS_PYTHON_BUILD NO CACHE BOOL "Set this if you want to build the python bindings.")
 set(XMSGRIDTRACE_TEST_PATH "../../test_files/" CACHE PATH "Path to test files for testing")
+set(XMS_VERSION "\"99.99.99\"" CACHE STRING "Library Version")
 
 project(xmsgridtrace C CXX)
+
+add_definitions(-DXMS_VERSION=\"${XMS_VERSION}\")
 
 if(WIN32)
     if(XMS_BUILD)
