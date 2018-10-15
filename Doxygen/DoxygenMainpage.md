@@ -1,13 +1,11 @@
 xmsgridtrace {#mainpage}
 ============
-xmsgridtrace {#mainpage}
-============
 \tableofcontents
 
 xmsgridtrace {#xmsgridtrace}
 ============
 
-Introduction {#Introduction}
+Introduction {#XmsgridtraceIntroduction}
 ------------
 
 xmsgridtrace is a cross-platform C++ software library written by [Aquaveo](http://www.aquaveo.com/) in partnership with [ERDC](http://www.erdc.usace.army.mil/). The code can be obtained from github.com.
@@ -18,7 +16,7 @@ xmsgridtrace is a cross-platform C++ software library written by [Aquaveo](http:
   </tr>
 </table>
 
-License {#License}
+License {#XmsgridtraceLicense}
 -------
 
 The code is distributed under the xmsng Software License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at [http://www.aquaveo.com/xmsng/LICENSE_1_0.txt](http://www.aquaveo.com/xmsng/LICENSE_1_0.txt)). 
@@ -28,7 +26,7 @@ Python
 
 This library is available as a python module. See [Python Documentation](./pydocs)
 
-Features {#Features}
+Features {#XmsgridtraceFeatures}
 --------
 xmsgridtrace includes the following functionality:
 
