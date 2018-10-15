@@ -71,7 +71,7 @@ echo "" > .nojekyll
 #install doxygen
 sudo apt-get update
 wget http://utils.aquaveo.com/doxygen-1.8.14-aquaveo.deb
-dpkg -i doxygen-1.8.14-aquaveo.deb
+sudo dpkg -i doxygen-1.8.14-aquaveo.deb
 
 ################################################################################
 ##### Generate the Doxygen code documentation and log the output.          #####
