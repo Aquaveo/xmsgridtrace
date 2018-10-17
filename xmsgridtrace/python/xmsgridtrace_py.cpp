@@ -33,11 +33,6 @@ PYBIND11_MODULE(xmsgridtrace_py, m) {
         steps on an XmGrid can be calculated and the velocity vectors can be 
         assigned to either the points or to the cells.
     )pydoc";      
-// xmsgridtrace includes the following functionality:
-
-// * Flow trace of a point between 2 velocity vector time steps on an XmGrid.
-// * The velocity vectors can be assigned to either the points or to the cells.
-
 
     // Extractor module
     py::module modGridtrace = m.def_submodule("gridtrace", misc_doc);
