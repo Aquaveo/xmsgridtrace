@@ -40,7 +40,7 @@ PYBIND11_MODULE(xmsgridtrace_py, m) {
 
 
     // Extractor module
-    py::module modGridtrace = m.def_submodule("gridtrace");
+    py::module modGridtrace = m.def_submodule("gridtrace", misc_doc);
     initGridtrace(modGridtrace);
 }
 
