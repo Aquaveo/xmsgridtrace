@@ -236,22 +236,22 @@ void initXmGridTrace(py::module &m) {
 
       Args:
           pt (iterable): The starting point of the trace.
-          ptTime (float): The starting time of the trace.
+          pt_time (float): The starting time of the trace.
 
       Returns:
           iterable: Contains the resultant positions at each step and the resultant 
             times at each step.
   )pydoc";
   gridtrace.def("trace_point", [](xms::XmGridTrace &self, py::iterable pt, 
-    double ptTime) -> py::iterable {
+    double pt_time) -> py::iterable {
           xms::Pt3d point = xms::Pt3dFromPyIter(pt);
           xms::VecPt3d outTrace;
           xms::VecDbl outTimes;
-          self.TracePoint(point, ptTime, outTrace, outTimes);
+          self.TracePoint(point, pt_time, outTrace, outTimes);
           py::iterable resultTrace = xms::PyIterFromVecPt3d(outTrace);
           py::iterable resultTimes = xms::PyIterFromVecDbl(outTimes);
           return py::make_tuple(resultTrace, resultTimes);
-        }, trace_point_doc, py::arg("pt"), py::arg("ptTime"));
+        }, trace_point_doc, py::arg("pt"), py::arg("pt_time"));
   // ---------------------------------------------------------------------------
   // function: get_exit_message
   // ---------------------------------------------------------------------------
