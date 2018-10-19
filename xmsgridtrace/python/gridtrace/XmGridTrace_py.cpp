@@ -146,7 +146,7 @@ void initXmGridTrace(py::module &m) {
   )pydoc";
   gridtrace.def("set_max_change_distance", 
     &xms::XmGridTrace::SetMaxChangeDistance, set_max_change_distance_doc,
-    py::arg("set_max_change_distance_doc"));
+    py::arg("maximum_change_distance"));
   // ---------------------------------------------------------------------------
   // function: get_max_change_velocity
   // ---------------------------------------------------------------------------
