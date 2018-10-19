@@ -25,8 +25,8 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
 void initXmGridTrace(py::module &m) {
   const char* XmGridtrace_doc = R"pydoc(
         Class in which the flow trace of a point between 2 velocity vector time 
-        steps on an XmGrid is calculated and the velocity vectors can be assigned 
-        to either the points or to the cells.
+        steps on an XmGrid is calculated and the velocity vectors can be 
+        assigned to either the points or to the cells.
     )pydoc";
     py::class_<xms::XmGridTrace, boost::shared_ptr<xms::XmGridTrace>> gridtrace(
       m, "XmGridTrace", XmGridTrace_doc);
@@ -239,8 +239,8 @@ void initXmGridTrace(py::module &m) {
           pt_time (float): The starting time of the trace.
 
       Returns:
-          iterable: Contains the resultant positions at each step and the resultant 
-            times at each step.
+          iterable: Contains the resultant positions at each step and the 
+            resultant times at each step.
   )pydoc";
   gridtrace.def("trace_point", [](xms::XmGridTrace &self, py::iterable pt, 
     double pt_time) -> py::iterable {
@@ -266,7 +266,7 @@ void initXmGridTrace(py::module &m) {
 
     // DataLocationEnum
     py::enum_<xms::DataLocationEnum>(m, "data_location_enum",
-                                    "data_location_enum location mapping for dataset values")
+                    "data_location_enum location mapping for dataset values")
         .value("LOC_POINTS", xms::LOC_POINTS)
         .value("LOC_CELLS", xms::LOC_CELLS)
         .value("LOC_UNKNOWN", xms::LOC_UNKNOWN);
