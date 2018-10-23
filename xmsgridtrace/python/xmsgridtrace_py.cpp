@@ -25,13 +25,11 @@ PYBIND11_MODULE(xmsgridtrace_py, m) {
           "Get current version of xmsgridtrace Python bindings.");
 
     const char* misc_doc = R"pydoc(
-        The misc module of the xmsgridtrace python library contains classes and
-        functions that are shared between all of the xms family of libraries.
-        These functions and classes can be used in any of the library to ensure
-        that functionality is standardized. Xmsgridtrace includes the following 
-        functionality, the flow trace of a point between 2 velocity vector time 
-        steps on an XmGrid can be calculated and the velocity vectors can be 
-        assigned to either the points or to the cells.
+        The gridtrace module of the xmsgridtrace python library contains classes
+        and functions for tracing the movement of a point through a scalar grid.
+        The gridtrace module contains the functionality to create the flow trace
+        of a point between 2 velocity vector time steps on an XmGrid. The module
+        supports velocity vectors assigned to either points or cells.
     )pydoc";      
 
     // Extractor module
