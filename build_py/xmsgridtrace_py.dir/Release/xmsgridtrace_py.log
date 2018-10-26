@@ -1,4 +1,6 @@
-﻿  XmGridTrace_py.cpp
+﻿  xmsgridtrace_py.cpp
+  gridtrace_py.cpp
+  XmGridTrace_py.cpp
      Creating library C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/lib/xmsgridtrace_py.lib and object C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/lib/xmsgridtrace_py.exp
   Generating code
   Finished generating code

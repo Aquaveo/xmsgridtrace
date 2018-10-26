@@ -212,7 +212,7 @@ set(CONAN_EXE_LINKER_FLAGS_ZLIB_LIST "")
 ### Definition of global aggregated variables ###
 
 set(CONAN_PACKAGE_NAME xmsgridtrace)
-set(CONAN_PACKAGE_VERSION master)
+set(CONAN_PACKAGE_VERSION 99.99.99)
 
 set(CONAN_SETTINGS_ARCH "x86_64")
 set(CONAN_SETTINGS_BUILD_TYPE "Release")

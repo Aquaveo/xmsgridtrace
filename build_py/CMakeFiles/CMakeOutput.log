@@ -9,7 +9,7 @@ The output was:
 Microsoft (R) Build Engine version 14.0.25420.1
 Copyright (C) Microsoft Corporation. All rights reserved.
 
-Build started 10/26/2018 1:18:19 PM.
+Build started 10/26/2018 4:26:13 PM.
 Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\3.12.1\CompilerIdC\CompilerIdC.vcxproj" on node 1 (default targets).
 PrepareForBuild:
   Creating directory "Debug\".
@@ -35,7 +35,7 @@ Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.77
+Time Elapsed 00:00:00.80
 
 
 Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
@@ -54,7 +54,7 @@ The output was:
 Microsoft (R) Build Engine version 14.0.25420.1
 Copyright (C) Microsoft Corporation. All rights reserved.
 
-Build started 10/26/2018 1:18:20 PM.
+Build started 10/26/2018 4:26:14 PM.
 Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\3.12.1\CompilerIdCXX\CompilerIdCXX.vcxproj" on node 1 (default targets).
 PrepareForBuild:
   Creating directory "Debug\".
@@ -80,7 +80,7 @@ Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.75
+Time Elapsed 00:00:01.29
 
 
 Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
@@ -92,79 +92,79 @@ The CXX compiler identification is MSVC, found in "C:/Users/ckingsbury/Documents
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp
 
-Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_5f5ed.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
+Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_0f712.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
 Microsoft (R) Build Engine version 14.0.25420.1
 Copyright (C) Microsoft Corporation. All rights reserved.
 
-Build started 10/26/2018 1:18:21 PM.
-Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_5f5ed.vcxproj" on node 1 (default targets).
+Build started 10/26/2018 4:26:15 PM.
+Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_0f712.vcxproj" on node 1 (default targets).
 PrepareForBuild:
-  Creating directory "cmTC_5f5ed.dir\Debug\".
+  Creating directory "cmTC_0f712.dir\Debug\".
   Creating directory "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\".
-  Creating directory "cmTC_5f5ed.dir\Debug\cmTC_5f5ed.tlog\".
+  Creating directory "cmTC_0f712.dir\Debug\cmTC_0f712.tlog\".
 InitializeBuildStatus:
-  Creating "cmTC_5f5ed.dir\Debug\cmTC_5f5ed.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Creating "cmTC_0f712.dir\Debug\cmTC_0f712.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
 ClCompile:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_5f5ed.dir\Debug\\" /Fd"cmTC_5f5ed.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\testCCompiler.c
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_0f712.dir\Debug\\" /Fd"cmTC_0f712.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\testCCompiler.c
   Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
   Copyright (C) Microsoft Corporation.  All rights reserved.
   
-  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_5f5ed.dir\Debug\\" /Fd"cmTC_5f5ed.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\testCCompiler.c
+  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_0f712.dir\Debug\\" /Fd"cmTC_0f712.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\testCCompiler.c
   
   testCCompiler.c
 Link:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_5f5ed.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_5f5ed.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_5f5ed.lib" /MACHINE:X64  /machine:x64 cmTC_5f5ed.dir\Debug\testCCompiler.obj
-  cmTC_5f5ed.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_5f5ed.exe
-  cmTC_5f5ed.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_5f5ed.pdb (Full PDB)
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_0f712.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_0f712.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_0f712.lib" /MACHINE:X64  /machine:x64 cmTC_0f712.dir\Debug\testCCompiler.obj
+  cmTC_0f712.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_0f712.exe
+  cmTC_0f712.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_0f712.pdb (Full PDB)
 FinalizeBuildStatus:
-  Deleting file "cmTC_5f5ed.dir\Debug\cmTC_5f5ed.tlog\unsuccessfulbuild".
-  Touching "cmTC_5f5ed.dir\Debug\cmTC_5f5ed.tlog\cmTC_5f5ed.lastbuildstate".
-Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_5f5ed.vcxproj" (default targets).
+  Deleting file "cmTC_0f712.dir\Debug\cmTC_0f712.tlog\unsuccessfulbuild".
+  Touching "cmTC_0f712.dir\Debug\cmTC_0f712.tlog\cmTC_0f712.lastbuildstate".
+Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_0f712.vcxproj" (default targets).
 
 Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:01.11
+Time Elapsed 00:00:00.91
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp
 
-Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_2fac3.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
+Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_c8331.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
 Microsoft (R) Build Engine version 14.0.25420.1
 Copyright (C) Microsoft Corporation. All rights reserved.
 
-Build started 10/26/2018 1:18:22 PM.
-Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_2fac3.vcxproj" on node 1 (default targets).
+Build started 10/26/2018 4:26:16 PM.
+Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_c8331.vcxproj" on node 1 (default targets).
 PrepareForBuild:
-  Creating directory "cmTC_2fac3.dir\Debug\".
+  Creating directory "cmTC_c8331.dir\Debug\".
   Creating directory "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\".
-  Creating directory "cmTC_2fac3.dir\Debug\cmTC_2fac3.tlog\".
+  Creating directory "cmTC_c8331.dir\Debug\cmTC_c8331.tlog\".
 InitializeBuildStatus:
-  Creating "cmTC_2fac3.dir\Debug\cmTC_2fac3.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Creating "cmTC_c8331.dir\Debug\cmTC_c8331.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
 ClCompile:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_2fac3.dir\Debug\\" /Fd"cmTC_2fac3.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue "C:\Program Files\CMake\share\cmake-3.12\Modules\CMakeCCompilerABI.c"
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_c8331.dir\Debug\\" /Fd"cmTC_c8331.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue "C:\Program Files\CMake\share\cmake-3.12\Modules\CMakeCCompilerABI.c"
   Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
   Copyright (C) Microsoft Corporation.  All rights reserved.
   
-  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_2fac3.dir\Debug\\" /Fd"cmTC_2fac3.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue "C:\Program Files\CMake\share\cmake-3.12\Modules\CMakeCCompilerABI.c"
+  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_c8331.dir\Debug\\" /Fd"cmTC_c8331.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue "C:\Program Files\CMake\share\cmake-3.12\Modules\CMakeCCompilerABI.c"
   
   CMakeCCompilerABI.c
 Link:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_2fac3.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_2fac3.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_2fac3.lib" /MACHINE:X64  /machine:x64 cmTC_2fac3.dir\Debug\CMakeCCompilerABI.obj
-  cmTC_2fac3.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_2fac3.exe
-  cmTC_2fac3.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_2fac3.pdb (Full PDB)
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_c8331.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_c8331.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_c8331.lib" /MACHINE:X64  /machine:x64 cmTC_c8331.dir\Debug\CMakeCCompilerABI.obj
+  cmTC_c8331.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_c8331.exe
+  cmTC_c8331.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_c8331.pdb (Full PDB)
 FinalizeBuildStatus:
-  Deleting file "cmTC_2fac3.dir\Debug\cmTC_2fac3.tlog\unsuccessfulbuild".
-  Touching "cmTC_2fac3.dir\Debug\cmTC_2fac3.tlog\cmTC_2fac3.lastbuildstate".
-Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_2fac3.vcxproj" (default targets).
+  Deleting file "cmTC_c8331.dir\Debug\cmTC_c8331.tlog\unsuccessfulbuild".
+  Touching "cmTC_c8331.dir\Debug\cmTC_c8331.tlog\cmTC_c8331.lastbuildstate".
+Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_c8331.vcxproj" (default targets).
 
 Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.87
+Time Elapsed 00:00:01.58
 
 
 
@@ -172,40 +172,40 @@ Time Elapsed 00:00:00.87
 Detecting C [] compiler features compiled with the following output:
 Change Dir: C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp
 
-Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_8206c.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
+Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_621cf.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
 Microsoft (R) Build Engine version 14.0.25420.1
 Copyright (C) Microsoft Corporation. All rights reserved.
 
-Build started 10/26/2018 1:18:24 PM.
-Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_8206c.vcxproj" on node 1 (default targets).
+Build started 10/26/2018 4:26:18 PM.
+Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_621cf.vcxproj" on node 1 (default targets).
 PrepareForBuild:
-  Creating directory "cmTC_8206c.dir\Debug\".
+  Creating directory "cmTC_621cf.dir\Debug\".
   Creating directory "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\".
-  Creating directory "cmTC_8206c.dir\Debug\cmTC_8206c.tlog\".
+  Creating directory "cmTC_621cf.dir\Debug\cmTC_621cf.tlog\".
 InitializeBuildStatus:
-  Creating "cmTC_8206c.dir\Debug\cmTC_8206c.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Creating "cmTC_621cf.dir\Debug\cmTC_621cf.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
 ClCompile:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_8206c.dir\Debug\\" /Fd"cmTC_8206c.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\feature_tests.c
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_621cf.dir\Debug\\" /Fd"cmTC_621cf.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\feature_tests.c
   Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
   Copyright (C) Microsoft Corporation.  All rights reserved.
   
-  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_8206c.dir\Debug\\" /Fd"cmTC_8206c.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\feature_tests.c
+  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_621cf.dir\Debug\\" /Fd"cmTC_621cf.dir\Debug\vc140.pdb" /Gd /TC /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\feature_tests.c
   
   feature_tests.c
 Link:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_8206c.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_8206c.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_8206c.lib" /MACHINE:X64  /machine:x64 cmTC_8206c.dir\Debug\feature_tests.obj
-  cmTC_8206c.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_8206c.exe
-  cmTC_8206c.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_8206c.pdb (Full PDB)
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_621cf.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_621cf.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_621cf.lib" /MACHINE:X64  /machine:x64 cmTC_621cf.dir\Debug\feature_tests.obj
+  cmTC_621cf.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_621cf.exe
+  cmTC_621cf.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_621cf.pdb (Full PDB)
 FinalizeBuildStatus:
-  Deleting file "cmTC_8206c.dir\Debug\cmTC_8206c.tlog\unsuccessfulbuild".
-  Touching "cmTC_8206c.dir\Debug\cmTC_8206c.tlog\cmTC_8206c.lastbuildstate".
-Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_8206c.vcxproj" (default targets).
+  Deleting file "cmTC_621cf.dir\Debug\cmTC_621cf.tlog\unsuccessfulbuild".
+  Touching "cmTC_621cf.dir\Debug\cmTC_621cf.tlog\cmTC_621cf.lastbuildstate".
+Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_621cf.vcxproj" (default targets).
 
 Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.98
+Time Elapsed 00:00:01.09
 
 
     Feature record: C_FEATURE:1c_function_prototypes
@@ -213,79 +213,79 @@ Time Elapsed 00:00:00.98
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp
 
-Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_df787.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
+Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_16cb1.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
 Microsoft (R) Build Engine version 14.0.25420.1
 Copyright (C) Microsoft Corporation. All rights reserved.
 
-Build started 10/26/2018 1:18:25 PM.
-Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_df787.vcxproj" on node 1 (default targets).
+Build started 10/26/2018 4:26:19 PM.
+Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_16cb1.vcxproj" on node 1 (default targets).
 PrepareForBuild:
-  Creating directory "cmTC_df787.dir\Debug\".
+  Creating directory "cmTC_16cb1.dir\Debug\".
   Creating directory "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\".
-  Creating directory "cmTC_df787.dir\Debug\cmTC_df787.tlog\".
+  Creating directory "cmTC_16cb1.dir\Debug\cmTC_16cb1.tlog\".
 InitializeBuildStatus:
-  Creating "cmTC_df787.dir\Debug\cmTC_df787.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Creating "cmTC_16cb1.dir\Debug\cmTC_16cb1.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
 ClCompile:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_df787.dir\Debug\\" /Fd"cmTC_df787.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\testCXXCompiler.cxx
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_16cb1.dir\Debug\\" /Fd"cmTC_16cb1.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\testCXXCompiler.cxx
   Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
   Copyright (C) Microsoft Corporation.  All rights reserved.
   
-  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_df787.dir\Debug\\" /Fd"cmTC_df787.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\testCXXCompiler.cxx
+  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_16cb1.dir\Debug\\" /Fd"cmTC_16cb1.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\testCXXCompiler.cxx
   
   testCXXCompiler.cxx
 Link:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_df787.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_df787.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_df787.lib" /MACHINE:X64  /machine:x64 cmTC_df787.dir\Debug\testCXXCompiler.obj
-  cmTC_df787.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_df787.exe
-  cmTC_df787.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_df787.pdb (Full PDB)
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_16cb1.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_16cb1.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_16cb1.lib" /MACHINE:X64  /machine:x64 cmTC_16cb1.dir\Debug\testCXXCompiler.obj
+  cmTC_16cb1.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_16cb1.exe
+  cmTC_16cb1.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_16cb1.pdb (Full PDB)
 FinalizeBuildStatus:
-  Deleting file "cmTC_df787.dir\Debug\cmTC_df787.tlog\unsuccessfulbuild".
-  Touching "cmTC_df787.dir\Debug\cmTC_df787.tlog\cmTC_df787.lastbuildstate".
-Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_df787.vcxproj" (default targets).
+  Deleting file "cmTC_16cb1.dir\Debug\cmTC_16cb1.tlog\unsuccessfulbuild".
+  Touching "cmTC_16cb1.dir\Debug\cmTC_16cb1.tlog\cmTC_16cb1.lastbuildstate".
+Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_16cb1.vcxproj" (default targets).
 
 Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:01.22
+Time Elapsed 00:00:01.38
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp
 
-Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_15a21.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
+Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_3d5ff.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
 Microsoft (R) Build Engine version 14.0.25420.1
 Copyright (C) Microsoft Corporation. All rights reserved.
 
-Build started 10/26/2018 1:18:26 PM.
-Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_15a21.vcxproj" on node 1 (default targets).
+Build started 10/26/2018 4:26:21 PM.
+Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_3d5ff.vcxproj" on node 1 (default targets).
 PrepareForBuild:
-  Creating directory "cmTC_15a21.dir\Debug\".
+  Creating directory "cmTC_3d5ff.dir\Debug\".
   Creating directory "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\".
-  Creating directory "cmTC_15a21.dir\Debug\cmTC_15a21.tlog\".
+  Creating directory "cmTC_3d5ff.dir\Debug\cmTC_3d5ff.tlog\".
 InitializeBuildStatus:
-  Creating "cmTC_15a21.dir\Debug\cmTC_15a21.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Creating "cmTC_3d5ff.dir\Debug\cmTC_3d5ff.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
 ClCompile:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_15a21.dir\Debug\\" /Fd"cmTC_15a21.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue "C:\Program Files\CMake\share\cmake-3.12\Modules\CMakeCXXCompilerABI.cpp"
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_3d5ff.dir\Debug\\" /Fd"cmTC_3d5ff.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue "C:\Program Files\CMake\share\cmake-3.12\Modules\CMakeCXXCompilerABI.cpp"
   Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
   Copyright (C) Microsoft Corporation.  All rights reserved.
   
-  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_15a21.dir\Debug\\" /Fd"cmTC_15a21.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue "C:\Program Files\CMake\share\cmake-3.12\Modules\CMakeCXXCompilerABI.cpp"
+  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_3d5ff.dir\Debug\\" /Fd"cmTC_3d5ff.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue "C:\Program Files\CMake\share\cmake-3.12\Modules\CMakeCXXCompilerABI.cpp"
   
   CMakeCXXCompilerABI.cpp
 Link:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_15a21.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_15a21.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_15a21.lib" /MACHINE:X64  /machine:x64 cmTC_15a21.dir\Debug\CMakeCXXCompilerABI.obj
-  cmTC_15a21.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_15a21.exe
-  cmTC_15a21.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_15a21.pdb (Full PDB)
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_3d5ff.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_3d5ff.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_3d5ff.lib" /MACHINE:X64  /machine:x64 cmTC_3d5ff.dir\Debug\CMakeCXXCompilerABI.obj
+  cmTC_3d5ff.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_3d5ff.exe
+  cmTC_3d5ff.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_3d5ff.pdb (Full PDB)
 FinalizeBuildStatus:
-  Deleting file "cmTC_15a21.dir\Debug\cmTC_15a21.tlog\unsuccessfulbuild".
-  Touching "cmTC_15a21.dir\Debug\cmTC_15a21.tlog\cmTC_15a21.lastbuildstate".
-Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_15a21.vcxproj" (default targets).
+  Deleting file "cmTC_3d5ff.dir\Debug\cmTC_3d5ff.tlog\unsuccessfulbuild".
+  Touching "cmTC_3d5ff.dir\Debug\cmTC_3d5ff.tlog\cmTC_3d5ff.lastbuildstate".
+Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_3d5ff.vcxproj" (default targets).
 
 Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:01.26
+Time Elapsed 00:00:01.04
 
 
 
@@ -293,40 +293,40 @@ Time Elapsed 00:00:01.26
 Detecting CXX [] compiler features compiled with the following output:
 Change Dir: C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp
 
-Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_ae29c.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
+Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_b01f9.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
 Microsoft (R) Build Engine version 14.0.25420.1
 Copyright (C) Microsoft Corporation. All rights reserved.
 
-Build started 10/26/2018 1:18:28 PM.
-Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_ae29c.vcxproj" on node 1 (default targets).
+Build started 10/26/2018 4:26:22 PM.
+Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_b01f9.vcxproj" on node 1 (default targets).
 PrepareForBuild:
-  Creating directory "cmTC_ae29c.dir\Debug\".
+  Creating directory "cmTC_b01f9.dir\Debug\".
   Creating directory "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\".
-  Creating directory "cmTC_ae29c.dir\Debug\cmTC_ae29c.tlog\".
+  Creating directory "cmTC_b01f9.dir\Debug\cmTC_b01f9.tlog\".
 InitializeBuildStatus:
-  Creating "cmTC_ae29c.dir\Debug\cmTC_ae29c.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Creating "cmTC_b01f9.dir\Debug\cmTC_b01f9.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
 ClCompile:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_ae29c.dir\Debug\\" /Fd"cmTC_ae29c.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\feature_tests.cxx
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_b01f9.dir\Debug\\" /Fd"cmTC_b01f9.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\feature_tests.cxx
   Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
   Copyright (C) Microsoft Corporation.  All rights reserved.
   
-  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_ae29c.dir\Debug\\" /Fd"cmTC_ae29c.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\feature_tests.cxx
+  cl /c /Zi /W3 /WX- /Od /Ob0 /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_b01f9.dir\Debug\\" /Fd"cmTC_b01f9.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\feature_tests.cxx
   
   feature_tests.cxx
 Link:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_ae29c.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_ae29c.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_ae29c.lib" /MACHINE:X64  /machine:x64 cmTC_ae29c.dir\Debug\feature_tests.obj
-  cmTC_ae29c.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_ae29c.exe
-  cmTC_ae29c.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_ae29c.pdb (Full PDB)
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_b01f9.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_b01f9.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_b01f9.lib" /MACHINE:X64  /machine:x64 cmTC_b01f9.dir\Debug\feature_tests.obj
+  cmTC_b01f9.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_b01f9.exe
+  cmTC_b01f9.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_b01f9.pdb (Full PDB)
 FinalizeBuildStatus:
-  Deleting file "cmTC_ae29c.dir\Debug\cmTC_ae29c.tlog\unsuccessfulbuild".
-  Touching "cmTC_ae29c.dir\Debug\cmTC_ae29c.tlog\cmTC_ae29c.lastbuildstate".
-Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_ae29c.vcxproj" (default targets).
+  Deleting file "cmTC_b01f9.dir\Debug\cmTC_b01f9.tlog\unsuccessfulbuild".
+  Touching "cmTC_b01f9.dir\Debug\cmTC_b01f9.tlog\cmTC_b01f9.lastbuildstate".
+Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_b01f9.vcxproj" (default targets).
 
 Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.95
+Time Elapsed 00:00:01.29
 
 
     Feature record: CXX_FEATURE:0cxx_aggregate_default_initializers
@@ -388,48 +388,48 @@ Time Elapsed 00:00:00.95
 Performing C++ SOURCE FILE Test HAS_MSVC_GL_LTCG succeeded with the following output:
 Change Dir: C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp
 
-Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_a4b38.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
+Run Build Command:"C:/Program Files (x86)/MSBuild/14.0/bin/MSBuild.exe" "cmTC_0cc32.vcxproj" "/p:Configuration=Debug" "/p:VisualStudioVersion=14.0"
 Microsoft (R) Build Engine version 14.0.25420.1
 Copyright (C) Microsoft Corporation. All rights reserved.
 
-Build started 10/26/2018 1:18:31 PM.
-Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_a4b38.vcxproj" on node 1 (default targets).
+Build started 10/26/2018 4:26:25 PM.
+Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_0cc32.vcxproj" on node 1 (default targets).
 PrepareForBuild:
-  Creating directory "cmTC_a4b38.dir\Debug\".
+  Creating directory "cmTC_0cc32.dir\Debug\".
   Creating directory "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\".
-  Creating directory "cmTC_a4b38.dir\Debug\cmTC_a4b38.tlog\".
+  Creating directory "cmTC_0cc32.dir\Debug\cmTC_0cc32.tlog\".
 InitializeBuildStatus:
-  Creating "cmTC_a4b38.dir\Debug\cmTC_a4b38.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Creating "cmTC_0cc32.dir\Debug\cmTC_0cc32.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
 ClCompile:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /GL /D WIN32 /D _WINDOWS /D HAS_MSVC_GL_LTCG /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_a4b38.dir\Debug\\" /Fd"cmTC_a4b38.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\src.cxx
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /Zi /W3 /WX- /Od /Ob0 /GL /D WIN32 /D _WINDOWS /D HAS_MSVC_GL_LTCG /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_0cc32.dir\Debug\\" /Fd"cmTC_0cc32.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\src.cxx
   Microsoft (R) C/C++ Optimizing Compiler Version 19.00.24215.1 for x64
   Copyright (C) Microsoft Corporation.  All rights reserved.
   
-  cl /c /Zi /W3 /WX- /Od /Ob0 /GL /D WIN32 /D _WINDOWS /D HAS_MSVC_GL_LTCG /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_a4b38.dir\Debug\\" /Fd"cmTC_a4b38.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\src.cxx
+  cl /c /Zi /W3 /WX- /Od /Ob0 /GL /D WIN32 /D _WINDOWS /D HAS_MSVC_GL_LTCG /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_0cc32.dir\Debug\\" /Fd"cmTC_0cc32.dir\Debug\vc140.pdb" /Gd /TP /errorReport:queue C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\src.cxx
   
   src.cxx
 Link:
-  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_a4b38.exe" /INCREMENTAL /NOLOGO "-LTCG" kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_a4b38.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_a4b38.lib" /MACHINE:X64  /machine:x64 cmTC_a4b38.dir\Debug\src.obj
-LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_a4b38.vcxproj]
+  C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_0cc32.exe" /INCREMENTAL /NOLOGO "-LTCG" kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_0cc32.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_0cc32.lib" /MACHINE:X64  /machine:x64 cmTC_0cc32.dir\Debug\src.obj
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_0cc32.vcxproj]
   Generating code
   Finished generating code
-  cmTC_a4b38.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_a4b38.exe
-  cmTC_a4b38.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_a4b38.pdb (Full PDB)
+  cmTC_0cc32.vcxproj -> C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\Debug\cmTC_0cc32.exe
+  cmTC_0cc32.vcxproj -> C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/CMakeTmp/Debug/cmTC_0cc32.pdb (Full PDB)
 FinalizeBuildStatus:
-  Deleting file "cmTC_a4b38.dir\Debug\cmTC_a4b38.tlog\unsuccessfulbuild".
-  Touching "cmTC_a4b38.dir\Debug\cmTC_a4b38.tlog\cmTC_a4b38.lastbuildstate".
-Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_a4b38.vcxproj" (default targets).
+  Deleting file "cmTC_0cc32.dir\Debug\cmTC_0cc32.tlog\unsuccessfulbuild".
+  Touching "cmTC_0cc32.dir\Debug\cmTC_0cc32.tlog\cmTC_0cc32.lastbuildstate".
+Done Building Project "C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_0cc32.vcxproj" (default targets).
 
 Build succeeded.
 
-"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_a4b38.vcxproj" (default target) (1) ->
+"C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_0cc32.vcxproj" (default target) (1) ->
 (Link target) -> 
-  LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_a4b38.vcxproj]
+  LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace\build_py\CMakeFiles\CMakeTmp\cmTC_0cc32.vcxproj]
 
     1 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.97
+Time Elapsed 00:00:01.22
 
 Source file was:
 int main() { return 0; }
