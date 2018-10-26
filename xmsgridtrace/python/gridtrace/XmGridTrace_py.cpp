@@ -23,7 +23,7 @@ namespace py = pybind11;
 PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
 
 void initXmGridTrace(py::module &m) {
-  const char* XmGridtrace_doc = R"pydoc(
+  const char* XmGridTrace_doc = R"pydoc(
         Class in which the flow trace of a point between 2 velocity vector time 
         steps on an XmGrid is calculated and the velocity vectors can be 
         assigned to either the points or to the cells.
@@ -206,27 +206,29 @@ void initXmGridTrace(py::module &m) {
 
       Args:
           scalars (iterable): The velocity vectors.
-          scalar_loc (data_location_enum): Whether the vectors are assigned to 
-            cells or points.
-          activity (iterable): Whether each cell or point is active.
-          activity_loc (data_location_enum): Whether the activities are assigned 
-            to cells or points.
+
+          scalar_loc (data_location_enum): Whether the vectors are assigned to cells or points.
+
+          cell_activity (iterable): Whether each cell or point is active.
+
+          activity_loc (data_location_enum): Whether the activities are assigned to cells or points.
+
           time (float): The time of the scalars.
   )pydoc";
   gridtrace.def("add_grid_scalars_at_time", [](xms::XmGridTrace &self, 
           py::iterable vel_scalars,
           xms::DataLocationEnum scalar_loc,
-          py::iterable activity,
+          py::iterable cell_activity,
           xms::DataLocationEnum activity_loc,
           double time) {
             boost::shared_ptr<xms::VecPt3d> scalars = 
               xms::VecPt3dFromPyIter(vel_scalars);
-            xms::DynBitset activity = xms::DynamicBitsetFromPyIter(activity);
+            xms::DynBitset activity = xms::DynamicBitsetFromPyIter(cell_activity);
             self.AddGridScalarsAtTime(*scalars, scalar_loc, activity, 
               activity_loc, time);
             return;
           }, add_grid_scalars_at_time_doc, py::arg("scalars"), 
-          py::arg("scalar_loc"), py::arg("activity"), py::arg("activity_loc"),
+          py::arg("scalar_loc"), py::arg("cell_activity"), py::arg("activity_loc"),
            py::arg("time"));
   // ---------------------------------------------------------------------------
   // function: trace_point
@@ -236,11 +238,11 @@ void initXmGridTrace(py::module &m) {
 
       Args:
           pt (iterable): The starting point of the trace.
+
           pt_time (float): The starting time of the trace.
 
       Returns:
-          iterable: Contains the resultant positions at each step and the 
-            resultant times at each step.
+          iterable: Contains the resultant positions at each step and the resultant times at each step.
   )pydoc";
   gridtrace.def("trace_point", [](xms::XmGridTrace &self, py::iterable pt, 
     double pt_time) -> py::iterable {
