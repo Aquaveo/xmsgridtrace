@@ -417,11 +417,10 @@
     <name>index</name>
     <title>xmsgridtrace</title>
     <filename>index</filename>
-    <docanchor file="index" title="xmsgridtrace ">mainpage</docanchor>
     <docanchor file="index" title="xmsgridtrace ">xmsgridtrace</docanchor>
-    <docanchor file="index" title="Introduction ">Introduction</docanchor>
-    <docanchor file="index" title="License ">License</docanchor>
-    <docanchor file="index" title="Features ">Features</docanchor>
+    <docanchor file="index" title="Introduction ">XmsgridtraceIntroduction</docanchor>
+    <docanchor file="index" title="License ">XmsgridtraceLicense</docanchor>
+    <docanchor file="index" title="Features ">XmsgridtraceFeatures</docanchor>
     <docanchor file="index" title="Testing ">XmsgridtraceTesting</docanchor>
     <docanchor file="index" title="The Code ">XmsgridtraceTheCode</docanchor>
     <docanchor file="index" title="Namespaces">XmsgridtraceNamespaces</docanchor>

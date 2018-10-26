@@ -200,14 +200,14 @@ PYTHON_LIBRARY:FILEPATH=C:/Users/ckingsbury/AppData/Local/Programs/Python/Python
 //Version of python to link to for python wrapping.
 PYTHON_TARGET_VERSION:STRING=3.5.4
 
-//Path to test files for testing
-XMSGRIDTRACE_TEST_PATH:PATH=../../test_files
-
 //No help, variable specified on the command line.
 XMS_BUILD:UNINITIALIZED=False
 
-//No help, variable specified on the command line.
-XMS_VERSION:UNINITIALIZED=99.99.99
+//Path to test files for testing
+XMS_TEST_PATH:PATH=C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/test_files
+
+//Library Version
+XMS_VERSION:STRING=99.99.99
 
 //Value Computed by CMake
 xmsgridtrace_BINARY_DIR:STATIC=C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py

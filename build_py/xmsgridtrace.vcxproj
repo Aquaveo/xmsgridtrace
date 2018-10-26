@@ -86,11 +86,11 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;BOOST_ALL_NO_LIB;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;BOOST_ALL_NO_LIB;XMS_VERSION="99.99.99";CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;BOOST_ALL_NO_LIB;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;BOOST_ALL_NO_LIB;XMS_VERSION=\"99.99.99\";CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace;C:\Users\ckingsbury\.conan\data\cxxtest\4.4\aquaveo\stable\package\5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9\include;C:\Users\ckingsbury\.conan\data\xmsextractor\1.0.0\aquaveo\stable\package\e5596bf02990842dcb4b9193950d090310fef61a\include;C:\Users\ckingsbury\.conan\data\xmsinterp\1.0.18\aquaveo\stable\package\7e2bd1bc5c6322ca544889d71432d1c6d102bf6c\include;C:\Users\ckingsbury\.conan\data\xmsgrid\1.0.10\aquaveo\stable\package\7e2bd1bc5c6322ca544889d71432d1c6d102bf6c\include;C:\Users\ckingsbury\.conan\data\xmscore\1.0.40\aquaveo\stable\package\906729decb6329f2b0c9694961783758bcc1bda0\include;C:\.conan\asealip2\1\include;C:\Users\ckingsbury\.conan\data\pybind11\2.2.2\aquaveo\stable\package\caa445deac6f2f357801d240079788bf3f962b1f\include;C:\Users\ckingsbury\.conan\data\bzip2\1.0.6\conan\stable\package\f6bcf0d95fafcf303dfebe42c8562386d4cdbf69\include;C:\Users\ckingsbury\.conan\data\zlib\1.2.11\conan\stable\package\63da998e3642b50bee33f4449826b2d623661505\include;C:\Users\ckingsbury\AppData\Local\Programs\Python\Python35\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
@@ -117,13 +117,13 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;XMS_VERSION="99.99.99";CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;XMS_VERSION=\"99.99.99\";CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace;C:\Users\ckingsbury\.conan\data\cxxtest\4.4\aquaveo\stable\package\5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9\include;C:\Users\ckingsbury\.conan\data\xmsextractor\1.0.0\aquaveo\stable\package\e5596bf02990842dcb4b9193950d090310fef61a\include;C:\Users\ckingsbury\.conan\data\xmsinterp\1.0.18\aquaveo\stable\package\7e2bd1bc5c6322ca544889d71432d1c6d102bf6c\include;C:\Users\ckingsbury\.conan\data\xmsgrid\1.0.10\aquaveo\stable\package\7e2bd1bc5c6322ca544889d71432d1c6d102bf6c\include;C:\Users\ckingsbury\.conan\data\xmscore\1.0.40\aquaveo\stable\package\906729decb6329f2b0c9694961783758bcc1bda0\include;C:\.conan\asealip2\1\include;C:\Users\ckingsbury\.conan\data\pybind11\2.2.2\aquaveo\stable\package\caa445deac6f2f357801d240079788bf3f962b1f\include;C:\Users\ckingsbury\.conan\data\bzip2\1.0.6\conan\stable\package\f6bcf0d95fafcf303dfebe42c8562386d4cdbf69\include;C:\Users\ckingsbury\.conan\data\zlib\1.2.11\conan\stable\package\63da998e3642b50bee33f4449826b2d623661505\include;C:\Users\ckingsbury\AppData\Local\Programs\Python\Python35\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
@@ -150,13 +150,13 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;CMAKE_INTDIR="MinSizeRel";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;XMS_VERSION="99.99.99";CMAKE_INTDIR="MinSizeRel";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;XMS_VERSION=\"99.99.99\";CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace;C:\Users\ckingsbury\.conan\data\cxxtest\4.4\aquaveo\stable\package\5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9\include;C:\Users\ckingsbury\.conan\data\xmsextractor\1.0.0\aquaveo\stable\package\e5596bf02990842dcb4b9193950d090310fef61a\include;C:\Users\ckingsbury\.conan\data\xmsinterp\1.0.18\aquaveo\stable\package\7e2bd1bc5c6322ca544889d71432d1c6d102bf6c\include;C:\Users\ckingsbury\.conan\data\xmsgrid\1.0.10\aquaveo\stable\package\7e2bd1bc5c6322ca544889d71432d1c6d102bf6c\include;C:\Users\ckingsbury\.conan\data\xmscore\1.0.40\aquaveo\stable\package\906729decb6329f2b0c9694961783758bcc1bda0\include;C:\.conan\asealip2\1\include;C:\Users\ckingsbury\.conan\data\pybind11\2.2.2\aquaveo\stable\package\caa445deac6f2f357801d240079788bf3f962b1f\include;C:\Users\ckingsbury\.conan\data\bzip2\1.0.6\conan\stable\package\f6bcf0d95fafcf303dfebe42c8562386d4cdbf69\include;C:\Users\ckingsbury\.conan\data\zlib\1.2.11\conan\stable\package\63da998e3642b50bee33f4449826b2d623661505\include;C:\Users\ckingsbury\AppData\Local\Programs\Python\Python35\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
@@ -184,11 +184,11 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;CMAKE_INTDIR="RelWithDebInfo";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;XMS_VERSION="99.99.99";CMAKE_INTDIR="RelWithDebInfo";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;BOOST_ALL_NO_LIB;XMS_VERSION=\"99.99.99\";CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\ckingsbury\Documents\GitHub\xmsgridtrace;C:\Users\ckingsbury\.conan\data\cxxtest\4.4\aquaveo\stable\package\5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9\include;C:\Users\ckingsbury\.conan\data\xmsextractor\1.0.0\aquaveo\stable\package\e5596bf02990842dcb4b9193950d090310fef61a\include;C:\Users\ckingsbury\.conan\data\xmsinterp\1.0.18\aquaveo\stable\package\7e2bd1bc5c6322ca544889d71432d1c6d102bf6c\include;C:\Users\ckingsbury\.conan\data\xmsgrid\1.0.10\aquaveo\stable\package\7e2bd1bc5c6322ca544889d71432d1c6d102bf6c\include;C:\Users\ckingsbury\.conan\data\xmscore\1.0.40\aquaveo\stable\package\906729decb6329f2b0c9694961783758bcc1bda0\include;C:\.conan\asealip2\1\include;C:\Users\ckingsbury\.conan\data\pybind11\2.2.2\aquaveo\stable\package\caa445deac6f2f357801d240079788bf3f962b1f\include;C:\Users\ckingsbury\.conan\data\bzip2\1.0.6\conan\stable\package\f6bcf0d95fafcf303dfebe42c8562386d4cdbf69\include;C:\Users\ckingsbury\.conan\data\zlib\1.2.11\conan\stable\package\63da998e3642b50bee33f4449826b2d623661505\include;C:\Users\ckingsbury\AppData\Local\Programs\Python\Python35\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
