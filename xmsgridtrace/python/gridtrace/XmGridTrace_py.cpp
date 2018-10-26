@@ -189,8 +189,7 @@ void initXmGridTrace(py::module &m) {
       Sets the maximum change in direction in radians.
 
       Args:
-          maximum_change_direction (float): The new maximum change in direction
-            in radians.
+          maximum_change_direction (float): The new maximum change in direction in radians.
   )pydoc";
   gridtrace.def("set_max_change_direction_in_radians", 
     &xms::XmGridTrace::SetMaxChangeDirectionInRadians, 
