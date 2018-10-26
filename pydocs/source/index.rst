@@ -4,7 +4,7 @@
    :align: right
 
 **********************
-XmsGridtrace |version|
+XmsGridTrace |version|
 **********************
 
 **Last Updated:** October 5, 2018
