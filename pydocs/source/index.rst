@@ -2,7 +2,6 @@
    :height: 35px
    :width: 250px
    :align: right
-
 **********************
 XmsGridTrace |version|
 **********************
