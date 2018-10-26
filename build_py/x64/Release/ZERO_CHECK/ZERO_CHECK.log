@@ -1,2 +1,57 @@
 ﻿  Checking Build System
-  CMake does not need to re-run because C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/generate.stamp is up-to-date.
+  CMake is re-running because C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/generate.stamp is out-of-date.
+    the file 'C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/conanbuildinfo.cmake'
+    is newer than 'C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/generate.stamp.depend'
+    result='-1'
+  -- Selecting Windows SDK version  to target Windows 10.0.17134.
+  -- Current conanbuildinfo.cmake directory: C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py
+  -- Conan: Using cmake targets configuration
+  -- Library xmsextractor found C:/Users/ckingsbury/.conan/data/xmsextractor/1.0.0/aquaveo/stable/package/e5596bf02990842dcb4b9193950d090310fef61a/lib/xmsextractor.lib
+  -- Library xmsinterp found C:/Users/ckingsbury/.conan/data/xmsinterp/1.0.18/aquaveo/stable/package/7e2bd1bc5c6322ca544889d71432d1c6d102bf6c/lib/xmsinterp.lib
+  -- Library xmsgrid found C:/Users/ckingsbury/.conan/data/xmsgrid/1.0.10/aquaveo/stable/package/7e2bd1bc5c6322ca544889d71432d1c6d102bf6c/lib/xmsgrid.lib
+  -- Library xmscore found C:/Users/ckingsbury/.conan/data/xmscore/1.0.40/aquaveo/stable/package/906729decb6329f2b0c9694961783758bcc1bda0/lib/xmscore.lib
+  -- Library boost_wave found C:/.conan/asealip2/1/lib/boost_wave.lib
+  -- Library boost_container found C:/.conan/asealip2/1/lib/boost_container.lib
+  -- Library boost_exception found C:/.conan/asealip2/1/lib/boost_exception.lib
+  -- Library boost_graph found C:/.conan/asealip2/1/lib/boost_graph.lib
+  -- Library boost_iostreams found C:/.conan/asealip2/1/lib/boost_iostreams.lib
+  -- Library boost_locale found C:/.conan/asealip2/1/lib/boost_locale.lib
+  -- Library boost_log found C:/.conan/asealip2/1/lib/boost_log.lib
+  -- Library boost_program_options found C:/.conan/asealip2/1/lib/boost_program_options.lib
+  -- Library boost_random found C:/.conan/asealip2/1/lib/boost_random.lib
+  -- Library boost_regex found C:/.conan/asealip2/1/lib/boost_regex.lib
+  -- Library boost_serialization found C:/.conan/asealip2/1/lib/boost_serialization.lib
+  -- Library boost_wserialization found C:/.conan/asealip2/1/lib/boost_wserialization.lib
+  -- Library boost_signals found C:/.conan/asealip2/1/lib/boost_signals.lib
+  -- Library boost_coroutine found C:/.conan/asealip2/1/lib/boost_coroutine.lib
+  -- Library boost_fiber found C:/.conan/asealip2/1/lib/boost_fiber.lib
+  -- Library boost_context found C:/.conan/asealip2/1/lib/boost_context.lib
+  -- Library boost_timer found C:/.conan/asealip2/1/lib/boost_timer.lib
+  -- Library boost_thread found C:/.conan/asealip2/1/lib/boost_thread.lib
+  -- Library boost_chrono found C:/.conan/asealip2/1/lib/boost_chrono.lib
+  -- Library boost_date_time found C:/.conan/asealip2/1/lib/boost_date_time.lib
+  -- Library boost_atomic found C:/.conan/asealip2/1/lib/boost_atomic.lib
+  -- Library boost_filesystem found C:/.conan/asealip2/1/lib/boost_filesystem.lib
+  -- Library boost_system found C:/.conan/asealip2/1/lib/boost_system.lib
+  -- Library boost_type_erasure found C:/.conan/asealip2/1/lib/boost_type_erasure.lib
+  -- Library boost_log_setup found C:/.conan/asealip2/1/lib/boost_log_setup.lib
+  -- Library boost_math_c99 found C:/.conan/asealip2/1/lib/boost_math_c99.lib
+  -- Library boost_math_c99f found C:/.conan/asealip2/1/lib/boost_math_c99f.lib
+  -- Library boost_math_c99l found C:/.conan/asealip2/1/lib/boost_math_c99l.lib
+  -- Library boost_math_tr1 found C:/.conan/asealip2/1/lib/boost_math_tr1.lib
+  -- Library boost_math_tr1f found C:/.conan/asealip2/1/lib/boost_math_tr1f.lib
+  -- Library boost_math_tr1l found C:/.conan/asealip2/1/lib/boost_math_tr1l.lib
+  -- Library boost_stacktrace_noop found C:/.conan/asealip2/1/lib/boost_stacktrace_noop.lib
+  -- Library boost_stacktrace_windbg found C:/.conan/asealip2/1/lib/boost_stacktrace_windbg.lib
+  -- Library boost_stacktrace_windbg_cached found C:/.conan/asealip2/1/lib/boost_stacktrace_windbg_cached.lib
+  -- Library boost_unit_test_framework found C:/.conan/asealip2/1/lib/boost_unit_test_framework.lib
+  -- Library bz2 found C:/Users/ckingsbury/.conan/data/bzip2/1.0.6/conan/stable/package/f6bcf0d95fafcf303dfebe42c8562386d4cdbf69/lib/bz2.lib
+  -- Library zlib found C:/Users/ckingsbury/.conan/data/zlib/1.2.11/conan/stable/package/63da998e3642b50bee33f4449826b2d623661505/lib/zlib.lib
+  -- Conan: Adjusting default RPATHs Conan policies
+  -- Conan: Adjusting language standard
+  External Include Dirs: C:/Users/ckingsbury/.conan/data/cxxtest/4.4/aquaveo/stable/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include;C:/Users/ckingsbury/.conan/data/xmsextractor/1.0.0/aquaveo/stable/package/e5596bf02990842dcb4b9193950d090310fef61a/include;C:/Users/ckingsbury/.conan/data/xmsinterp/1.0.18/aquaveo/stable/package/7e2bd1bc5c6322ca544889d71432d1c6d102bf6c/include;C:/Users/ckingsbury/.conan/data/xmsgrid/1.0.10/aquaveo/stable/package/7e2bd1bc5c6322ca544889d71432d1c6d102bf6c/include;C:/Users/ckingsbury/.conan/data/xmscore/1.0.40/aquaveo/stable/package/906729decb6329f2b0c9694961783758bcc1bda0/include;C:/.conan/asealip2/1/include;C:/Users/ckingsbury/.conan/data/pybind11/2.2.2/aquaveo/stable/package/caa445deac6f2f357801d240079788bf3f962b1f/include;C:/Users/ckingsbury/.conan/data/bzip2/1.0.6/conan/stable/package/f6bcf0d95fafcf303dfebe42c8562386d4cdbf69/include;C:/Users/ckingsbury/.conan/data/zlib/1.2.11/conan/stable/package/63da998e3642b50bee33f4449826b2d623661505/include;C:/Users/ckingsbury/AppData/Local/Programs/Python/Python35/include
+  External Lib Dirs: C:/Users/ckingsbury/.conan/data/xmsextractor/1.0.0/aquaveo/stable/package/e5596bf02990842dcb4b9193950d090310fef61a/lib;C:/Users/ckingsbury/.conan/data/xmsinterp/1.0.18/aquaveo/stable/package/7e2bd1bc5c6322ca544889d71432d1c6d102bf6c/lib;C:/Users/ckingsbury/.conan/data/xmsgrid/1.0.10/aquaveo/stable/package/7e2bd1bc5c6322ca544889d71432d1c6d102bf6c/lib;C:/Users/ckingsbury/.conan/data/xmscore/1.0.40/aquaveo/stable/package/906729decb6329f2b0c9694961783758bcc1bda0/lib;C:/.conan/asealip2/1/lib;C:/Users/ckingsbury/.conan/data/pybind11/2.2.2/aquaveo/stable/package/caa445deac6f2f357801d240079788bf3f962b1f/lib;C:/Users/ckingsbury/.conan/data/bzip2/1.0.6/conan/stable/package/f6bcf0d95fafcf303dfebe42c8562386d4cdbf69/lib;C:/Users/ckingsbury/.conan/data/zlib/1.2.11/conan/stable/package/63da998e3642b50bee33f4449826b2d623661505/lib
+  Extneral Libs: xmsextractor;xmsinterp;xmsgrid;xmscore;boost_wave;boost_container;boost_exception;boost_graph;boost_iostreams;boost_locale;boost_log;boost_program_options;boost_random;boost_regex;boost_serialization;boost_wserialization;boost_signals;boost_coroutine;boost_fiber;boost_context;boost_timer;boost_thread;boost_chrono;boost_date_time;boost_atomic;boost_filesystem;boost_system;boost_type_erasure;boost_log_setup;boost_math_c99;boost_math_c99f;boost_math_c99l;boost_math_tr1;boost_math_tr1f;boost_math_tr1l;boost_stacktrace_noop;boost_stacktrace_windbg;boost_stacktrace_windbg_cached;boost_unit_test_framework;bz2;zlib
+  -- Configuring done
+  -- Generating done
+  -- Build files have been written to: C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py
