@@ -11,9 +11,6 @@ XmsGridTrace |version|
 
 The xmsgridtrace library is a particle tracing library for other aquaveo products.
 
-.. note::
-
-    Documentation coming soon!
 
 Contents
 ========
