@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'build_py', 'lib')))
 
 # -- Project information -----------------------------------------------------
 
-project = 'XmsInterp Library'
+project = 'XmsGridTrace Library'
 copyright = '2018, aquaveo'
 author = 'aquaveo'
 

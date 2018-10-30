@@ -2,11 +2,13 @@
    :height: 35px
    :width: 250px
    :align: right
+
 **********************
 XmsGridTrace |version|
 **********************
 
 **Last Updated:** October 5, 2018
+
 The xmsgridtrace library is a grid trace library for other aquaveo products. This library contains classes used to perform calculations on a grid.
 
 Contents
