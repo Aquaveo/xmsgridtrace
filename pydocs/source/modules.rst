@@ -11,9 +11,6 @@ GridTrace
 
 .. automodule:: xmsgridtrace_py.gridtrace
 
-.. note::
-   
-    Description of the gridtrace module is coming soon!
 
 .. toctree::
    :maxdepth: 1
