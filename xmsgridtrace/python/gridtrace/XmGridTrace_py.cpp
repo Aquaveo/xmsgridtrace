@@ -227,25 +227,54 @@ void initXmGridTrace(py::module &m) {
       Args:
           scalars (iterable): The velocity vectors.
 
-          scalar_loc (data_location_enum): Whether the vectors are assigned to cells or points.
+          scalar_loc (string): Whether the vectors are assigned to cells or points.
 
           cell_activity (iterable): Whether each cell or point is active.
 
-          activity_loc (data_location_enum): Whether the activities are assigned to cells or points.
+          activity_loc (string): Whether the activities are assigned to cells or points.
 
           time (float): The time of the scalars.
   )pydoc";
   gridtrace.def("add_grid_scalars_at_time", [](xms::XmGridTrace &self, 
           py::iterable vel_scalars,
-          xms::DataLocationEnum scalar_loc,
+          std::string scalar_loc,
           py::iterable cell_activity,
-          xms::DataLocationEnum activity_loc,
+          std::string activity_loc,
           double time) {
+
+            xms::DataLocationEnum scalar_loc_e;
+            if (scalar_loc == "points")
+              scalar_loc_e = xms::DataLocationEnum::LOC_POINTS;
+            else if (scalar_loc == "cells")
+              scalar_loc_e = xms::DataLocationEnum::LOC_CELLS;
+            else if (scalar_loc == "unknown")
+              scalar_loc_e = xms::DataLocationEnum::LOC_UNKNOWN;
+            else
+            {
+              std::string msg = "nodal_func_type string must be one of 'points', 'cells', "
+                                "'unknown' not " + scalar_loc;
+              throw py::value_error(msg);
+            }
+
+            xms::DataLocationEnum activity_loc_e;
+            if (activity_loc == "points")
+              activity_loc_e = xms::DataLocationEnum::LOC_POINTS;
+            else if (activity_loc == "cells")
+              activity_loc_e = xms::DataLocationEnum::LOC_CELLS;
+            else if (activity_loc == "unknown")
+              activity_loc_e = xms::DataLocationEnum::LOC_UNKNOWN;
+            else
+            {
+              std::string msg = "nodal_func_type string must be one of 'points', 'cells', "
+                                "'unknown' not " + activity_loc;
+              throw py::value_error(msg);
+            }
+
             boost::shared_ptr<xms::VecPt3d> scalars = 
               xms::VecPt3dFromPyIter(vel_scalars);
             xms::DynBitset activity = xms::DynamicBitsetFromPyIter(cell_activity);
-            self.AddGridScalarsAtTime(*scalars, scalar_loc, activity, 
-              activity_loc, time);
+            self.AddGridScalarsAtTime(*scalars, scalar_loc_e, activity,
+              activity_loc_e, time);
             return;
           }, add_grid_scalars_at_time_doc, py::arg("scalars"), 
           py::arg("scalar_loc"), py::arg("cell_activity"), py::arg("activity_loc"),

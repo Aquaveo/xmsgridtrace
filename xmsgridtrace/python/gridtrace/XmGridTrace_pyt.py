@@ -3,7 +3,6 @@ import unittest
 import xmsgridtrace
 from xmsgrid.ugrid import UGrid
 from xmsgridtrace.gridtrace import GridTrace
-from xmsgridtrace.gridtrace import data_location_enum
 import numpy as np
 
 class TestGridTrace(unittest.TestCase):
@@ -25,8 +24,8 @@ class TestGridTrace(unittest.TestCase):
         tracer.max_change_direction_in_radians = 1.5*np.pi
         scalars = [(1,1,0),(1,1,0),(1,1,0),(1,1,0)]
         point_activity = [True]*4
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,10)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",0)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",10)
         return tracer
     def create_default_two_cell(self):
         """Create a default two cell"""
@@ -44,8 +43,8 @@ class TestGridTrace(unittest.TestCase):
         tracer.max_change_direction_in_radians = 1.5*np.pi
         scalars = [ ( .1,0,0 ),( .2,0,0 ) ]
         point_activity = [True]*2
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_CELLS,point_activity,data_location_enum.LOC_CELLS,0)
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_CELLS,point_activity,data_location_enum.LOC_CELLS,10)
+        tracer.add_grid_scalars_at_time(scalars,"cells",point_activity,"cells",0)
+        tracer.add_grid_scalars_at_time(scalars,"cells",point_activity,"cells",10)
         return tracer
     def test_basic_trace_point(self):
         """test basic tracing functionality"""
@@ -80,8 +79,8 @@ class TestGridTrace(unittest.TestCase):
         tracer.max_change_distance = .25
         scalars = [(.1,.1,0),(.1,.1,0),(.1,.1,0),(.1,.1,0)]
         point_activity = [True]*4
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,10)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",0)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",10)
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
 
@@ -102,8 +101,8 @@ class TestGridTrace(unittest.TestCase):
 
         scalars = [(0,1,0),(-1,0,0),(0,-1,0),(1,0,0)]
         point_activity = [True]*4
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,10)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",0)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",10)
 
         result_tuple = tracer.trace_point((0,0,0),start_time)
 
@@ -185,8 +184,8 @@ class TestGridTrace(unittest.TestCase):
         start_time=.5
         scalars = [(0,1,0),(-1,0,0),(0,-1,0),(1,0,0)]
         point_activity = [True]*4
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,10)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",0)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",10)
 
         result_tuple = tracer.trace_point((0,0,0),start_time)
 
@@ -238,8 +237,8 @@ class TestGridTrace(unittest.TestCase):
 
         scalars = [(0,1,0),(-1,0,0),(0,-1,0),(1,0,0)]
         point_activity = [True]*4
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,10)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",0)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",10)
 
         result_tuple = tracer.trace_point((0,0,0),start_time)
 
@@ -308,8 +307,8 @@ class TestGridTrace(unittest.TestCase):
 
         scalars = [(0,1,0),(-1,0,0),(0,-1,0),(1,0,0)]
         point_activity = [True]*4
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,10)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",0)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",10)
 
         result_tuple = tracer.trace_point((0,0,0),start_time)
 
@@ -433,7 +432,7 @@ class TestGridTrace(unittest.TestCase):
         
         scalars = [(.2,0,0),(.3,0,0)]
         point_activity = [True]*2
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_CELLS,point_activity,data_location_enum.LOC_CELLS,20)
+        tracer.add_grid_scalars_at_time(scalars,"cells",point_activity,"cells",20)
 
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
@@ -461,7 +460,7 @@ class TestGridTrace(unittest.TestCase):
         scalars = [(.2,0,0),(99999,0,0)]
         point_activity = [True]*2
         point_activity[1]=False
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_CELLS,point_activity,data_location_enum.LOC_CELLS,20)
+        tracer.add_grid_scalars_at_time(scalars,"cells",point_activity,"cells",20)
 
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
@@ -485,7 +484,7 @@ class TestGridTrace(unittest.TestCase):
         scalars = [(.2,0,0),(99999,0,0)]
         point_activity = [True]*2
         point_activity[0]=False
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_CELLS,point_activity,data_location_enum.LOC_CELLS,20)
+        tracer.add_grid_scalars_at_time(scalars,"cells",point_activity,"cells",20)
 
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
@@ -537,12 +536,12 @@ class TestGridTrace(unittest.TestCase):
                     ( 0,.1,0 ),( 0,0,0 ),( 0,-.1,0 ),
                     ( 1,0,0 ),( .1,0,0 ),( 0,-1,0 )]
         point_activity = [True]*9
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",0)
         # For the second timestep scalars are doubled to indicate an increase in magnitude
         scalars = [(  0,2,0 ),( -.2,0,0 ),( -2,0,0 ),
                     ( 0,.2,0 ),( 0,0,0 ),( 0,-.2,0 ),
                     ( 2,0,0 ),( .2,0,0 ),( 0,-2,0 )]
-        tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,20)
+        tracer.add_grid_scalars_at_time(scalars,"points",point_activity,"points",20)
     
         start_time=0
         start_point = (.5,.5,0)
