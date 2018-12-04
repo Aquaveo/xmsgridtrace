@@ -72,10 +72,10 @@ class XmsgridtraceConan(ConanFile):
             self.requires("pybind11/2.2.2@aquaveo/stable")
 
         # Use the dev version of XMSCore, XMSInterp, XMSGrid, XMSExtractor
-        self.requires("xmscore/[>=2.0.1,<3.0.0]0@aquaveo/stable")
-        self.requires("xmsinterp/[>=2.0.0,<3.0.0]@aquaveo/stable")
+        self.requires("xmscore/[>=2.0.1,<3.0.0]@aquaveo/stable")
+        self.requires("xmsinterp/[>=2.0.0,<3.0.]@aquaveo/stable")
         self.requires("xmsgrid/[>=2.0.0,<3.0.0]@aquaveo/stable")
-        self.requires("xmsextractor/[>=2.0.0,<3.0.0]@aquaveo/stable")
+        self.requires("xmsextractor/[>=2.0.0,<3.0.0]@aquaveo/testing")
 
     def build(self):
         cmake = CMake(self)

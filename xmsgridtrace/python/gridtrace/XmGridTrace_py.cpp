@@ -29,7 +29,7 @@ void initXmGridTrace(py::module &m) {
         assigned to either the points or to the cells.
     )pydoc";
     py::class_<xms::XmGridTrace, boost::shared_ptr<xms::XmGridTrace>> gridtrace(
-      m, "XmGridTrace", XmGridTrace_doc);
+      m, "GridTrace", XmGridTrace_doc);
     gridtrace.def(py::init([](boost::shared_ptr<xms::XmUGrid> ugrid) {
             return boost::shared_ptr<xms::XmGridTrace>(xms::XmGridTrace::New(
               ugrid));

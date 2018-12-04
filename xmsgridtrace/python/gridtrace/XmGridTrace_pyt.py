@@ -1,21 +1,21 @@
-"""Test XmUGrid2dDataExtractor_py.cpp"""
+"""Test UGrid2dDataExtractor.cpp"""
 import unittest
-import xmsgridtrace_py
-from xmsgrid_py.ugrid import XmUGrid
-from xmsgridtrace_py.gridtrace import XmGridTrace
-from xmsgridtrace_py.gridtrace import data_location_enum
+import xmsgridtrace
+from xmsgrid.ugrid import UGrid
+from xmsgridtrace.gridtrace import GridTrace
+from xmsgridtrace.gridtrace import data_location_enum
 import numpy as np
 
-class TestXmGridTrace(unittest.TestCase):
-    """XmGridTrace tests"""
+class TestGridTrace(unittest.TestCase):
+    """GridTrace tests"""
     def create_default_single_cell(self):
         """Create a default single cell"""
         points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
-        cells = [XmUGrid.xmugrid_celltype_enum.XMU_TRIANGLE, 3, 0, 1, 2,
-                 XmUGrid.xmugrid_celltype_enum.XMU_TRIANGLE, 3, 2, 3, 0]
-        ugrid = XmUGrid(points, cells)
-        tracer = XmGridTrace(ugrid)
-        self.assertIsInstance(tracer,XmGridTrace)
+        cells = [UGrid.ugrid_celltype_enum.TRIANGLE, 3, 0, 1, 2,
+                 UGrid.ugrid_celltype_enum.TRIANGLE, 3, 2, 3, 0]
+        ugrid = UGrid(points, cells)
+        tracer = GridTrace(ugrid)
+        self.assertIsInstance(tracer,GridTrace)
         tracer.set_vector_multiplier(1)
         tracer.set_max_tracing_time(100)
         tracer.set_max_tracing_distance(100)
@@ -31,10 +31,10 @@ class TestXmGridTrace(unittest.TestCase):
     def create_default_two_cell(self):
         """Create a default two cell"""
         points = [ ( 0, 0, 0 ),( 1, 0, 0 ),( 1, 1, 0 ),( 0, 1, 0 ),( 2, 0, 0 ),( 2, 1, 0 ) ]
-        cells = [ XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 0, 1, 2, 3, XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 1, 4, 5, 2 ]
-        ugrid = XmUGrid(points,cells)
-        tracer = XmGridTrace(ugrid)
-        self.assertIsInstance(tracer,XmGridTrace)
+        cells = [ UGrid.ugrid_celltype_enum.QUAD, 4, 0, 1, 2, 3, UGrid.ugrid_celltype_enum.QUAD, 4, 1, 4, 5, 2 ]
+        ugrid = UGrid(points,cells)
+        tracer = GridTrace(ugrid)
+        self.assertIsInstance(tracer,GridTrace)
         tracer.set_vector_multiplier(1)
         tracer.set_max_tracing_time(100)
         tracer.set_max_tracing_distance(100)
@@ -513,16 +513,16 @@ class TestXmGridTrace(unittest.TestCase):
         points = [ ( 0, 0, 0 ),( 1, 0, 0 ),( 2, 0, 0 ),
       ( 0, 1, 0 ),( 1, 1, 0 ),( 2, 1, 0 ),
       ( 0, 2, 0 ),( 1, 2, 0 ),( 2, 2, 0 )]
-        cells = [XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 0, 1, 4, 3,
-                XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 1, 2, 5, 4,
-                XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 3, 4, 7, 6,
-                XmUGrid.xmugrid_celltype_enum.XMU_QUAD, 4, 4, 5, 8, 7]
-        ugrid = XmUGrid(points, cells)
+        cells = [UGrid.ugrid_celltype_enum.QUAD, 4, 0, 1, 4, 3,
+                UGrid.ugrid_celltype_enum.QUAD, 4, 1, 2, 5, 4,
+                UGrid.ugrid_celltype_enum.QUAD, 4, 3, 4, 7, 6,
+                UGrid.ugrid_celltype_enum.QUAD, 4, 4, 5, 8, 7]
+        ugrid = UGrid(points, cells)
         # Step 2: Create the tracer from the grid
-        tracer = XmGridTrace(ugrid)
+        tracer = GridTrace(ugrid)
 
         # Step 3: Set up the constraints on the tracer
-        self.assertIsInstance(tracer,XmGridTrace)
+        self.assertIsInstance(tracer,GridTrace)
         tracer.set_vector_multiplier(2)
         tracer.set_max_tracing_time(-1)
         tracer.set_max_tracing_distance(-1)
