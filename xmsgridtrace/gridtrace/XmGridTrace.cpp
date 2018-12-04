@@ -1443,7 +1443,7 @@ void XmGridTraceUnitTests::testTutorial()
   // Step 5: Trace the point
   tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
   // show the cause for termination by calling GetExitMessage
-  std::cout << tracer->GetExitMessage();
+  // std::cout << tracer->GetExitMessage();
 
   // Expected values for this simulation
   VecPt3d expectedOutTrace = {{0.50000000000000000, 0.50000000000000000, 0.00000000000000000},
