@@ -16,13 +16,13 @@ class TestGridTrace(unittest.TestCase):
         ugrid = UGrid(points, cells)
         tracer = GridTrace(ugrid)
         self.assertIsInstance(tracer,GridTrace)
-        tracer.set_vector_multiplier(1)
-        tracer.set_max_tracing_time(100)
-        tracer.set_max_tracing_distance(100)
-        tracer.set_min_delta_time(.1)
-        tracer.set_max_change_distance(100)
-        tracer.set_max_change_velocity(100)
-        tracer.set_max_change_direction_in_radians(1.5*np.pi)
+        tracer.vector_multiplier = 1
+        tracer.max_tracing_time = 100
+        tracer.max_tracing_distance = 100
+        tracer.min_delta_time = .1
+        tracer.max_change_distance = 100
+        tracer.max_change_velocity = 100
+        tracer.max_change_direction_in_radians = 1.5*np.pi
         scalars = [(1,1,0),(1,1,0),(1,1,0),(1,1,0)]
         point_activity = [True]*4
         tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
@@ -35,13 +35,13 @@ class TestGridTrace(unittest.TestCase):
         ugrid = UGrid(points,cells)
         tracer = GridTrace(ugrid)
         self.assertIsInstance(tracer,GridTrace)
-        tracer.set_vector_multiplier(1)
-        tracer.set_max_tracing_time(100)
-        tracer.set_max_tracing_distance(100)
-        tracer.set_min_delta_time(.1)
-        tracer.set_max_change_distance(100)
-        tracer.set_max_change_velocity(100)
-        tracer.set_max_change_direction_in_radians(1.5*np.pi)
+        tracer.vector_multiplier = 1
+        tracer.max_tracing_time = 100
+        tracer.max_tracing_distance = 100
+        tracer.min_delta_time = .1
+        tracer.max_change_distance = 100
+        tracer.max_change_velocity = 100
+        tracer.max_change_direction_in_radians = 1.5*np.pi
         scalars = [ ( .1,0,0 ),( .2,0,0 ) ]
         point_activity = [True]*2
         tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_CELLS,point_activity,data_location_enum.LOC_CELLS,0)
@@ -62,7 +62,7 @@ class TestGridTrace(unittest.TestCase):
         """test max change distance functionality"""
         tracer=self.create_default_single_cell()
         start_time=.5
-        tracer.set_max_change_distance(.25)
+        tracer.max_change_distance = .25
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
 
@@ -77,7 +77,7 @@ class TestGridTrace(unittest.TestCase):
         """test functionality with small scalars"""
         tracer=self.create_default_single_cell()
         start_time=.5
-        tracer.set_max_change_distance(.25)
+        tracer.max_change_distance = .25
         scalars = [(.1,.1,0),(.1,.1,0),(.1,.1,0),(.1,.1,0)]
         point_activity = [True]*4
         tracer.add_grid_scalars_at_time(scalars,data_location_enum.LOC_POINTS,point_activity,data_location_enum.LOC_POINTS,0)
@@ -96,8 +96,8 @@ class TestGridTrace(unittest.TestCase):
     def test_strong_direction_change(self):
         """test functionality with strong changes in direction"""
         tracer=self.create_default_single_cell()
-        tracer.set_max_change_direction_in_radians(np.pi*.2)
-        tracer.set_min_delta_time(-1)
+        tracer.max_change_direction_in_radians = np.pi*.2
+        tracer.min_delta_time = -1
         start_time=.5
 
         scalars = [(0,1,0),(-1,0,0),(0,-1,0),(1,0,0)]
@@ -178,9 +178,9 @@ class TestGridTrace(unittest.TestCase):
     def test_max_tracing_time(self):
         """test functionality of max tracing time"""
         tracer=self.create_default_single_cell()
-        tracer.set_max_change_direction_in_radians(np.pi*.2)
-        tracer.set_min_delta_time(-1)
-        tracer.set_max_tracing_time(5)
+        tracer.max_change_direction_in_radians = np.pi*.2
+        tracer.min_delta_time = -1
+        tracer.max_tracing_time = 5
 
         start_time=.5
         scalars = [(0,1,0),(-1,0,0),(0,-1,0),(1,0,0)]
@@ -231,9 +231,9 @@ class TestGridTrace(unittest.TestCase):
     def test_max_tracing_distance(self):
         """test functionality of max tracing distance"""
         tracer=self.create_default_single_cell()
-        tracer.set_max_change_direction_in_radians(np.pi*.2)
-        tracer.set_min_delta_time(-1)
-        tracer.set_max_tracing_distance(1.0)
+        tracer.max_change_direction_in_radians = np.pi*.2
+        tracer.min_delta_time = -1
+        tracer.max_tracing_distance = 1.0
         start_time=.5
 
         scalars = [(0,1,0),(-1,0,0),(0,-1,0),(1,0,0)]
@@ -301,9 +301,9 @@ class TestGridTrace(unittest.TestCase):
     def test_vector_multiplier(self):
         """test functionality of vector multiplier"""
         tracer=self.create_default_single_cell()
-        tracer.set_max_change_direction_in_radians(np.pi*.2)
-        tracer.set_min_delta_time(-1)
-        tracer.set_vector_multiplier(0.5)
+        tracer.max_change_direction_in_radians = np.pi*.2
+        tracer.min_delta_time = -1
+        tracer.vector_multiplier = 0.5
         start_time=.5
 
         scalars = [(0,1,0),(-1,0,0),(0,-1,0),(1,0,0)]
@@ -377,8 +377,8 @@ class TestGridTrace(unittest.TestCase):
     def test_max_change_velocity(self):
         """test functionality of max change in velocity"""
         tracer=self.create_default_two_cell()
-        tracer.set_max_change_velocity(.01)
-        tracer.set_min_delta_time(.001)
+        tracer.max_change_velocity = .01
+        tracer.min_delta_time = .001
         start_time=0
 
         result_tuple = tracer.trace_point((.5,.5,0),start_time)
@@ -523,13 +523,13 @@ class TestGridTrace(unittest.TestCase):
 
         # Step 3: Set up the constraints on the tracer
         self.assertIsInstance(tracer,GridTrace)
-        tracer.set_vector_multiplier(2)
-        tracer.set_max_tracing_time(-1)
-        tracer.set_max_tracing_distance(-1)
-        tracer.set_min_delta_time(.01)
-        tracer.set_max_change_distance(-1)
-        tracer.set_max_change_velocity(-1)
-        tracer.set_max_change_direction_in_radians(.25*np.pi)
+        tracer.vector_multiplier = 2
+        tracer.max_tracing_time = -1
+        tracer.max_tracing_distance = -1
+        tracer.min_delta_time = .01
+        tracer.max_change_distance = -1
+        tracer.max_change_velocity = -1
+        tracer.max_change_direction_in_radians = .25*np.pi
         # Step 4: Set up the velocity vectors for both time steps. Insert timesteps sequentially
         # For this case Scalars are set such that they circle around the edge of the graph in a clockwise direction
         # Z component is not used in scalars
