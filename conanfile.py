@@ -132,6 +132,6 @@ class XmsgridtraceConan(ConanFile):
     def package_info(self):
         self.env_info.PYTHONPATH.append(os.path.join(self.package_folder, "site-packages"))
         if self.settings.build_type == 'Debug':
-            self.cpp_info.libs = ["xmsgridtrace_d"]
+            self.cpp_info.libs = ["xmsgridtracelib_d"]
         else:
-            self.cpp_info.libs = ["xmsgridtrace"]
+            self.cpp_info.libs = ["xmsgridtracelib"]

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1.2)
 cmake_policy(SET CMP0015 NEW) # Link Directory Pathing
 set(CMAKE_DEBUG_POSTFIX _d)
 
-project(xmsgridtrace C CXX)
+project(xmsgridtracelib C CXX)
 
 if (APPLE)  
   set(CMAKE_POSITION_INDEPENDENT_CODE False)
@@ -145,26 +145,26 @@ endif()
 
 #Pybind11
 if(IS_PYTHON_BUILD)
-    pybind11_add_module(xmsgridtrace_py
+    pybind11_add_module(xmsgridtrace
       ${xmsgridtrace_py} ${xmsgridtrace_py_headers}
     )
-    target_include_directories(xmsgridtrace_py
+    target_include_directories(xmsgridtrace
       PRIVATE
           ${EXT_LIBS}
           ${PYTHON_INCLUDE_DIRS}
     )
-    target_link_libraries(xmsgridtrace_py
+    target_link_libraries(xmsgridtrace
     PRIVATE
       ${EXT_LIBS}
       ${PROJECT_NAME}
   )
-    set_target_properties(xmsgridtrace_py PROPERTIES
+    set_target_properties(xmsgridtrace PROPERTIES
     LINKER_LANGUAGE CXX
   )
 
   # Install recipe
   install(
-      TARGETS xmsgridtrace_py
+      TARGETS xmsgridtrace
       ARCHIVE DESTINATION "site-packages"
       LIBRARY DESTINATION "site-packages"
   )
