@@ -1,6 +1,6 @@
-***********
-XmGridtrace
-***********
+*********
+Gridtrace
+*********
 
-.. autoclass:: xmsgridtrace_py.gridtrace.XmGridTrace
+.. autoclass:: xmsgridtrace.gridtrace.GridTrace
    :members:

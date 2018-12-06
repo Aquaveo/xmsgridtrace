@@ -2,17 +2,17 @@
 Modules
 *******
 
-**Last Update:** October 5, 2018
+**Last Update:** December 5, 2018
 
 These are the modules currently exposed to python from the xmsinterp library
 
 GridTrace
 =========
 
-.. automodule:: xmsgridtrace_py.gridtrace
+.. automodule:: xmsgridtrace.gridtrace
 
 
 .. toctree::
    :maxdepth: 1
    
-   modules/gridtrace/XmGridTrace
+   modules/gridtrace/GridTrace
