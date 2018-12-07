@@ -75,7 +75,7 @@ class XmsgridtraceConan(ConanFile):
         self.requires("xmscore/[>=2.0.1,<3.0.0]@aquaveo/stable")
         self.requires("xmsinterp/[>=2.0.0,<3.0.]@aquaveo/stable")
         self.requires("xmsgrid/[>=2.0.0,<3.0.0]@aquaveo/stable")
-        self.requires("xmsextractor/[>=2.0.0,<3.0.0]@aquaveo/testing")
+        self.requires("xmsextractor/[>=2.0.0,<3.0.0]@aquaveo/stable")
 
     def build(self):
         cmake = CMake(self)
