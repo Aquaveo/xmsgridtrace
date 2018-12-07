@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Gridtrace &mdash; XmsGridTrace Library  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> XmsGridTrace Library
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">XmsGridTrace Library</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+      <li>Gridtrace</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/modules/gridtrace/XmGridTrace.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="gridtrace">
+<h1>Gridtrace<a class="headerlink" href="#gridtrace" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="xmsgridtrace.gridtrace.GridTrace">
+<em class="property">class </em><code class="descclassname">xmsgridtrace.gridtrace.</code><code class="descname">GridTrace</code><a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class in which the flow trace of a point between 2 velocity vector time 
+steps on an XmGrid is calculated and the velocity vectors can be 
+assigned to either the points or to the cells.</p>
+<dl class="method">
+<dt id="xmsgridtrace.gridtrace.GridTrace.add_grid_scalars_at_time">
+<code class="descname">add_grid_scalars_at_time</code><span class="sig-paren">(</span><em>self: xmsgridtrace.gridtrace.GridTrace</em>, <em>scalars: iterable</em>, <em>scalar_loc: unicode</em>, <em>cell_activity: iterable</em>, <em>activity_loc: unicode</em>, <em>time: float</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.add_grid_scalars_at_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assigns velocity vectors to each point or cell for a time step,
+keeping the previous step, and dropping the one before that
+for a maximum of two time steps.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><p class="first">scalars (iterable): The velocity vectors.</p>
+<p>scalar_loc (string): Whether the vectors are assigned to cells or points.</p>
+<p>cell_activity (iterable): Whether each cell or point is active.</p>
+<p>activity_loc (string): Whether the activities are assigned to cells or points.</p>
+<p class="last">time (float): The time of the scalars.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xmsgridtrace.gridtrace.GridTrace.get_exit_message">
+<code class="descname">get_exit_message</code><span class="sig-paren">(</span><em>self: xmsgridtrace.gridtrace.GridTrace</em><span class="sig-paren">)</span> &#x2192; unicode<a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.get_exit_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a message describing what caused trace to exit.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>str: The exit message of the last TracePoint operation.</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="xmsgridtrace.gridtrace.GridTrace.max_change_direction_in_radians">
+<code class="descname">max_change_direction_in_radians</code><a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.max_change_direction_in_radians" title="Permalink to this definition">¶</a></dt>
+<dd><p>The max change direction in radians.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="xmsgridtrace.gridtrace.GridTrace.max_change_distance">
+<code class="descname">max_change_distance</code><a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.max_change_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>The max change distance.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="xmsgridtrace.gridtrace.GridTrace.max_change_velocity">
+<code class="descname">max_change_velocity</code><a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.max_change_velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>The max change velocity.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="xmsgridtrace.gridtrace.GridTrace.max_tracing_distance">
+<code class="descname">max_tracing_distance</code><a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.max_tracing_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>The max tracing distance.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="xmsgridtrace.gridtrace.GridTrace.max_tracing_time">
+<code class="descname">max_tracing_time</code><a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.max_tracing_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>The max tracing time.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="xmsgridtrace.gridtrace.GridTrace.min_delta_time">
+<code class="descname">min_delta_time</code><a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.min_delta_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>The min delta time.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xmsgridtrace.gridtrace.GridTrace.trace_point">
+<code class="descname">trace_point</code><span class="sig-paren">(</span><em>self: xmsgridtrace.gridtrace.GridTrace</em>, <em>pt: iterable</em>, <em>pt_time: float</em><span class="sig-paren">)</span> &#x2192; iterable<a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.trace_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the Grid Trace for a point.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><p class="first">pt (iterable): The starting point of the trace.</p>
+<p class="last">pt_time (float): The starting time of the trace.</p>
+</dd>
+<dt>Returns:</dt>
+<dd>iterable: Contains the resultant positions at each step and the resultant times at each step.</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="xmsgridtrace.gridtrace.GridTrace.vector_multiplier">
+<code class="descname">vector_multiplier</code><a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.vector_multiplier" title="Permalink to this definition">¶</a></dt>
+<dd><p>The vector multiplier.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, aquaveo
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

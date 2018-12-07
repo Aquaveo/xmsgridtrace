@@ -1,6 +1,9 @@
 var searchData=
 [
-  ['nodalfunc_2ecpp',['NodalFunc.cpp',['https://aquaveo.github.io/xmsinterp/_nodal_func_8cpp.html',1,'']]],
-  ['nodalfunc_2eh',['NodalFunc.h',['https://aquaveo.github.io/xmsinterp/_nodal_func_8h.html',1,'']]],
-  ['nodalfunc_2et_2eh',['NodalFunc.t.h',['https://aquaveo.github.io/xmsinterp/_nodal_func_8t_8h.html',1,'']]]
+  ['map_2eh',['map.h',['https://aquaveo.github.io/xmscore/map_8h.html',1,'']]],
+  ['math_2ecpp',['math.cpp',['https://aquaveo.github.io/xmscore/math_8cpp.html',1,'']]],
+  ['math_2eh',['math.h',['https://aquaveo.github.io/xmscore/math_8h.html',1,'']]],
+  ['math_2et_2eh',['math.t.h',['https://aquaveo.github.io/xmscore/math_8t_8h.html',1,'']]],
+  ['matrix_2ecpp',['matrix.cpp',['https://aquaveo.github.io/xmsinterp/matrix_8cpp.html',1,'']]],
+  ['matrix_2eh',['matrix.h',['https://aquaveo.github.io/xmsinterp/matrix_8h.html',1,'']]]
 ];
