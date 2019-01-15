@@ -61,10 +61,10 @@ def create_hv_objects_from_ugrid(_ug, _projection=None):
 
     else:
       # Polygons
-      r_polygons = gv.Polygons(polygons, crs=_projection)
+      r_polygons = gv.Polygons(polygons, crs=_projection).options(alpha=.25)
               
       # Lines
-      r_lines = gv.Path(lines, crs=_projection).options(line_color='red')
+      r_lines = gv.Path(lines, crs=_projection).options(line_color='red', line_width=.5)
       
       # Points
       r_points = gv.Points(points, crs=_projection).options(color='black', size=1.5)
@@ -72,17 +72,22 @@ def create_hv_objects_from_ugrid(_ug, _projection=None):
       
     return r_polygons, r_lines, r_points
 
-def hv_vector_field_from_2_timesteps(s1, s2, pts):
+def hv_vector_field_from_2_timesteps(s1, pts, _projection=None):
     x0, y0, _ = zip(*s1)
-    x1, y1, _ = zip(*s2)
-    mag = [math.sqrt(abs((x1[i] - x0[i]) + (y1[i] - y0[i]))) for i in range(len(s1))]
-    angle = [math.atan2((y1[i] - y0[i]), (x1[i] - x0[i])) for i in range(len(s1))]
+    mag = [math.sqrt(pow((x0[i]), 2) + pow((y0[i]), 2)) for i in range(len(s1))]
+    angle = [math.atan2(y0[i], x0[i]) 
+             for i in range(len(s1))]
     xs, ys, _ = zip(*pts)
-    overlay = hv.VectorField((xs, ys, angle, mag))
-    return overlay.opts(
-      hv.opts.VectorField(line_width=1.5, color='red', magnitude=hv.dim('Magnitude').norm()*0.2, pivot='tail')
-    )
-
-
+    if not _projection:
+        overlay = hv.VectorField((xs, ys, angle, mag))
+        return overlay.opts(
+          hv.opts.VectorField(line_width=1.5, color='red', magnitude=hv.dim('Magnitude').norm()*0.2, pivot='tail')
+        )
+    else:
+        overlay = gv.VectorField((xs, ys, angle, mag), crs=_projection)
+        return overlay.opts(
+          gv.opts.VectorField(line_width=1.5, color='red', magnitude=hv.dim('Magnitude').norm()*0.2, pivot='tail')
+        )
+        
 
 
