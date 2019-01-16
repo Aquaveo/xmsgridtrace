@@ -9,7 +9,7 @@ from conans.errors import ConanException
 class XmsgridtraceConan(ConanFile):
     """XMSGridtrace Conanfile"""
     name = "xmsgridtrace"
-    version = None
+    # version = None  # This no longer worked after conan version 1.11
     license = "XMSNG Software License"
     url = "https://github.com/Aquaveo/xmsgridtrace"
     description = "Grid library for XMS products"
