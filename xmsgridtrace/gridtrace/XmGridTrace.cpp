@@ -95,25 +95,25 @@ private:
                                   xms::Pt3d& a_data) const;
 
   BSHP<XmUGrid> m_ugrid;                ///< UGrid for the TracePoint operation
-  double m_vectorMultiplier;            ///< multiplier for all vectors in grid
-  double m_maxTracingTime;              ///< maximum time for trace
-  double m_maxTracingDistance;          ///< maximum distance for trace
-  double m_minDeltaTime;                ///< minimum time per trace step
-  double m_maxChangeDistance;           ///< maximum distance per trace step
-  double m_maxChangeVelocity;           ///< maximum change in velocity per trace step
-  double m_maxChangeDirectionInRadians; ///< maxmium change in direction per trace step
+  double m_vectorMultiplier=1;          ///< multiplier for all vectors in grid
+  double m_maxTracingTime=-1;           ///< maximum time for trace
+  double m_maxTracingDistance=-1;       ///< maximum distance for trace
+  double m_minDeltaTime=1;              ///< minimum time per trace step
+  double m_maxChangeDistance=-1;        ///< maximum distance per trace step
+  double m_maxChangeVelocity=-1;        ///< maximum change in velocity per trace step
+  double m_maxChangeDirectionInRadians=XM_PI/4; ///< maxmium change in direction per trace step
 
-  BSHP<XmUGrid2dDataExtractor>
-    m_extractor1x; ///< data extractor for the x component for the first time step
-  BSHP<XmUGrid2dDataExtractor>
-    m_extractor1y; ///< data extractor for the y component for the first time step
-  double m_time1;  ///< time of the first time step
-  BSHP<XmUGrid2dDataExtractor>
-    m_extractor2x; ///< data extractor for the x component for the second time step
-  BSHP<XmUGrid2dDataExtractor>
-    m_extractor2y;       ///< data extractor for the y component for the second time step
-  double m_time2;        ///< time of the second time step
-  double m_distTraveled; ///< distance traveled in the last TracePoint operation
+  /// data extractor for the x component for the first time step
+  BSHP<XmUGrid2dDataExtractor> m_extractor1x;
+  /// data extractor for the y component for the first time step
+  BSHP<XmUGrid2dDataExtractor> m_extractor1y;
+  double m_time1=-1;  ///< time of the first time step
+  /// data extractor for the x component for the second time step
+  BSHP<XmUGrid2dDataExtractor> m_extractor2x;
+  /// data extractor for the y component for the second time step
+  BSHP<XmUGrid2dDataExtractor> m_extractor2y;
+  double m_time2=-1;        ///< time of the second time step
+  double m_distTraveled=0; ///< distance traveled in the last TracePoint operation
 
   std::string m_exitMessage; ///< exit message for the last TracePoint operation
 protected:
@@ -469,7 +469,7 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt,
     {
       double segDist = Mdist(pt0.x, pt0.y, pt1.x, pt1.y);
       m_distTraveled += segDist;
-      if (m_maxTracingDistance != -1 && m_distTraveled > m_maxTracingDistance)
+      if (m_maxTracingDistance > 0 && m_distTraveled > m_maxTracingDistance)
       {
         // because our last point exceeded the exitDistance
         // find this point by linear calculations
