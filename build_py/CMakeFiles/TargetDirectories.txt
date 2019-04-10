@@ -1,5 +1,0 @@
-C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/INSTALL.dir
-C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/xmsgridtrace.dir
-C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/xmsgridtrace_py.dir
-C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/ALL_BUILD.dir
-C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/build_py/CMakeFiles/ZERO_CHECK.dir
