@@ -2,7 +2,7 @@
 <tagfile>
   <compound kind="file">
     <name>XmGridTrace.cpp</name>
-    <path>C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/xmsgridtrace/gridtrace/</path>
+    <path>C:/Code/ERDC/xmsgridtrace/xmsgridtrace/gridtrace/</path>
     <filename>_xm_grid_trace_8cpp</filename>
     <includes id="_xm_grid_trace_8h" name="XmGridTrace.h" local="no" imported="no">xmsgridtrace/gridtrace/XmGridTrace.h</includes>
     <includes id="_xm_grid_trace_8t_8h" name="XmGridTrace.t.h" local="no" imported="no">xmsgridtrace/gridtrace/XmGridTrace.t.h</includes>
@@ -122,14 +122,14 @@
   </compound>
   <compound kind="file">
     <name>XmGridTrace.h</name>
-    <path>C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/xmsgridtrace/gridtrace/</path>
+    <path>C:/Code/ERDC/xmsgridtrace/xmsgridtrace/gridtrace/</path>
     <filename>_xm_grid_trace_8h</filename>
     <class kind="class">xms::XmGridTrace</class>
     <namespace>xms</namespace>
   </compound>
   <compound kind="file">
     <name>XmGridTrace.t.h</name>
-    <path>C:/Users/ckingsbury/Documents/GitHub/xmsgridtrace/xmsgridtrace/gridtrace/</path>
+    <path>C:/Code/ERDC/xmsgridtrace/xmsgridtrace/gridtrace/</path>
     <filename>_xm_grid_trace_8t_8h</filename>
     <class kind="class">XmGridTraceUnitTests</class>
   </compound>
