@@ -7,28 +7,43 @@
 XmsGridTrace |version|
 **********************
 
-**Last Updated:** December 5, 2018
+**Last Updated:** April 10, 2019
 
-The xmsgridtrace library is a grid trace library for other aquaveo products. This library contains classes used to perform calculations on a grid.
+The xmsgridtrace library is a grid trace library for other aquaveo products. This library
+contains classes used to perform calculations on a grid.
 
-Contents
+Examples
 ========
+
+The examples for this library can be found in the
+examples folder in the `github repository <https://github.com/Aquaveo/xmsgridtrace>`_
+
+Index
+=====
+
+**Getting Started**
+
+* :doc:`getting_started`
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Getting Started
+
+   getting_started.rst
+
+**User Interface**
+
+* :doc:`modules/gridtrace/GridTrace`
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
+   :caption: User Interface
 
-   gettingstarted
-   modules
+   modules/gridtrace/GridTrace.rst
 
 Acknowledgements
 ================
 
 This library is from work done by aquaveo developers to support other aquaveo libraries.
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
