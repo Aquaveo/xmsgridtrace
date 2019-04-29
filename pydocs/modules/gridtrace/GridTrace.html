@@ -17,32 +17,35 @@
   
 
   
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" /> 
-
-  
-  <script src="../../_static/js/modernizr.min.js"></script>
-
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="Installation" href="../../getting_started.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -56,7 +59,7 @@
             
             
               <div class="version">
-                2.0.0
+                2.0.2
               </div>
             
           
@@ -80,9 +83,14 @@
               
             
             
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../gettingstarted.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html#usage">Usage</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Interface</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Gridtrace</a></li>
 </ul>
 
             
@@ -134,7 +142,7 @@
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="../../_sources/modules/gridtrace/XmGridTrace.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../../_sources/modules/gridtrace/GridTrace.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -152,8 +160,8 @@
 <dl class="class">
 <dt id="xmsgridtrace.gridtrace.GridTrace">
 <em class="property">class </em><code class="descclassname">xmsgridtrace.gridtrace.</code><code class="descname">GridTrace</code><a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Class in which the flow trace of a point between 2 velocity vector time 
-steps on an XmGrid is calculated and the velocity vectors can be 
+<dd><p>Class in which the flow trace of a point between 2 velocity vector time
+steps on an XmGrid is calculated and the velocity vectors can be
 assigned to either the points or to the cells.</p>
 <dl class="method">
 <dt id="xmsgridtrace.gridtrace.GridTrace.add_grid_scalars_at_time">
@@ -161,25 +169,37 @@ assigned to either the points or to the cells.</p>
 <dd><p>Assigns velocity vectors to each point or cell for a time step,
 keeping the previous step, and dropping the one before that
 for a maximum of two time steps.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><p class="first">scalars (iterable): The velocity vectors.</p>
-<p>scalar_loc (string): Whether the vectors are assigned to cells or points.</p>
-<p>cell_activity (iterable): Whether each cell or point is active.</p>
-<p>activity_loc (string): Whether the activities are assigned to cells or points.</p>
-<p class="last">time (float): The time of the scalars.</p>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>scalars</strong> (<em>iterable</em>) – The velocity vectors.</li>
+<li><strong>scalar_loc</strong> (<em>string</em>) – Whether the vectors are assigned to cells or points.</li>
+<li><strong>cell_activity</strong> (<em>iterable</em>) – Whether each cell or point is active.</li>
+<li><strong>activity_loc</strong> (<em>string</em>) – Whether the activities are assigned to cells or points.</li>
+<li><strong>time</strong> (<em>float</em>) – The time of the scalars.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="xmsgridtrace.gridtrace.GridTrace.get_exit_message">
 <code class="descname">get_exit_message</code><span class="sig-paren">(</span><em>self: xmsgridtrace.gridtrace.GridTrace</em><span class="sig-paren">)</span> &#x2192; unicode<a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.get_exit_message" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a message describing what caused trace to exit.</p>
-<dl class="docutils">
-<dt>Returns:</dt>
-<dd>str: The exit message of the last TracePoint operation.</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The exit message of the last TracePoint operation.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -222,14 +242,24 @@ for a maximum of two time steps.</p>
 <dt id="xmsgridtrace.gridtrace.GridTrace.trace_point">
 <code class="descname">trace_point</code><span class="sig-paren">(</span><em>self: xmsgridtrace.gridtrace.GridTrace</em>, <em>pt: iterable</em>, <em>pt_time: float</em><span class="sig-paren">)</span> &#x2192; iterable<a class="headerlink" href="#xmsgridtrace.gridtrace.GridTrace.trace_point" title="Permalink to this definition">¶</a></dt>
 <dd><p>Runs the Grid Trace for a point.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><p class="first">pt (iterable): The starting point of the trace.</p>
-<p class="last">pt_time (float): The starting time of the trace.</p>
-</dd>
-<dt>Returns:</dt>
-<dd>iterable: Contains the resultant positions at each step and the resultant times at each step.</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pt</strong> (<em>iterable</em>) – The starting point of the trace.</li>
+<li><strong>pt_time</strong> (<em>float</em>) – The starting time of the trace.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Contains the resultant positions at each step and the resultant times at each step.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">iterable</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -247,6 +277,13 @@ for a maximum of two time steps.</p>
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="../../getting_started.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -270,25 +307,16 @@ for a maximum of two time steps.</p>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../_static/doctools.js"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

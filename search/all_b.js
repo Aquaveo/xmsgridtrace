@@ -2,7 +2,7 @@ var searchData=
 [
   ['lineparameters',['LineParameters',['https://aquaveo.github.io/xmsinterp/structxms_1_1_line_parameters.html',1,'xms::LineParameters'],['https://aquaveo.github.io/xmsinterp/structxms_1_1_line_parameters.html#a7e915686586e522bed5f9f964e72a6cb',1,'xms::LineParameters::LineParameters()']]],
   ['list_2eh',['list.h',['https://aquaveo.github.io/xmscore/list_8h.html',1,'']]],
-  ['localindex',['LocalIndex',['https://aquaveo.github.io/xmsinterp/classxms_1_1_tr_tin_impl.html#ac60ab20aba505a86b7eaca1a6935f540',1,'xms::TrTinImpl']]],
+  ['localindex',['LocalIndex',['https://aquaveo.github.io/xmsinterp/classxms_1_1_tr_tin_impl.html#ac60ab20aba505a86b7eaca1a6935f540',1,'xms::TrTinImpl::LocalIndex(int a_tri, int a_pt) const override'],['https://aquaveo.github.io/xmsgrid/classxms_1_1_tr_tin_impl.html#ac60ab20aba505a86b7eaca1a6935f540',1,'xms::TrTinImpl::LocalIndex(int a_tri, int a_pt) const override']]],
   ['log',['Log',['https://aquaveo.github.io/xmscore/classxms_1_1_xm_log.html#a82db042ede308de7f85b0b55b8eb3587',1,'xms::XmLog']]],
   ['logfilename',['LogFilename',['https://aquaveo.github.io/xmscore/classxms_1_1_xm_log.html#a8a9ac073794a7d8919c088de774811d5',1,'xms::XmLog']]],
   ['logfilenamecallback',['LogFilenameCallback',['https://aquaveo.github.io/xmscore/classxms_1_1_xm_log.html#ab3d175834a2ed9bff301cbf304f89f47',1,'xms::XmLog']]],

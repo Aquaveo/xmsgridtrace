@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['mapedges',['MapEdges',['https://aquaveo.github.io/xmsinterp/classxms_1_1_interp_nat_neigh_impl.html#a1e9f040080051c5ff390579d0b127308',1,'xms::InterpNatNeighImpl']]]
+  ['box',['box',['https://aquaveo.github.io/xmsgrid/namespacexms.html#af3aa99ee2ee766e1f9c1480f8f4fa2f8',1,'xms']]]
 ];
