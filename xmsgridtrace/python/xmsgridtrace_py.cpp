@@ -19,7 +19,7 @@ namespace py = pybind11;
 
 
 //------ Primary Module --------------------------------------------------------
-PYBIND11_MODULE(xmsgridtrace, m) {
+PYBIND11_MODULE(_xmsgridtrace, m) {
     m.doc() = "Python bindings for xmsgridtrace"; // optional module docstring
     m.attr("__version__") = XMS_VERSION;
 

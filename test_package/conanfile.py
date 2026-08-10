@@ -1,29 +1,26 @@
-from conans import ConanFile, CMake, tools
 import os
 
+from conan import ConanFile
+from conan.tools.cmake import CMake, cmake_layout
+from conan.tools.build import can_run
 
-class XmsextractorTestConan(ConanFile):
+
+class XmsgridtraceTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    generators = "cmake"
+    generators = "CMakeDeps", "CMakeToolchain"
+
+    def requirements(self):
+        self.requires(self.tested_reference_str)
 
     def build(self):
         cmake = CMake(self)
-        # Current dir is "test_package/build/<build_id>" and CMakeLists.txt is in "test_package"
-        print('TEST PACKAGE CURRENT WORKING DIRECTORY: {}'.format(os.getcwd()))
         cmake.configure()
         cmake.build()
 
-    def imports(self):
-        self.copy("*.dll", dst="bin", src="bin")
-        self.copy("*.dylib*", dst="bin", src="lib")
-        self.copy('*.so*', dst='bin', src='lib')
+    def layout(self):
+        cmake_layout(self)
 
     def test(self):
-        # Run tests only for x86_64 builds
-        if not tools.cross_building(self.settings):
-            os.chdir("bin")
-            self.run(".%sexample" % os.sep)
-        else:
-            print("Cross Building: Skipping tests.")
-            print(self.settings.arch.value)
-            print(self.settings.build_type.value)
+        if can_run(self):
+            cmd = os.path.join(self.cpp.build.bindir, "example")
+            self.run(cmd, env="conanrun")

@@ -25,8 +25,8 @@ copyright = '2018, aquaveo'
 author = 'aquaveo'
 
 # The short X.Y version
-import xmsgridtrace
-version = xmsgridtrace.__version__
+from xms.gridtrace import __version__
+version = __version__
 # The full version, including alpha/beta/rc tags
 release = ''
 
