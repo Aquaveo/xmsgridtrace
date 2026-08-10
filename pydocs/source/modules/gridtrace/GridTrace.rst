@@ -2,5 +2,5 @@
 Gridtrace
 *********
 
-.. autoclass:: xmsgridtrace.gridtrace.GridTrace
+.. autoclass:: xms.gridtrace.GridTrace
    :members:

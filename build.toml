@@ -1,0 +1,37 @@
+library_name = "xmsgridtrace"
+description = "Grid tracing library for XMS products"
+ci_type = "github"
+
+xms_dependencies = [
+    { name = "xmscore", version = "7.0.8" },
+    { name = "xmsgrid", version = "9.0.9" },
+    { name = "xmsinterp", version = "7.0.8" },
+    { name = "xmsextractor", version = "10.0.6" },
+]
+
+python_namespaced_dir = "gridtrace"
+
+library_sources = [
+    "xmsgridtrace/gridtrace/XmGridTrace.cpp",
+]
+
+library_headers = [
+    "xmsgridtrace/gridtrace/XmGridTrace.h",
+]
+
+testing_headers = [
+    "xmsgridtrace/gridtrace/XmGridTrace.t.h",
+]
+
+pybind_sources = [
+    "xmsgridtrace/python/xmsgridtrace_py.cpp",
+    "xmsgridtrace/python/gridtrace/gridtrace_py.cpp",
+    "xmsgridtrace/python/gridtrace/XmGridTrace_py.cpp",
+]
+
+pybind_headers = [
+    "xmsgridtrace/python/gridtrace/gridtrace_py.h",
+]
+
+[ci]
+python_versions = ["3.10", "3.13"]

@@ -5,9 +5,7 @@ Grid point tracer for XMS products.
 Master Branch Status
 --------------------
 
-[![Build Status](https://travis-ci.org/Aquaveo/xmsgridtrace.svg?branch=master)](https://travis-ci.org/Aquaveo/xmsgridtrace)
-
-[![Build status](https://ci.appveyor.com/api/projects/status/tkgmhrs31cc4l3ph?svg=true)](https://ci.appveyor.com/project/Aquaveo/xmsgridtrace)
+![XmsGridtrace-CI](https://github.com/Aquaveo/xmsgridtrace/workflows/XmsGridtrace-CI/badge.svg)
 
 
 Prerequisites
