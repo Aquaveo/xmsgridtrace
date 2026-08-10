@@ -24,7 +24,7 @@
 #include <xmscore/misc/xmstype.h> // XM_ZERO_TOL
 #include <xmsextractor/extractor/XmUGrid2dDataExtractor.h>
 #include <xmsextractor/extractor/XmUGrid2dPolylineDataExtractor.h>
-#include <xmsinterp/geometry/geoms.h>
+#include <xmsgrid/geometry/geoms.h>
 
 // 6. Non-shared code headers
 
@@ -52,7 +52,7 @@ namespace
 class XmGridTraceImpl : public XmGridTrace
 {
 public:
-  XmGridTraceImpl(BSHP<XmUGrid> a_ugrid);
+  XmGridTraceImpl(std::shared_ptr<XmUGrid> a_ugrid);
   ~XmGridTraceImpl(){};
 
   double GetVectorMultiplier() const final;
@@ -94,7 +94,7 @@ private:
                                   double a_currentTime,
                                   xms::Pt3d& a_data) const;
 
-  BSHP<XmUGrid> m_ugrid;                ///< UGrid for the TracePoint operation
+  std::shared_ptr<XmUGrid> m_ugrid;                ///< UGrid for the TracePoint operation
   double m_vectorMultiplier=1;          ///< multiplier for all vectors in grid
   double m_maxTracingTime=-1;           ///< maximum time for trace
   double m_maxTracingDistance=-1;       ///< maximum distance for trace
@@ -129,7 +129,7 @@ double iGetDirAsCosTheta(double a_vx0, double a_vy0, double a_vx1, double a_vy1)
 /// \brief Construct a new XmGridTrace using a UGrid.
 /// \param[in] a_ugrid The UGrid to construct a grid trace for
 //------------------------------------------------------------------------------
-XmGridTraceImpl::XmGridTraceImpl(BSHP<XmUGrid> a_ugrid)
+XmGridTraceImpl::XmGridTraceImpl(std::shared_ptr<XmUGrid> a_ugrid)
 : m_ugrid(a_ugrid)
 {
 }
@@ -580,7 +580,7 @@ XmGridTrace::~XmGridTrace()
 /// \param[in] a_ugrid The UGrid to construct a grid trace for
 /// \return a boost shared pointer to an XmGridTrace
 //------------------------------------------------------------------------------
-BSHP<XmGridTrace> XmGridTrace::New(BSHP<XmUGrid> a_ugrid)
+BSHP<XmGridTrace> XmGridTrace::New(std::shared_ptr<XmUGrid> a_ugrid)
 {
   return BSHP<XmGridTraceImpl>(new XmGridTraceImpl(a_ugrid));
 } // XmGridTrace::New
@@ -609,7 +609,7 @@ void iCreateDefaultSingleCell(BSHP<XmGridTrace>& a_tracer)
   //  0----1
   VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
   VecInt cells = {XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0};
-  BSHP<XmUGrid> ugrid = XmUGrid::New(points, cells);
+  std::shared_ptr<XmUGrid> ugrid = XmUGrid::New(points, cells);
   a_tracer = XmGridTrace::New(ugrid);
   const double vm = 1;
   a_tracer->SetVectorMultiplier(vm);
@@ -670,7 +670,7 @@ void iCreateDefaultTwoCell(BSHP<XmGridTrace>& a_tracer)
 
   VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {2, 0, 0}, {2, 1, 0}};
   VecInt cells = {XMU_QUAD, 4, 0, 1, 2, 3, XMU_QUAD, 4, 1, 4, 5, 2};
-  BSHP<XmUGrid> ugrid = XmUGrid::New(points, cells);
+  std::shared_ptr<XmUGrid> ugrid = XmUGrid::New(points, cells);
   a_tracer = XmGridTrace::New(ugrid);
   const double vm = 1;
   a_tracer->SetVectorMultiplier(vm);
@@ -1399,7 +1399,7 @@ void XmGridTraceUnitTests::testTutorial()
                     {2, 1, 0}, {0, 2, 0}, {1, 2, 0}, {2, 2, 0}};
   VecInt cells = {XMU_QUAD, 4, 0, 1, 4, 3, XMU_QUAD, 4, 1, 2, 5, 4,
                   XMU_QUAD, 4, 3, 4, 7, 6, XMU_QUAD, 4, 4, 5, 8, 7};
-  BSHP<XmUGrid> ugrid = XmUGrid::New(points, cells);
+  std::shared_ptr<XmUGrid> ugrid = XmUGrid::New(points, cells);
 
   // Step 2: Create the tracer from the grid
   BSHP<XmGridTrace> tracer = XmGridTrace::New(ugrid);

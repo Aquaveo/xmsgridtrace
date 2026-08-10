@@ -34,7 +34,7 @@ void initXmGridTrace(py::module &m) {
   // ---------------------------------------------------------------------------
   // function: __init__
   // ---------------------------------------------------------------------------
-  gridtrace.def(py::init([](boost::shared_ptr<xms::XmUGrid> ugrid,
+  gridtrace.def(py::init([](std::shared_ptr<xms::XmUGrid> ugrid,
                 py::object vector_multiplier, py::object max_tracing_time,
                 py::object max_tracing_distance, py::object min_delta_time,
                 py::object max_change_distance, py::object max_change_velocity,
