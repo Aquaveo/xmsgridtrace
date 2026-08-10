@@ -41,7 +41,7 @@ class XmGridTrace
 public:
   /// \brief Construct XmGridTrace for a UGrid.
   /// \param[in] a_ugrid a ugrid
-  static BSHP<XmGridTrace> New(BSHP<XmUGrid> a_ugrid);
+  static BSHP<XmGridTrace> New(std::shared_ptr<XmUGrid> a_ugrid);
 
   /// \brief Deconstruct XmGridTrace.
   virtual ~XmGridTrace();
