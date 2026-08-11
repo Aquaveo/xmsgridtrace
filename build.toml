@@ -3,10 +3,10 @@ description = "Grid tracing library for XMS products"
 ci_type = "github"
 
 xms_dependencies = [
-    { name = "xmscore", version = "7.0.8" },
-    { name = "xmsgrid", version = "9.0.9" },
-    { name = "xmsinterp", version = "7.0.8" },
-    { name = "xmsextractor", version = "10.0.6" },
+    { name = "xmscore", version = "7.0.11" },
+    { name = "xmsgrid", version = "9.0.10" },
+    { name = "xmsinterp", version = "7.0.9" },
+    { name = "xmsextractor", version = "10.0.7" },
 ]
 
 python_namespaced_dir = "gridtrace"
