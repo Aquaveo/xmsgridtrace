@@ -41,6 +41,9 @@ public:
   void testTimeVaryingFieldChangesPath();
   void testBatchMatchesSerialTracePoint();
   void testTracesContinueAcrossTimeSteps();
+  void testRedundantContinueDoesNotStallTrace();
+  void testSeedReleasedAfterWindowWaitsThenTraces();
+  void testDataLocationChangeIsNotShared();
   void testBoundaryExtractorIsCached();
   void testTraceBenchmark();
 
