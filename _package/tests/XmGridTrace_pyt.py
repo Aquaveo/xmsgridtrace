@@ -1,10 +1,15 @@
 """Test GridTrace."""
+
+# 1. Standard Python modules
 import unittest
 
+# 2. Third party modules
 import numpy as np
 
+# 3. Aquaveo modules
 from xms.grid.ugrid import UGrid
 
+# 4. Local modules
 from xms.gridtrace import exit_reason_enum, GridTrace
 
 
