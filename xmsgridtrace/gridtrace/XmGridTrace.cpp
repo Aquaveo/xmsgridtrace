@@ -24,6 +24,7 @@
 #include <xmscore/misc/xmstype.h> // XM_ZERO_TOL
 #include <xmsextractor/extractor/XmUGrid2dDataExtractor.h>
 #include <xmsextractor/extractor/XmUGrid2dPolylineDataExtractor.h>
+#include <xmsextractor/ugrid/XmUGridTriangles2d.h>
 #include <xmsgrid/geometry/geoms.h>
 
 // 6. Non-shared code headers
@@ -46,14 +47,14 @@ namespace
 /// XMS Namespace
 
 #ifdef CXX_TEST
-/// \brief Count of XmUGrid2dDataExtractor::ExtractData calls since it was last zeroed.
+/// \brief Count of point-location searches since it was last zeroed.
 /// Test-build-only instrumentation for testTraceBenchmark. A trace's cost is dominated by
-/// the point-location search each ExtractData performs, so the benchmark needs the search
-/// count and not only wall time -- otherwise an algorithmic win cannot be told apart from
-/// a faster machine. Not thread safe; the benchmark is single threaded.
-size_t g_extractDataCalls = 0;
-/// \brief Adds a_n to the ExtractData call count. Compiles away outside test builds.
-#define XMGT_COUNT_EXTRACT_DATA(a_n) (g_extractDataCalls += (a_n))
+/// these searches, so the benchmark needs the count and not only wall time -- otherwise an
+/// algorithmic win cannot be told apart from a faster machine. Not thread safe; the
+/// benchmark is single threaded.
+size_t g_searchCalls = 0;
+/// \brief Adds a_n to the search count. Compiles away outside test builds.
+#define XMGT_COUNT_SEARCH(a_n) (g_searchCalls += (a_n))
 /// \brief Count of XmUGrid2dPolylineDataExtractor constructions since it was last zeroed.
 /// Test-build-only instrumentation for testBoundaryExtractorIsCached. Caching that extractor
 /// is a pure performance change with no effect on trace output, so a construction count is
@@ -63,7 +64,7 @@ size_t g_boundaryExtractorBuilds = 0;
 #define XMGT_COUNT_BOUNDARY_EXTRACTOR_BUILD() (++g_boundaryExtractorBuilds)
 #else
 /// \brief No-op outside test builds, so production traces pay nothing for instrumentation.
-#define XMGT_COUNT_EXTRACT_DATA(a_n) ((void)0)
+#define XMGT_COUNT_SEARCH(a_n) ((void)0)
 /// \brief No-op outside test builds.
 #define XMGT_COUNT_BOUNDARY_EXTRACTOR_BUILD() ((void)0)
 #endif
@@ -79,6 +80,40 @@ bool iIsTerminal(XmGridTraceExitEnum a_reason)
 {
   return a_reason != GTEXIT_NOT_STARTED && a_reason != GTEXIT_WAITING_FOR_TIME_STEP;
 } // iIsTerminal
+
+//------------------------------------------------------------------------------
+/// \brief Applies one set of interpolation weights to a time step's x and y scalars.
+///
+/// Reproduces XmUGrid2dDataExtractor::ExtractData exactly -- accumulating in double, then
+/// narrowing to float -- so that replacing four ExtractData calls with one search plus this
+/// gives bit-identical answers rather than merely close ones.
+/// \param[in] a_x The extractor holding the x component
+/// \param[in] a_y The extractor holding the y component, sharing a_x's triangulation
+/// \param[in] a_idxs Triangulation point indices from the search
+/// \param[in] a_weights Interpolation weights parallel to a_idxs
+/// \param[out] a_outX The interpolated x component
+/// \param[out] a_outY The interpolated y component
+//------------------------------------------------------------------------------
+void iApplyWeights(const XmUGrid2dDataExtractor& a_x,
+                   const XmUGrid2dDataExtractor& a_y,
+                   const VecInt& a_idxs,
+                   const VecDbl& a_weights,
+                   float& a_outX,
+                   float& a_outY)
+{
+  const VecFlt& xScalars = a_x.GetScalars();
+  const VecFlt& yScalars = a_y.GetScalars();
+  double interpX = 0.0, interpY = 0.0;
+  for (size_t i = 0; i < a_idxs.size(); ++i)
+  {
+    const int ptIdx = a_idxs[i];
+    const double weight = a_weights[i];
+    interpX += xScalars[ptIdx] * weight;
+    interpY += yScalars[ptIdx] * weight;
+  }
+  a_outX = static_cast<float>(interpX);
+  a_outY = static_cast<float>(interpY);
+} // iApplyWeights
 
 ////////////////////////////////////////////////////////////////////////////////
 /// One trace in progress, and everything about it that has to survive a time step change.
@@ -184,6 +219,16 @@ private:
   /// data extractor for the y component for the second time step
   BSHP<XmUGrid2dDataExtractor> m_extractor2y;
   double m_time2=-1;        ///< time of the second time step
+  xms::DynBitset m_activity2; ///< activity of the second time step, to compare with the next
+  /// Whether both time steps share one triangulation, which they can when their activity
+  /// matches. When they do, one search serves all four extractors instead of one per step.
+  bool m_sharedAcrossTime = false;
+  /// Scratch for the point-location search. Members rather than locals because
+  /// GetVectorAtLocationAndTime runs a few dozen times per traced seed and these would
+  /// otherwise reallocate on every call. They make the tracer unsafe to share across
+  /// threads, which it already was -- GmTriSearch caches barycentric state per query.
+  mutable VecInt m_searchIdxs;
+  mutable VecDbl m_searchWeights;
   /// Extractor used to find where a trace leaves the grid, built lazily on the first
   /// out-of-domain step and reused for every one after it. Its construction triangulates the
   /// whole grid and its first SetPolyline indexes every triangle into a GmMultiPolyIntersector;
@@ -369,32 +414,49 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars,
                                            DataLocationEnum a_activityLoc,
                                            double a_time)
 {
-  if (m_extractor2x && m_extractor2y)
+  const bool hadPrevious = m_extractor2x && m_extractor2y;
+  if (hadPrevious)
   {
     m_extractor1x = m_extractor2x;
     m_extractor1y = m_extractor2y;
     m_time1 = m_time2;
   }
-  m_extractor2x = XmUGrid2dDataExtractor::New(m_ugrid);
-  m_extractor2y = XmUGrid2dDataExtractor::New(m_ugrid);
 
   m_time2 = a_time;
   std::vector<float> xx, yy;
+  xx.reserve(a_scalars.size());
+  yy.reserve(a_scalars.size());
   for (auto& pt : a_scalars)
   {
     xx.push_back((float)pt.x);
     yy.push_back((float)pt.y);
   }
+
+  // Share the triangulation with the previous time step when the two agree on activity. The
+  // triangulation and its GmTriSearch R-tree depend only on the grid and the activity mask,
+  // so an identical mask makes them interchangeable -- which both skips a rebuild and lets a
+  // single point-location query serve all four extractors instead of one per time step.
+  // Differing activity is the case that cannot share, and it is why the mask is compared
+  // rather than assumed.
+  m_sharedAcrossTime = hadPrevious && a_activity == m_activity2;
+  m_extractor2x = m_sharedAcrossTime ? XmUGrid2dDataExtractor::New(m_extractor1x)
+                                     : XmUGrid2dDataExtractor::New(m_ugrid);
   if (a_scalarLoc == DataLocationEnum::LOC_POINTS)
-  {
     m_extractor2x->SetGridPointScalars(xx, a_activity, a_activityLoc);
-    m_extractor2y->SetGridPointScalars(yy, a_activity, a_activityLoc);
-  }
   else
-  {
     m_extractor2x->SetGridCellScalars(xx, a_activity, a_activityLoc);
+
+  // y is built from x, and only after x's scalars are set. The sharing constructor copies
+  // the triangulation *and* the flag saying what it was built for; copying x before it has
+  // built one would leave y thinking it must build, and y would then rebuild the very
+  // triangulation it is sharing. Only the scalar arrays differ between the two.
+  m_extractor2y = XmUGrid2dDataExtractor::New(m_extractor2x);
+  if (a_scalarLoc == DataLocationEnum::LOC_POINTS)
+    m_extractor2y->SetGridPointScalars(yy, a_activity, a_activityLoc);
+  else
     m_extractor2y->SetGridCellScalars(yy, a_activity, a_activityLoc);
-  }
+
+  m_activity2 = a_activity;
 }
 
 //------------------------------------------------------------------------------
@@ -721,32 +783,40 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
                                                  double a_currentTime,
                                                  xms::Pt3d& a_data) const
 {
-  xms::VecPt3d loc;
-  loc.push_back(a_pt);
-  m_extractor1x->SetExtractLocations(loc);
-  m_extractor1y->SetExtractLocations(loc);
-  xms::VecFlt dataOutx1;
-  xms::VecFlt dataOuty1;
-  m_extractor1x->ExtractData(dataOutx1);
-  m_extractor1y->ExtractData(dataOuty1);
-  XMGT_COUNT_EXTRACT_DATA(2);
-  if (dataOutx1.size() != 1 || dataOuty1.size() != 1)
+  if (!m_extractor1x || !m_extractor1y || !m_extractor2x || !m_extractor2y)
   {
-    XM_LOG(xmlog::error, "Gridtracer: An error occured when extracting data");
+    // Two time steps are required. This used to dereference a null first extractor when only
+    // one had been supplied.
+    XM_LOG(xmlog::error, "Gridtracer: two time steps must be added before tracing.");
     return false;
   }
 
-  m_extractor2x->SetExtractLocations(loc);
-  m_extractor2y->SetExtractLocations(loc);
-  xms::VecFlt dataOutx2;
-  xms::VecFlt dataOuty2;
-  m_extractor2x->ExtractData(dataOutx2);
-  m_extractor2y->ExtractData(dataOuty2);
-  XMGT_COUNT_EXTRACT_DATA(2);
-  if (dataOutx2.size() != 1 || dataOuty2.size() != 1)
+  // One point-location query per distinct triangulation, rather than one per scalar array.
+  // The weights returned index the triangulation's points, and every extractor sharing that
+  // triangulation indexes its own scalars the same way, so a single query serves the x and y
+  // of a time step -- and both time steps too when they share a triangulation.
+  float x1 = m_extractor1x->GetNoDataValue();
+  float y1 = m_extractor1y->GetNoDataValue();
+  const int cell1 =
+    m_extractor1x->GetUGridTriangles()->GetIntersectedCell(a_pt, m_searchIdxs, m_searchWeights);
+  XMGT_COUNT_SEARCH(1);
+  if (cell1 >= 0)
+    iApplyWeights(*m_extractor1x, *m_extractor1y, m_searchIdxs, m_searchWeights, x1, y1);
+
+  float x2 = m_extractor2x->GetNoDataValue();
+  float y2 = m_extractor2y->GetNoDataValue();
+  if (m_sharedAcrossTime)
   {
-    XM_LOG(xmlog::error, "Gridtracer: An error occured when extracting data");
-    return false;
+    if (cell1 >= 0)
+      iApplyWeights(*m_extractor2x, *m_extractor2y, m_searchIdxs, m_searchWeights, x2, y2);
+  }
+  else
+  {
+    const int cell2 =
+      m_extractor2x->GetUGridTriangles()->GetIntersectedCell(a_pt, m_searchIdxs, m_searchWeights);
+    XMGT_COUNT_SEARCH(1);
+    if (cell2 >= 0)
+      iApplyWeights(*m_extractor2x, *m_extractor2y, m_searchIdxs, m_searchWeights, x2, y2);
   }
 
   if (a_currentTime < m_time1 - XM_ZERO_TOL)
@@ -759,8 +829,8 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
   // XM_NODATA (-9999999) against a real value produces something like -999999.9, which is
   // neither no-data nor meaningful, and every caller tests for XM_NODATA exactly. Returning
   // true is correct -- extraction succeeded, and no-data is the answer.
-  if (EQ_TOL(dataOutx1[0], XM_NODATA, 1) || EQ_TOL(dataOuty1[0], XM_NODATA, 1) ||
-      EQ_TOL(dataOutx2[0], XM_NODATA, 1) || EQ_TOL(dataOuty2[0], XM_NODATA, 1))
+  if (EQ_TOL(x1, XM_NODATA, 1) || EQ_TOL(y1, XM_NODATA, 1) || EQ_TOL(x2, XM_NODATA, 1) ||
+      EQ_TOL(y2, XM_NODATA, 1))
   {
     a_data.x = XM_NODATA;
     a_data.y = XM_NODATA;
@@ -775,8 +845,8 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
   // particle released at m_time1 entirely by the field at m_time2.
   double weight1 = fabs(a_currentTime - m_time2) / totalTime;
   double weight2 = fabs(a_currentTime - m_time1) / totalTime;
-  a_data.x = dataOutx1[0] * weight1 + dataOutx2[0] * weight2;
-  a_data.y = dataOuty1[0] * weight1 + dataOuty2[0] * weight2;
+  a_data.x = x1 * weight1 + x2 * weight2;
+  a_data.y = y1 * weight1 + y2 * weight2;
   return true;
 } // XmGridTraceImpl::GetVectorAtLocationAndTime
 } // namespace {}
@@ -987,7 +1057,7 @@ struct BenchmarkStats
   int m_seeds = 0;                          ///< seed points handed to TracePoint
   int m_traced = 0;                         ///< seeds that produced a usable (2+ point) polyline
   size_t m_tracePoints = 0;                 ///< total polyline points produced
-  size_t m_extractCalls = 0;                ///< XmUGrid2dDataExtractor::ExtractData calls consumed
+  size_t m_searchCalls = 0;                 ///< point-location searches consumed
   double m_seconds = 0;                     ///< wall time of the traced batch, excluding setup
   std::map<std::string, int> m_exitReasons; ///< exit message -> count, over a sample
 };
@@ -1100,7 +1170,7 @@ void iRunTraceBenchmark(BSHP<XmGridTrace>& a_tracer,
 
   VecPt3d trace;
   VecDbl times;
-  g_extractDataCalls = 0;
+  g_searchCalls = 0;
   const auto start = std::chrono::steady_clock::now();
   for (const auto& seed : a_seeds)
   {
@@ -1113,7 +1183,7 @@ void iRunTraceBenchmark(BSHP<XmGridTrace>& a_tracer,
   }
   const auto end = std::chrono::steady_clock::now();
   a_stats.m_seconds = std::chrono::duration<double>(end - start).count();
-  a_stats.m_extractCalls = g_extractDataCalls;
+  a_stats.m_searchCalls = g_searchCalls;
 
   const int sampleSize = std::min((int)a_seeds.size(), 1000);
   for (int i = 0; i < sampleSize; ++i)
@@ -1131,9 +1201,9 @@ void iReportTraceBenchmark(const char* a_label, const BenchmarkStats& a_stats)
 {
   const double seeds = a_stats.m_seeds ? (double)a_stats.m_seeds : 1.0;
   const double usPerSeed = a_stats.m_seconds * 1e6 / seeds;
-  const double extractsPerSeed = a_stats.m_extractCalls / seeds;
+  const double searchesPerSeed = a_stats.m_searchCalls / seeds;
   const double usPerExtract =
-    a_stats.m_extractCalls ? a_stats.m_seconds * 1e6 / a_stats.m_extractCalls : 0.0;
+    a_stats.m_searchCalls ? a_stats.m_seconds * 1e6 / a_stats.m_searchCalls : 0.0;
   const double ptsPerTrace =
     a_stats.m_traced ? (double)a_stats.m_tracePoints / a_stats.m_traced : 0.0;
 
@@ -1141,9 +1211,8 @@ void iReportTraceBenchmark(const char* a_label, const BenchmarkStats& a_stats)
             << "] seeds=" << a_stats.m_seeds << " traced=" << a_stats.m_traced << "\n"
             << "    wall            " << a_stats.m_seconds * 1e3 << " ms\n"
             << "    per seed        " << usPerSeed << " us\n"
-            << "    ExtractData     " << a_stats.m_extractCalls << " calls ("
-            << std::setprecision(1) << extractsPerSeed << "/seed, " << std::setprecision(3)
-            << usPerExtract << " us/call)\n"
+            << "    searches        " << a_stats.m_searchCalls << " (" << std::setprecision(1)
+            << searchesPerSeed << "/seed, " << std::setprecision(3) << usPerExtract << " us/call)\n"
             << "    trace points    " << a_stats.m_tracePoints << " (" << std::setprecision(1)
             << ptsPerTrace << "/trace)\n"
             << "    exit reasons (sampled):\n";
@@ -2250,14 +2319,14 @@ void XmGridTraceUnitTests::testBoundaryExtractorIsCached()
 /// measured separately because they exercise different code:
 ///
 ///   interior  seeds far enough from the edge that no trace can reach it -- the pure
-///             stepping cost, four ExtractData searches per integration step
+///             stepping cost, one point-location search per triangulation per step
 ///   boundary  seeds in a band along the edge, so traces run out of the domain and pay for
 ///             the XmUGrid2dPolylineDataExtractor path -- a whole-grid triangulation plus a
 ///             GmMultiPolyIntersector, once per tracer since that extractor is cached
 ///             (it was once per exit event, inside the stepping loop)
 ///   mixed     seeds spread over the whole domain -- what the display actually does
 ///
-/// Reported alongside wall time is the ExtractData call count, so a later optimization
+/// Reported alongside wall time is the point-location search count, so a later optimization
 /// can be shown to have removed searches rather than merely found a faster machine.
 ///
 /// Seed count and grid size come from XMGT_BENCH_SEEDS and XMGT_BENCH_CELLS so a sweep
@@ -2362,7 +2431,7 @@ void XmGridTraceUnitTests::testTraceBenchmark()
   // bound tight enough that a real breakage in tracing still fails here.
   TS_ASSERT(mixed.m_traced >= seedCount - 1 - seedCount / 1000);
   // The instrumentation itself has to be working, or the search counts mean nothing.
-  TS_ASSERT(interior.m_extractCalls > (size_t)seedCount);
+  TS_ASSERT(interior.m_searchCalls > (size_t)seedCount);
   // The boundary set must actually leave the grid, otherwise this benchmark silently
   // stops measuring the per-exit extractor construction it exists to measure.
   const std::string outOfDomain = "Point has traveled out of domain.";

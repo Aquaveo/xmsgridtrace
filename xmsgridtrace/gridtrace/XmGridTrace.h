@@ -52,7 +52,6 @@ enum XmGridTraceExitEnum {
   GTEXIT_EXTRACTION_FAILED      ///< a field lookup failed; the trace is discarded
 };
 
-
 //----- Structs / Classes ------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
