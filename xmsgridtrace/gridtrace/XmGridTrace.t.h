@@ -38,6 +38,7 @@ public:
   void testInactiveCell();
   void testStartInactiveCell();
   void testTutorial();
+  void testTraceBenchmark();
 
 }; // XmGridTraceUnitTests
 

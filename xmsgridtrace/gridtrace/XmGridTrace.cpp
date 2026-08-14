@@ -45,6 +45,20 @@ namespace
 {
 /// XMS Namespace
 
+#ifdef CXX_TEST
+/// \brief Count of XmUGrid2dDataExtractor::ExtractData calls since it was last zeroed.
+/// Test-build-only instrumentation for testTraceBenchmark. A trace's cost is dominated by
+/// the point-location search each ExtractData performs, so the benchmark needs the search
+/// count and not only wall time -- otherwise an algorithmic win cannot be told apart from
+/// a faster machine. Not thread safe; the benchmark is single threaded.
+size_t g_extractDataCalls = 0;
+/// \brief Adds a_n to the ExtractData call count. Compiles away outside test builds.
+#define XMGT_COUNT_EXTRACT_DATA(a_n) (g_extractDataCalls += (a_n))
+#else
+/// \brief No-op outside test builds, so production traces pay nothing for instrumentation.
+#define XMGT_COUNT_EXTRACT_DATA(a_n) ((void)0)
+#endif
+
 //----- Class / Function definitions -------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -528,6 +542,7 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
   xms::VecFlt dataOuty1;
   m_extractor1x->ExtractData(dataOutx1);
   m_extractor1y->ExtractData(dataOuty1);
+  XMGT_COUNT_EXTRACT_DATA(2);
   if (dataOutx1.size() != 1 || dataOuty1.size() != 1)
   {
     XM_LOG(xmlog::error, "Gridtracer: An error occured when extracting data");
@@ -540,6 +555,7 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
   xms::VecFlt dataOuty2;
   m_extractor2x->ExtractData(dataOutx2);
   m_extractor2y->ExtractData(dataOuty2);
+  XMGT_COUNT_EXTRACT_DATA(2);
   if (dataOutx2.size() != 1 || dataOuty2.size() != 1)
   {
     XM_LOG(xmlog::error, "Gridtracer: An error occured when extracting data");
@@ -589,7 +605,14 @@ BSHP<XmGridTrace> XmGridTrace::New(std::shared_ptr<XmUGrid> a_ugrid)
 #ifdef CXX_TEST
 #include <xmsgridtrace/gridtrace/XmGridTrace.t.h>
 
+#include <chrono>
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+#include <map>
+
 #include <xmscore/testing/TestTools.h>
+#include <xmsextractor/ugrid/XmUGridTriangles2d.h>
 #include <xmsgrid/ugrid/XmUGrid.h>
 
 using namespace xms;
@@ -708,6 +731,204 @@ void iCreateDefaultTwoCell(BSHP<XmGridTrace>& a_tracer)
   a_tracer->AddGridScalarsAtTime(scalars, DataLocationEnum::LOC_CELLS, pointActivity,
                                  DataLocationEnum::LOC_CELLS, time);
 } // iCreateDefaultTwoCell
+
+//------------------------------------------------------------------------------
+/// \brief A structured quad grid plus its point locations, for the tracing benchmark.
+/// The locations are kept alongside the ugrid so the velocity field can be evaluated
+/// without depending on how the ugrid exposes its points.
+//------------------------------------------------------------------------------
+struct BenchmarkGrid
+{
+  std::shared_ptr<XmUGrid> m_ugrid; ///< the grid itself
+  VecPt3d m_points;                 ///< grid point locations, in grid point order
+};
+
+//------------------------------------------------------------------------------
+/// \brief Measurements from one benchmark batch.
+//------------------------------------------------------------------------------
+struct BenchmarkStats
+{
+  int m_seeds = 0;                          ///< seed points handed to TracePoint
+  int m_traced = 0;                         ///< seeds that produced a usable (2+ point) polyline
+  size_t m_tracePoints = 0;                 ///< total polyline points produced
+  size_t m_extractCalls = 0;                ///< XmUGrid2dDataExtractor::ExtractData calls consumed
+  double m_seconds = 0;                     ///< wall time of the traced batch, excluding setup
+  std::map<std::string, int> m_exitReasons; ///< exit message -> count, over a sample
+};
+
+//------------------------------------------------------------------------------
+/// \brief Builds a structured quad grid standing in for a real hydrodynamic mesh.
+/// \param[in] a_cellsPerSide Number of cells along each axis
+/// \param[in] a_length Length of the square domain along each axis
+/// \return the grid and its point locations
+//------------------------------------------------------------------------------
+BenchmarkGrid iBuildBenchmarkGrid(int a_cellsPerSide, double a_length)
+{
+  const int ptsPerSide = a_cellsPerSide + 1;
+  const double dx = a_length / a_cellsPerSide;
+  BenchmarkGrid grid;
+  grid.m_points.reserve((size_t)ptsPerSide * ptsPerSide);
+  for (int j = 0; j < ptsPerSide; ++j)
+  {
+    for (int i = 0; i < ptsPerSide; ++i)
+      grid.m_points.push_back({i * dx, j * dx, 0.0});
+  }
+
+  VecInt cells;
+  cells.reserve((size_t)a_cellsPerSide * a_cellsPerSide * 6);
+  for (int j = 0; j < a_cellsPerSide; ++j)
+  {
+    for (int i = 0; i < a_cellsPerSide; ++i)
+    {
+      const int p0 = j * ptsPerSide + i;
+      cells.push_back(XMU_QUAD);
+      cells.push_back(4);
+      cells.push_back(p0);
+      cells.push_back(p0 + 1);
+      cells.push_back(p0 + ptsPerSide + 1);
+      cells.push_back(p0 + ptsPerSide);
+    }
+  }
+  grid.m_ugrid = XmUGrid::New(grid.m_points, cells);
+  return grid;
+} // iBuildBenchmarkGrid
+//------------------------------------------------------------------------------
+/// \brief Builds a rotating-plus-drifting velocity field over the grid points.
+/// A vortex is used rather than a uniform field for two reasons: the curvature makes the
+/// adaptive stepping subdivide the way it does on real flow, and the drift carries part
+/// of the seed population off the grid so the out-of-domain exit path -- which builds a
+/// fresh polyline extractor per event -- is measured rather than assumed away.
+/// \param[in] a_points Grid point locations
+/// \param[in] a_omega Angular rate of the vortex; negative reverses the rotation
+/// \param[in] a_drift Uniform velocity added in +x
+/// \param[in] a_length Length of the square domain along each axis
+/// \return velocity vectors, one per grid point
+//------------------------------------------------------------------------------
+VecPt3d iBenchmarkVectors(const VecPt3d& a_points, double a_omega, double a_drift, double a_length)
+{
+  const double cx = a_length / 2, cy = a_length / 2;
+  VecPt3d vectors;
+  vectors.reserve(a_points.size());
+  for (const auto& pt : a_points)
+    vectors.push_back({-a_omega * (pt.y - cy) + a_drift, a_omega * (pt.x - cx), 0.0});
+  return vectors;
+} // iBenchmarkVectors
+//------------------------------------------------------------------------------
+/// \brief Builds seed points scattered inside a rectangular band of the domain.
+/// The scatter is driven by a fixed linear congruential generator rather than std::rand
+/// so that reruns and different machines trace the identical seed set; a benchmark whose
+/// input changes between runs cannot measure a delta.
+/// \param[in] a_count Number of seeds
+/// \param[in] a_lo Low corner of the band, on both axes
+/// \param[in] a_hi High corner of the band, on both axes
+/// \param[in] a_holeLo Low corner of a rectangular hole to reject seeds from
+/// \param[in] a_holeHi High corner of the hole; pass a_holeHi <= a_holeLo for no hole
+/// \return the seed points
+//------------------------------------------------------------------------------
+VecPt3d iBenchmarkSeeds(int a_count, double a_lo, double a_hi, double a_holeLo, double a_holeHi)
+{
+  unsigned int state = 12345u;
+  auto nextUnit = [&state]() {
+    state = state * 1664525u + 1013904223u;
+    return (state >> 8) / 16777216.0;
+  };
+
+  VecPt3d seeds;
+  seeds.reserve(a_count);
+  while ((int)seeds.size() < a_count)
+  {
+    const double x = a_lo + nextUnit() * (a_hi - a_lo);
+    const double y = a_lo + nextUnit() * (a_hi - a_lo);
+    const bool inHole =
+      a_holeHi > a_holeLo && x > a_holeLo && x < a_holeHi && y > a_holeLo && y < a_holeHi;
+    if (!inHole)
+      seeds.push_back({x, y, 0.0});
+  }
+  return seeds;
+} // iBenchmarkSeeds
+//------------------------------------------------------------------------------
+/// \brief Traces every seed and measures the batch.
+/// Timing covers only the TracePoint calls. The exit-reason histogram is gathered in a
+/// separate untimed pass over a sample, because GetExitMessage returns a std::string by
+/// value and a per-seed map insert would show up in a measurement this small.
+/// \param[in] a_tracer The tracer, already loaded with two time steps
+/// \param[in] a_seeds The seed points
+/// \param[out] a_stats The measurements
+//------------------------------------------------------------------------------
+void iRunTraceBenchmark(BSHP<XmGridTrace>& a_tracer,
+                        const VecPt3d& a_seeds,
+                        BenchmarkStats& a_stats)
+{
+  a_stats = BenchmarkStats();
+  a_stats.m_seeds = (int)a_seeds.size();
+
+  VecPt3d trace;
+  VecDbl times;
+  g_extractDataCalls = 0;
+  const auto start = std::chrono::steady_clock::now();
+  for (const auto& seed : a_seeds)
+  {
+    a_tracer->TracePoint(seed, 0.0, trace, times);
+    if (trace.size() > 1)
+    {
+      ++a_stats.m_traced;
+      a_stats.m_tracePoints += trace.size();
+    }
+  }
+  const auto end = std::chrono::steady_clock::now();
+  a_stats.m_seconds = std::chrono::duration<double>(end - start).count();
+  a_stats.m_extractCalls = g_extractDataCalls;
+
+  const int sampleSize = std::min((int)a_seeds.size(), 1000);
+  for (int i = 0; i < sampleSize; ++i)
+  {
+    a_tracer->TracePoint(a_seeds[i], 0.0, trace, times);
+    a_stats.m_exitReasons[a_tracer->GetExitMessage()]++;
+  }
+} // iRunTraceBenchmark
+//------------------------------------------------------------------------------
+/// \brief Prints one benchmark batch in a form that can be pasted into a results table.
+/// \param[in] a_label Which seed population this batch was
+/// \param[in] a_stats The measurements
+//------------------------------------------------------------------------------
+void iReportTraceBenchmark(const char* a_label, const BenchmarkStats& a_stats)
+{
+  const double seeds = a_stats.m_seeds ? (double)a_stats.m_seeds : 1.0;
+  const double usPerSeed = a_stats.m_seconds * 1e6 / seeds;
+  const double extractsPerSeed = a_stats.m_extractCalls / seeds;
+  const double usPerExtract =
+    a_stats.m_extractCalls ? a_stats.m_seconds * 1e6 / a_stats.m_extractCalls : 0.0;
+  const double ptsPerTrace =
+    a_stats.m_traced ? (double)a_stats.m_tracePoints / a_stats.m_traced : 0.0;
+
+  std::cout << std::fixed << std::setprecision(3) << "\n  [" << a_label
+            << "] seeds=" << a_stats.m_seeds << " traced=" << a_stats.m_traced << "\n"
+            << "    wall            " << a_stats.m_seconds * 1e3 << " ms\n"
+            << "    per seed        " << usPerSeed << " us\n"
+            << "    ExtractData     " << a_stats.m_extractCalls << " calls ("
+            << std::setprecision(1) << extractsPerSeed << "/seed, " << std::setprecision(3)
+            << usPerExtract << " us/call)\n"
+            << "    trace points    " << a_stats.m_tracePoints << " (" << std::setprecision(1)
+            << ptsPerTrace << "/trace)\n"
+            << "    exit reasons (sampled):\n";
+  for (const auto& reason : a_stats.m_exitReasons)
+    std::cout << "      " << std::setw(5) << reason.second << "  " << reason.first << "\n";
+  std::cout << std::flush;
+} // iReportTraceBenchmark
+//------------------------------------------------------------------------------
+/// \brief Reads a positive integer from the environment, or returns a fallback.
+/// \param[in] a_name Environment variable name
+/// \param[in] a_fallback Value to use when unset, unparseable, or not positive
+/// \return the resolved value
+//------------------------------------------------------------------------------
+int iEnvInt(const char* a_name, int a_fallback)
+{
+  const char* raw = std::getenv(a_name);
+  if (!raw)
+    return a_fallback;
+  const int value = std::atoi(raw);
+  return value > 0 ? value : a_fallback;
+} // iEnvInt
 }
 ////////////////////////////////////////////////////////////////////////////////
 /// \class XmGridTraceUnitTests
@@ -1491,5 +1712,138 @@ void XmGridTraceUnitTests::testTutorial()
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
 } // XmGridTraceUnitTests::testTutorial
   //! [snip_test_Example_XmGridTrace]
+//------------------------------------------------------------------------------
+/// \brief Measures the cost of tracing many seed points over a realistic grid.
+///
+/// This is the baseline for routing the "follow flow path" vector display option through
+/// XmGridTrace: the display traces every visible glyph, so the number that matters is the
+/// per-seed cost at glyph counts, not the cost of one trace. Three seed populations are
+/// measured separately because they exercise different code:
+///
+///   interior  seeds far enough from the edge that no trace can reach it -- the pure
+///             stepping cost, four ExtractData searches per integration step
+///   boundary  seeds in a band along the edge, so traces run out of the domain and pay
+///             for a freshly constructed XmUGrid2dPolylineDataExtractor and
+///             GmMultiPolyIntersector per exit event, inside the stepping loop
+///   mixed     seeds spread over the whole domain -- what the display actually does
+///
+/// Reported alongside wall time is the ExtractData call count, so a later optimization
+/// can be shown to have removed searches rather than merely found a faster machine.
+///
+/// Seed count and grid size come from XMGT_BENCH_SEEDS and XMGT_BENCH_CELLS so a sweep
+/// needs no recompile; the defaults are small enough to leave in the regular suite. The
+/// assertions are deliberately loose -- this guards against order-of-magnitude
+/// regressions, and a tight bound would only make the suite flaky on shared runners.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testTraceBenchmark()
+{
+  const int seedCount = iEnvInt("XMGT_BENCH_SEEDS", 250);
+  const int cellsPerSide = iEnvInt("XMGT_BENCH_CELLS", 200);
+  const double length = 200.0;
+  const double omega = 0.05; // vortex rate; reversed at the second time step
+  const double drift = 1.0;  // uniform +x velocity, carries seeds off the +x edge
+  const double timeStepInterval = 10.0;
+  const double maxTracingDistance = 15.0;
+
+  const auto setupStart = std::chrono::steady_clock::now();
+  BenchmarkGrid grid = iBuildBenchmarkGrid(cellsPerSide, length);
+  const auto gridBuilt = std::chrono::steady_clock::now();
+
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(grid.m_ugrid);
+  tracer->SetVectorMultiplier(1);
+  tracer->SetMaxTracingTime(timeStepInterval);
+  tracer->SetMaxTracingDistance(maxTracingDistance);
+  tracer->SetMinDeltaTime(.01);
+  tracer->SetMaxChangeDistance(2.0);
+  tracer->SetMaxChangeVelocity(-1);
+  tracer->SetMaxChangeDirectionInRadians(0.2);
+
+  DynBitset pointActivity;
+  pointActivity.resize(grid.m_points.size(), true);
+  // The rotation reverses between the two steps, so a trace that spans them is genuinely
+  // time dependent -- a single-timestep tracer cannot reproduce its path.
+  VecPt3d vectors1 = iBenchmarkVectors(grid.m_points, omega, drift, length);
+  VecPt3d vectors2 = iBenchmarkVectors(grid.m_points, -omega, drift, length);
+  tracer->AddGridScalarsAtTime(vectors1, DataLocationEnum::LOC_POINTS, pointActivity,
+                               DataLocationEnum::LOC_POINTS, 0.0);
+  tracer->AddGridScalarsAtTime(vectors2, DataLocationEnum::LOC_POINTS, pointActivity,
+                               DataLocationEnum::LOC_POINTS, timeStepInterval);
+  const auto setupEnd = std::chrono::steady_clock::now();
+
+  const double gridSeconds = std::chrono::duration<double>(gridBuilt - setupStart).count();
+  const double scalarSeconds = std::chrono::duration<double>(setupEnd - gridBuilt).count();
+
+  // Break the per-timestep setup cost into its parts. This decides whether two timesteps
+  // with *different* cell activity can share one triangulation: activity is not baked into
+  // the triangles, it is latched onto the search object (XmUGridTriangles2d.cpp:146-164),
+  // so the question is whether flipping it per query is cheaper than triangulating twice.
+  DynBitset benchActivity;
+  benchActivity.resize(grid.m_ugrid->GetCellCount(), true);
+
+  BSHP<XmUGridTriangles2d> tris = XmUGridTriangles2d::New();
+  const auto triStart = std::chrono::steady_clock::now();
+  tris->BuildTriangles(*grid.m_ugrid, XmUGridTriangles2d::PO_CENTROIDS_ONLY);
+  const auto triBuilt = std::chrono::steady_clock::now();
+  tris->SetCellActivity(benchActivity); // first call also builds the GmTriSearch R-tree
+  const auto searchBuilt = std::chrono::steady_clock::now();
+  tris->SetCellActivity(benchActivity); // second call is the activity mask alone
+  const auto activityFlipped = std::chrono::steady_clock::now();
+
+  const double triSeconds = std::chrono::duration<double>(triBuilt - triStart).count();
+  const double searchSeconds = std::chrono::duration<double>(searchBuilt - triBuilt).count();
+  const double flipSeconds = std::chrono::duration<double>(activityFlipped - searchBuilt).count();
+
+  std::cout << std::fixed << std::setprecision(3) << "\n=== XmGridTrace trace benchmark ===\n"
+            << "  grid            " << cellsPerSide << "x" << cellsPerSide << " quads, "
+            << grid.m_points.size() << " points\n"
+            << "  seeds per set   " << seedCount << "\n"
+            << "  grid build      " << gridSeconds * 1e3 << " ms\n"
+            << "  add 2 timesteps " << scalarSeconds * 1e3 << " ms\n"
+            << "  setup breakdown, one XmUGridTriangles2d:\n"
+            << "    BuildTriangles      " << triSeconds * 1e3 << " ms\n"
+            << "    + R-tree & activity " << searchSeconds * 1e3 << " ms\n"
+            << "    activity flip only  " << flipSeconds * 1e3 << " ms\n"
+            << std::flush;
+
+  // No trace can travel maxTracingDistance from this band, so nothing exits the grid.
+  const double interiorMargin = maxTracingDistance + 5.0;
+  VecPt3d interiorSeeds =
+    iBenchmarkSeeds(seedCount, interiorMargin, length - interiorMargin, 0.0, 0.0);
+  // Seeds within a band of the edge; the hole rejects anything that is not in the band.
+  const double boundaryBand = 5.0;
+  VecPt3d boundarySeeds =
+    iBenchmarkSeeds(seedCount, 0.5, length - 0.5, boundaryBand, length - boundaryBand);
+  VecPt3d mixedSeeds = iBenchmarkSeeds(seedCount, 0.5, length - 0.5, 0.0, 0.0);
+
+  BenchmarkStats interior, boundary, mixed;
+  iRunTraceBenchmark(tracer, interiorSeeds, interior);
+  iReportTraceBenchmark("interior", interior);
+  iRunTraceBenchmark(tracer, boundarySeeds, boundary);
+  iReportTraceBenchmark("boundary", boundary);
+  iRunTraceBenchmark(tracer, mixedSeeds, mixed);
+  iReportTraceBenchmark("mixed", mixed);
+
+  // Interior seeds cannot reach a boundary, so every one of them must trace.
+  TS_ASSERT_EQUALS(interior.m_traced, seedCount);
+  // Seeds that can leave the grid are not guaranteed a usable polyline: a seed that exits
+  // on its first step can hit the "failed to find an intersection when exiting grid" early
+  // return (:404-408) and come back holding only the seed point. Measured at roughly 1 in
+  // 100,000, so allow a small tail rather than asserting a false invariant -- but keep the
+  // bound tight enough that a real breakage in tracing still fails here.
+  TS_ASSERT(mixed.m_traced >= seedCount - 1 - seedCount / 1000);
+  // The instrumentation itself has to be working, or the search counts mean nothing.
+  TS_ASSERT(interior.m_extractCalls > (size_t)seedCount);
+  // The boundary set must actually leave the grid, otherwise this benchmark silently
+  // stops measuring the per-exit extractor construction it exists to measure.
+  const std::string outOfDomain = "Point has traveled out of domain.";
+  TS_ASSERT(boundary.m_exitReasons.count(outOfDomain) > 0);
+  TS_ASSERT_EQUALS(interior.m_exitReasons.count(outOfDomain), 0);
+  // Re-latching activity onto an existing search must stay cheaper than rebuilding the
+  // triangulation, or "share one triangulation and flip activity" is not even a candidate.
+  TS_ASSERT(flipSeconds < triSeconds);
+  // Order-of-magnitude guard only. Measured at ~0.1 ms/seed; 10 ms leaves room for a
+  // debug build on a loaded machine while still catching a real algorithmic regression.
+  TS_ASSERT(mixed.m_seconds * 1e3 / seedCount < 10.0);
+} // XmGridTraceUnitTests::testTraceBenchmark
 
 #endif
