@@ -33,6 +33,26 @@ class dyn_bitset;
 
 //----- Constants / Enumerations -----------------------------------------------
 
+/// \brief Why a trace stopped.
+///
+/// Reported per trace instead of the message string it replaced. A batch traces every
+/// visible glyph -- tens of thousands of them -- and a caller has to be able to tell "left
+/// the grid, draw it short" from "spent its distance budget, this is the normal ending"
+/// without comparing strings. The old messages could not support that anyway: they were
+/// composed by appending, so no fixed string identified a case.
+enum XmGridTraceExitEnum {
+  GTEXIT_NOT_STARTED,           ///< no stepping has happened yet
+  GTEXIT_WAITING_FOR_TIME_STEP, ///< reached the 2nd loaded step; supply a later one to resume
+  GTEXIT_MAX_TRACING_TIME,      ///< the trace spent its time budget
+  GTEXIT_MAX_TRACING_DISTANCE,  ///< the trace spent its distance budget
+  GTEXIT_LEFT_GRID,             ///< stepped out of the grid; the path stops at the boundary
+  GTEXIT_ZERO_VELOCITY,         ///< the field went still under the particle
+  GTEXIT_MIN_DELTA_TIME,        ///< subdividing reached the smallest allowed step
+  GTEXIT_SEED_NOT_TRACEABLE,    ///< the seed was outside the grid or in an inactive cell
+  GTEXIT_EXTRACTION_FAILED      ///< a field lookup failed; the trace is discarded
+};
+
+
 //----- Structs / Classes ------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,7 +125,7 @@ public:
   /// \param[in] a_time The time of the scalars
   virtual void AddGridScalarsAtTime(const VecPt3d& a_scalars,
                                     DataLocationEnum a_scalarLoc,
-                                    xms::DynBitset& a_activity,
+                                    const xms::DynBitset& a_activity,
                                     DataLocationEnum a_activityLoc,
                                     double a_time) = 0;
 
@@ -119,36 +139,57 @@ public:
                           VecPt3d& a_outTrace,
                           VecDbl& a_outTimes) = 0;
 
-  /// \brief Runs the Grid Trace for many points against the current two time steps.
+  /// \brief Begins tracing a batch of seeds against the currently loaded time steps.
   ///
-  /// Equivalent to calling TracePoint once per point, but crossing a language or module
-  /// boundary once instead of once per point, and reporting why every trace ended rather
-  /// than only the last -- GetExitMessage describes a single operation, so it cannot
-  /// answer that for a batch.
+  /// A trace runs only as far as the second loaded time step, because that is as far as the
+  /// field is known. Supply the next time step with AddGridScalarsAtTime and call
+  /// ContinueTraces to carry every unfinished trace onward; the two-step window means memory
+  /// stays bounded however long the series is, and the caller reads time steps only as the
+  /// traces actually need them:
   ///
-  /// The time steps are not advanced: every trace runs against whichever pair
-  /// AddGridScalarsAtTime has most recently supplied. Callers wanting traces that span more
-  /// of a series feed the next time step and trace again.
+  /// \code
+  /// tracer->StartTraces(seeds, seedTimes);
+  /// while (tracer->ContinueTraces() > 0 && series.HasNext())
+  ///   tracer->AddGridScalarsAtTime(series.Next(), ...);
+  /// tracer->GetTraceResults(traces, times, reasons);
+  /// \endcode
   ///
-  /// A_outTraces[i] can hold fewer than two points. A seed that leaves the grid on its very
-  /// first step yields only the seed itself, so callers must not assume one usable polyline
-  /// per point.
+  /// Stopping early is legitimate: traces still waiting simply end where they got to, with
+  /// GTEXIT_WAITING_FOR_TIME_STEP. Calling ContinueTraces twice without supplying a time step
+  /// in between does no useful work.
+  ///
+  /// One batch is in flight per tracer, because the time step window it runs against is
+  /// itself state on the tracer. Starting a batch discards any previous one.
   ///
   /// \param[in] a_pts The starting point of each trace
-  /// \param[in] a_ptTimes The starting time of each trace; must be one per point
-  /// \param[out] a_outTraces The resultant positions at each step, one entry per point
-  /// \param[out] a_outTimes The resultant times, parallel to and the same length as
-  ///             the matching entry of a_outTraces
-  /// \param[out] a_outExitMessages What ended each trace, one entry per point
-  virtual void TracePoints(const VecPt3d& a_pts,
-                           const VecDbl& a_ptTimes,
-                           std::vector<VecPt3d>& a_outTraces,
-                           std::vector<VecDbl>& a_outTimes,
-                           VecStr& a_outExitMessages) = 0;
+  /// \param[in] a_ptTimes The starting time of each trace; must be one per point, or the
+  ///            batch is refused entirely
+  virtual void StartTraces(const VecPt3d& a_pts, const VecDbl& a_ptTimes) = 0;
 
-  /// \brief returns a message describing what caused trace to exit
-  /// \return the exit message of the last TracePoint operation
-  virtual std::string GetExitMessage() = 0;
+  /// \brief Advances every unfinished trace as far as the loaded time steps allow.
+  /// \return How many traces are waiting on a later time step. Zero means every trace has
+  ///         ended for a reason that more data cannot change.
+  virtual int ContinueTraces() = 0;
+
+  /// \brief Copies out the batch traced so far. Valid at any point, complete once
+  ///        ContinueTraces has returned zero.
+  ///
+  /// An entry can hold fewer than two points: a seed that leaves the grid on its very first
+  /// step yields only the seed itself, so callers must not assume one usable polyline per
+  /// seed.
+  ///
+  /// \param[out] a_outTraces The positions of each trace, one entry per seed
+  /// \param[out] a_outTimes The times of each trace, parallel to and the same length as the
+  ///             matching entry of a_outTraces
+  /// \param[out] a_outExitReasons Why each trace stopped, one entry per seed
+  virtual void GetTraceResults(std::vector<VecPt3d>& a_outTraces,
+                               std::vector<VecDbl>& a_outTimes,
+                               std::vector<XmGridTraceExitEnum>& a_outExitReasons) const = 0;
+
+  /// \brief Returns a human-readable description of what ended the last trace operation.
+  ///        Use GetTraceResults' exit reasons to make decisions; this is for display and logs.
+  /// \return the exit message of the last trace operation
+  virtual const std::string& GetExitMessage() const = 0;
 
 private:
   XM_DISALLOW_COPY_AND_ASSIGN(XmGridTrace)
@@ -158,5 +199,10 @@ protected:
 };
 
 //----- Function prototypes ----------------------------------------------------
+
+/// \brief Returns a human-readable description of an exit reason.
+/// \param[in] a_reason The exit reason
+/// \return a description suitable for a log or a tooltip
+const char* XmGridTraceExitReasonToString(XmGridTraceExitEnum a_reason);
 
 } // namespace xms
