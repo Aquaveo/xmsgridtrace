@@ -387,9 +387,10 @@ class TestGridTrace(unittest.TestCase):
         expected_out_times = []
         np.testing.assert_equal(0, len(result_tuple[0]))
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
+        self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, tracer.get_exit_reason())
 
     def test_beyond_timestep(self):
-        """Test functionality of starting beyond the time step."""
+        """Test that a start time past the loaded window waits rather than failing."""
         tracer = self.create_default_single_cell()
         start_time = 10.1
 
@@ -398,6 +399,10 @@ class TestGridTrace(unittest.TestCase):
         expected_out_times = []
         np.testing.assert_equal(0, len(result_tuple[0]))
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
+        # This and test_start_out_of_cell both produce an empty trace, so emptiness alone
+        # cannot tell them apart -- which is how this case went unnoticed as an extraction
+        # failure. The field is not known this far ahead yet; the trace is waiting for data.
+        self.assertEqual(exit_reason_enum.WAITING_FOR_TIME_STEP, tracer.get_exit_reason())
 
     def test_before_timestep(self):
         """Test functionality of starting before the time step."""

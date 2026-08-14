@@ -71,6 +71,11 @@ size_t g_boundaryExtractorBuilds = 0;
 
 //----- Class / Function definitions -------------------------------------------
 
+/// Step size a trace begins with, and the value a resumed trace falls back to when the
+/// window it just finished clamped its step to zero. See StepTrace for why zero cannot be
+/// carried forward.
+const double kInitialDeltaT = 1.0;
+
 //------------------------------------------------------------------------------
 /// \brief Whether a reason means the trace can never advance again.
 /// \param[in] a_reason The exit reason
@@ -131,7 +136,7 @@ struct TraceState
   double m_ptTime = 0;       ///< time the trace was released; never advanced
   double m_elapsedTime = 0;  ///< time advanced since release, against m_maxTracingTime
   double m_distTraveled = 0; ///< distance covered, against m_maxTracingDistance
-  double m_deltaT = 1.0;     ///< adaptive step size carried into the next step
+  double m_deltaT = kInitialDeltaT; ///< adaptive step size carried into the next step
   double m_vx = 0;           ///< velocity x at m_pt, for the subdivision tests
   double m_vy = 0;           ///< velocity y at m_pt, for the subdivision tests
   double m_mag = 0;          ///< speed at m_pt, for the change-in-velocity test
@@ -220,8 +225,15 @@ private:
   BSHP<XmUGrid2dDataExtractor> m_extractor2y;
   double m_time2=-1;        ///< time of the second time step
   xms::DynBitset m_activity2; ///< activity of the second time step, to compare with the next
-  /// Whether both time steps share one triangulation, which they can when their activity
-  /// matches. When they do, one search serves all four extractors instead of one per step.
+  /// Data location of the second time step's scalars, to compare with the next. The
+  /// triangulation is built for a location, so a change here forbids sharing.
+  DataLocationEnum m_scalarLoc2 = DataLocationEnum::LOC_UNKNOWN;
+  /// Data location of the second time step's activity, to compare with the next. Decides how
+  /// the activity bitset maps onto cell activity, so a change here forbids sharing too.
+  DataLocationEnum m_activityLoc2 = DataLocationEnum::LOC_UNKNOWN;
+  /// Whether both time steps share one triangulation, which they can when the two steps agree
+  /// on activity and on both data locations. When they do, one search serves all four
+  /// extractors instead of one per step.
   bool m_sharedAcrossTime = false;
   /// Scratch for the point-location search. Members rather than locals because
   /// GetVectorAtLocationAndTime runs a few dozen times per traced seed and these would
@@ -432,13 +444,21 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars,
     yy.push_back((float)pt.y);
   }
 
-  // Share the triangulation with the previous time step when the two agree on activity. The
-  // triangulation and its GmTriSearch R-tree depend only on the grid and the activity mask,
-  // so an identical mask makes them interchangeable -- which both skips a rebuild and lets a
-  // single point-location query serve all four extractors instead of one per time step.
-  // Differing activity is the case that cannot share, and it is why the mask is compared
-  // rather than assumed.
-  m_sharedAcrossTime = hadPrevious && a_activity == m_activity2;
+  // Share the triangulation with the previous time step when the two agree on everything it
+  // is built from: the grid (fixed at construction), the data location, and the activity
+  // mask. When they do, one point-location query serves all four extractors instead of one
+  // per time step, and no rebuild happens.
+  //
+  // All three terms are load-bearing, and the location ones are the easy ones to miss. The
+  // triangulation's shape comes from a_scalarLoc -- LOC_CELLS adds a centroid point per cell
+  // and LOC_POINTS adds none -- while a_activityLoc decides how the same bitset maps onto
+  // cell activity. Sharing does not copy the triangulation, it shares the object, and the
+  // second step's SetGrid*Scalars rebuilds that shared object in place; so sharing across a
+  // location change would rebuild the triangulation the *first* step is still pointing at,
+  // leaving its shorter scalar array indexed by the new triangulation's centroid indices.
+  // That is an out-of-bounds read in iApplyWeights, not a wrong answer.
+  m_sharedAcrossTime = hadPrevious && a_activity == m_activity2 &&
+                       a_scalarLoc == m_scalarLoc2 && a_activityLoc == m_activityLoc2;
   m_extractor2x = m_sharedAcrossTime ? XmUGrid2dDataExtractor::New(m_extractor1x)
                                      : XmUGrid2dDataExtractor::New(m_ugrid);
   if (a_scalarLoc == DataLocationEnum::LOC_POINTS)
@@ -457,6 +477,8 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars,
     m_extractor2y->SetGridCellScalars(yy, a_activity, a_activityLoc);
 
   m_activity2 = a_activity;
+  m_scalarLoc2 = a_scalarLoc;
+  m_activityLoc2 = a_activityLoc;
 }
 
 //------------------------------------------------------------------------------
@@ -475,6 +497,15 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
   const double ptTime = a_state.m_ptTime;
   Pt3d pt0 = a_state.m_pt, pt1;
   double deltaT = a_state.m_deltaT;
+  // A window that ended exactly on m_time2 left deltaT clamped to zero (see the time step
+  // clamp in the loop below), and zero cannot be carried into the next window: a zero-length
+  // step moves nothing and changes no velocity, so it satisfies none of the loop's exit
+  // tests -- not the clamps, which need elapsedTime to advance, and not the subdivision
+  // tests, which compare a step against the one before it and would see no change. The loop
+  // would spin forever. Start the next window from the initial step and let the clamps size
+  // it again, which is what a fresh trace does.
+  if (deltaT <= 0)
+    deltaT = kInitialDeltaT;
   double elapsedTime = a_state.m_elapsedTime;
   double distTraveled = a_state.m_distTraveled;
   double vx0 = a_state.m_vx, vy0 = a_state.m_vy, mag0 = a_state.m_mag;
@@ -504,8 +535,18 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
   {
     outTrace.clear();
     outTimes.clear();
-    if (ptTime > m_time2 || // Test if the time specified is after the time range
-        !GetVectorAtLocationAndTime(pt0, ptTime, vector)) // Ensure extraction did not fail
+    if (ptTime > m_time2)
+    {
+      // The seed is released after the loaded window, so its field is not known yet. That is
+      // the same situation the time step clamp below reports as WAITING, and it has to be
+      // reported the same way here: EXTRACTION_FAILED is terminal (see iIsTerminal), so a
+      // seed given a later release time than the current window would never start, even once
+      // the time step covering it arrived. StartTraces takes a release time per seed
+      // precisely so a batch can be staggered, which makes this a normal input, not an error.
+      stopWith(GTEXIT_WAITING_FOR_TIME_STEP);
+      return;
+    }
+    if (!GetVectorAtLocationAndTime(pt0, ptTime, vector)) // Ensure extraction did not fail
     {
       stopWith(GTEXIT_EXTRACTION_FAILED);
       return;
@@ -546,6 +587,18 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     if (elapsedTime + deltaT + ptTime > m_time2)
     {
       deltaT = m_time2 - elapsedTime - ptTime;
+      if (deltaT <= 0)
+      {
+        // Nothing left in this window -- the trace is already sitting exactly on m_time2,
+        // which is what a second ContinueTraces with no new data finds. Stop before stepping,
+        // and put back the step size this call came in with: a zero-length step would append
+        // nothing anyway, and persisting the zero is what used to leave the resumed trace
+        // unable to advance at all. Restoring it is what makes a redundant ContinueTraces
+        // genuinely do no useful work, rather than quietly changing the path that follows.
+        deltaT = a_state.m_deltaT;
+        stopWith(GTEXIT_WAITING_FOR_TIME_STEP);
+        return;
+      }
       bContinue = false; // This will be the last point traced in this window
       stopReason = GTEXIT_WAITING_FOR_TIME_STEP;
     }
@@ -1610,6 +1663,10 @@ void XmGridTraceUnitTests::testBeyondTimestep()
   VecDbl expectedOutTimes = {};
   TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
   TS_ASSERT_DELTA_VEC(expectedOutTimes, outTimes, .0001);
+  // An empty trace on its own does not say which of several unrelated things happened, which
+  // is how this case went unnoticed as an extraction failure. The field simply is not known
+  // this far ahead yet, so the trace is waiting -- supplying a later time step starts it.
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)tracer->GetExitReason());
 } // XmGridTraceUnitTests::testBeyondTimestep
 //------------------------------------------------------------------------------
 /// \brief test the behavior when starting before the first timestep
@@ -2272,6 +2329,184 @@ void XmGridTraceUnitTests::testTracesContinueAcrossTimeSteps()
   TS_ASSERT(maxX > seeds[0].x);
   TS_ASSERT(traces[0].back().x < maxX);
 } // XmGridTraceUnitTests::testTracesContinueAcrossTimeSteps
+//------------------------------------------------------------------------------
+/// \brief Returns a tracer whose spatially uniform field rotates +x -> +y across two steps.
+///
+/// One cell spanning the domain, so the field is uniform in space and every change in a path
+/// comes from time. Steps at t = 0 (east) and t = 10 (north) are loaded; supply a third to
+/// let a trace resume past t = 10.
+/// \param[out] a_activity Single-cell activity, for supplying further time steps
+/// \return the tracer
+//------------------------------------------------------------------------------
+BSHP<XmGridTrace> iCreateRotatingFieldTracer(DynBitset& a_activity)
+{
+  VecPt3d points = {{0, 0, 0}, {40, 0, 0}, {40, 40, 0}, {0, 40, 0}};
+  VecInt cells = {XMU_QUAD, 4, 0, 1, 2, 3};
+  std::shared_ptr<XmUGrid> ugrid = XmUGrid::New(points, cells);
+
+  a_activity.clear();
+  a_activity.push_back(true);
+
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(ugrid);
+  tracer->SetVectorMultiplier(1);
+  tracer->SetMaxTracingTime(18);
+  tracer->SetMaxTracingDistance(1000);
+  tracer->SetMinDeltaTime(.01);
+  tracer->SetMaxChangeDistance(.5);
+  tracer->SetMaxChangeVelocity(-1);
+  tracer->SetMaxChangeDirectionInRadians(XM_PI); // never subdivide on direction
+  VecPt3d east = {{1, 0, 0}}, north = {{0, 1, 0}};
+  tracer->AddGridScalarsAtTime(east, DataLocationEnum::LOC_CELLS, a_activity,
+                               DataLocationEnum::LOC_CELLS, 0.0);
+  tracer->AddGridScalarsAtTime(north, DataLocationEnum::LOC_CELLS, a_activity,
+                               DataLocationEnum::LOC_CELLS, 10.0);
+  return tracer;
+} // iCreateRotatingFieldTracer
+//------------------------------------------------------------------------------
+/// \brief A redundant ContinueTraces must not change what the trace does afterwards.
+///
+/// XmGridTrace.h sanctions calling ContinueTraces twice with no time step in between, saying
+/// it does no useful work. It used to do considerably worse than nothing: the first call ends
+/// a window by clamping deltaT to exactly m_time2 - elapsed - ptTime, which for a trace
+/// already sitting on m_time2 is exactly zero, and that zero was carried into the resumed
+/// trace. A zero-length step moves nothing and changes no velocity, so no clamp and no
+/// subdivision test could ever end the loop -- it spun forever, appending nothing, with the
+/// GIL released so Python could not interrupt it.
+///
+/// The assertion is equality with the run that did not make the redundant call. "Does no
+/// useful work" is only true if the outcome is indistinguishable.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testRedundantContinueDoesNotStallTrace()
+{
+  const VecPt3d seeds = {{20, 10, 0}};
+  const VecDbl seedTimes = {0};
+  VecPt3d west = {{-1, 0, 0}};
+
+  DynBitset plainActivity;
+  BSHP<XmGridTrace> plain = iCreateRotatingFieldTracer(plainActivity);
+  plain->StartTraces(seeds, seedTimes);
+  TS_ASSERT_EQUALS(1, plain->ContinueTraces());
+  plain->AddGridScalarsAtTime(west, DataLocationEnum::LOC_CELLS, plainActivity,
+                              DataLocationEnum::LOC_CELLS, 20.0);
+  TS_ASSERT_EQUALS(0, plain->ContinueTraces());
+  std::vector<VecPt3d> plainTraces;
+  std::vector<VecDbl> plainTimes;
+  std::vector<XmGridTraceExitEnum> plainReasons;
+  plain->GetTraceResults(plainTraces, plainTimes, plainReasons);
+
+  DynBitset activity;
+  BSHP<XmGridTrace> tracer = iCreateRotatingFieldTracer(activity);
+  tracer->StartTraces(seeds, seedTimes);
+  TS_ASSERT_EQUALS(1, tracer->ContinueTraces());
+  // The redundant call. Still waiting, because no new data arrived.
+  TS_ASSERT_EQUALS(1, tracer->ContinueTraces());
+  tracer->AddGridScalarsAtTime(west, DataLocationEnum::LOC_CELLS, activity,
+                               DataLocationEnum::LOC_CELLS, 20.0);
+  // Before the fix this call never returned.
+  TS_ASSERT_EQUALS(0, tracer->ContinueTraces());
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+  tracer->GetTraceResults(traces, times, reasons);
+
+  TS_ASSERT_EQUALS((int)plainReasons[0], (int)reasons[0]);
+  TS_ASSERT_EQUALS(plainTraces[0].size(), traces[0].size());
+  TS_ASSERT_DELTA_VECPT3D(plainTraces[0], traces[0], 1e-12);
+  TS_ASSERT_DELTA_VEC(plainTimes[0], times[0], 1e-12);
+} // XmGridTraceUnitTests::testRedundantContinueDoesNotStallTrace
+//------------------------------------------------------------------------------
+/// \brief A seed released after the loaded window waits for its data instead of failing.
+///
+/// StartTraces takes a release time per seed so a batch can be staggered, which makes a seed
+/// timed past the current window an ordinary input. It used to be reported as
+/// GTEXIT_EXTRACTION_FAILED, which iIsTerminal treats as terminal, so the seed was dead: the
+/// time step covering it could arrive and ContinueTraces would never look at it again. The
+/// mid-trace clamp had always called this same condition WAITING; only the seed path did not.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSeedReleasedAfterWindowWaitsThenTraces()
+{
+  DynBitset activity;
+  BSHP<XmGridTrace> tracer = iCreateRotatingFieldTracer(activity);
+
+  // Steps at t = 0 and t = 10 are loaded; this seed is released at 15.
+  const VecPt3d seeds = {{20, 10, 0}};
+  tracer->StartTraces(seeds, {15});
+  TS_ASSERT_EQUALS(1, tracer->ContinueTraces()); // waiting, not failed
+
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+  tracer->GetTraceResults(traces, times, reasons);
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)reasons[0]);
+  TS_ASSERT(traces[0].empty());
+
+  // Now supply a window that covers t = 15. The seed must start.
+  VecPt3d west = {{-1, 0, 0}};
+  tracer->AddGridScalarsAtTime(west, DataLocationEnum::LOC_CELLS, activity,
+                               DataLocationEnum::LOC_CELLS, 20.0);
+  tracer->ContinueTraces();
+  tracer->GetTraceResults(traces, times, reasons);
+
+  TS_ASSERT(reasons[0] != GTEXIT_EXTRACTION_FAILED);
+  TS_ASSERT(traces[0].size() >= 2);
+  TS_ASSERT_DELTA(15.0, times[0].front(), 1e-9); // started at its own release time
+  TS_ASSERT_DELTA(20.0, traces[0].front().x, 1e-9);
+  TS_ASSERT_DELTA(10.0, traces[0].front().y, 1e-9);
+} // XmGridTraceUnitTests::testSeedReleasedAfterWindowWaitsThenTraces
+//------------------------------------------------------------------------------
+/// \brief Two time steps at different data locations must not share a triangulation.
+///
+/// Sharing does not copy the triangulation, it shares the object, and the second step's
+/// SetGrid*Scalars rebuilds that shared object in place. The shape of the rebuild depends on
+/// the data location -- LOC_CELLS adds a centroid point per cell, LOC_POINTS adds none -- so
+/// sharing across a location change rebuilt the triangulation the first step was still
+/// pointing at, leaving its four-entry scalar array indexed by a centroid index of 4.
+///
+/// Both steps here carry the *same* uniform eastward field, written once as point scalars and
+/// once as cell scalars, so the interpolated field is identical at every time and the path
+/// must be a straight line east. A corrupted first-step lookup cannot produce that.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testDataLocationChangeIsNotShared()
+{
+  VecPt3d points = {{0, 0, 0}, {40, 0, 0}, {40, 40, 0}, {0, 40, 0}};
+  VecInt cells = {XMU_QUAD, 4, 0, 1, 2, 3};
+  std::shared_ptr<XmUGrid> ugrid = XmUGrid::New(points, cells);
+
+  // Activity is cell-based and identical across both steps, so the data location is the only
+  // term that differs -- which is exactly the term the sharing test used to ignore.
+  DynBitset activity;
+  activity.push_back(true);
+
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(ugrid);
+  tracer->SetVectorMultiplier(1);
+  tracer->SetMaxTracingTime(8);
+  tracer->SetMaxTracingDistance(1000);
+  tracer->SetMinDeltaTime(.01);
+  tracer->SetMaxChangeDistance(.5);
+  tracer->SetMaxChangeVelocity(-1);
+  tracer->SetMaxChangeDirectionInRadians(XM_PI);
+
+  VecPt3d eastAtPoints = {{1, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 0, 0}};
+  VecPt3d eastAtCells = {{1, 0, 0}};
+  tracer->AddGridScalarsAtTime(eastAtPoints, DataLocationEnum::LOC_POINTS, activity,
+                               DataLocationEnum::LOC_CELLS, 0.0);
+  tracer->AddGridScalarsAtTime(eastAtCells, DataLocationEnum::LOC_CELLS, activity,
+                               DataLocationEnum::LOC_CELLS, 10.0);
+
+  VecPt3d outTrace;
+  VecDbl outTimes;
+  tracer->TracePoint({5, 20, 0}, 0, outTrace, outTimes);
+
+  TS_ASSERT(outTrace.size() >= 2);
+  for (size_t i = 0; i < outTrace.size(); ++i)
+  {
+    TS_ASSERT_DELTA(20.0, outTrace[i].y, 1e-9); // pure +x field: y never moves
+    if (i > 0)
+      TS_ASSERT(outTrace[i].x > outTrace[i - 1].x);
+  }
+  // 8 time units at unit speed from x = 5.
+  TS_ASSERT_DELTA(13.0, outTrace.back().x, 1e-6);
+} // XmGridTraceUnitTests::testDataLocationChangeIsNotShared
 //------------------------------------------------------------------------------
 /// \brief Verifies the boundary-exit extractor is built once per tracer, not once per exit.
 ///
