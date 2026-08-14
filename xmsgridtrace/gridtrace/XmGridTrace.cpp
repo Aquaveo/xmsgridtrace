@@ -54,9 +54,18 @@ namespace
 size_t g_extractDataCalls = 0;
 /// \brief Adds a_n to the ExtractData call count. Compiles away outside test builds.
 #define XMGT_COUNT_EXTRACT_DATA(a_n) (g_extractDataCalls += (a_n))
+/// \brief Count of XmUGrid2dPolylineDataExtractor constructions since it was last zeroed.
+/// Test-build-only instrumentation for testBoundaryExtractorIsCached. Caching that extractor
+/// is a pure performance change with no effect on trace output, so a construction count is
+/// the only thing that can tell a cached run from an uncached one.
+size_t g_boundaryExtractorBuilds = 0;
+/// \brief Records one boundary-extractor construction. Compiles away outside test builds.
+#define XMGT_COUNT_BOUNDARY_EXTRACTOR_BUILD() (++g_boundaryExtractorBuilds)
 #else
 /// \brief No-op outside test builds, so production traces pay nothing for instrumentation.
 #define XMGT_COUNT_EXTRACT_DATA(a_n) ((void)0)
+/// \brief No-op outside test builds.
+#define XMGT_COUNT_BOUNDARY_EXTRACTOR_BUILD() ((void)0)
 #endif
 
 //----- Class / Function definitions -------------------------------------------
@@ -127,6 +136,13 @@ private:
   /// data extractor for the y component for the second time step
   BSHP<XmUGrid2dDataExtractor> m_extractor2y;
   double m_time2=-1;        ///< time of the second time step
+  /// Extractor used to find where a trace leaves the grid, built lazily on the first
+  /// out-of-domain step and reused for every one after it. Its construction triangulates the
+  /// whole grid and its first SetPolyline indexes every triangle into a GmMultiPolyIntersector;
+  /// neither depends on the polyline, and both were previously rebuilt per exit event at a
+  /// measured ~40 ms each. Null until a trace actually exits, so a tracer whose traces all
+  /// stay inside the grid never pays the memory.
+  BSHP<XmUGrid2dPolylineDataExtractor> m_boundaryExtractor;
   double m_distTraveled=0; ///< distance traveled in the last TracePoint operation
 
   std::string m_exitMessage; ///< exit message for the last TracePoint operation
@@ -410,11 +426,17 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt,
     {
       m_exitMessage = "Point has traveled out of domain.";
       VecPt3d points = {pt0, pt1};
-      // DataLocationEnum is irrelevant here.
-      BSHP<XmUGrid2dPolylineDataExtractor> polylineExtractor =
-        XmUGrid2dPolylineDataExtractor::New(m_ugrid, DataLocationEnum::LOC_POINTS);
-      polylineExtractor->SetPolyline(points);
-      points = polylineExtractor->GetExtractLocations();
+      if (!m_boundaryExtractor)
+      {
+        // DataLocationEnum is irrelevant here: only the extract locations are consumed below,
+        // never the extracted values, so the dummy zero scalars the constructor installs do
+        // not matter and the instance stays valid for this tracer's lifetime.
+        m_boundaryExtractor =
+          XmUGrid2dPolylineDataExtractor::New(m_ugrid, DataLocationEnum::LOC_POINTS);
+        XMGT_COUNT_BOUNDARY_EXTRACTOR_BUILD();
+      }
+      m_boundaryExtractor->SetPolyline(points);
+      points = m_boundaryExtractor->GetExtractLocations();
       if (points.size() < 3)
       {
         XM_LOG(xmlog::error, "Gridtracer failed to find an intersection when exiting grid.");
@@ -1713,6 +1735,44 @@ void XmGridTraceUnitTests::testTutorial()
 } // XmGridTraceUnitTests::testTutorial
   //! [snip_test_Example_XmGridTrace]
 //------------------------------------------------------------------------------
+/// \brief Verifies the boundary-exit extractor is built once per tracer, not once per exit.
+///
+/// The extractor's constructor triangulates the whole grid and its first SetPolyline indexes
+/// every triangle into a GmMultiPolyIntersector -- both grid-only work, and both measured at
+/// ~40 ms per exit event when rebuilt inside the stepping loop. Caching it changes no output,
+/// so the construction count is what has to be asserted; the trace comparison is here to
+/// catch the reuse silently changing an answer.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testBoundaryExtractorIsCached()
+{
+  BSHP<XmGridTrace> tracer;
+  iCreateDefaultSingleCell(tracer);
+
+  // The default single cell has a uniform (1, 1) field, so a trace from the middle leaves the
+  // grid on its first step.
+  const Pt3d startPoint = {.5, .5, 0};
+  const double startTime = .5;
+  const std::string outOfDomain = "Point has traveled out of domain.";
+
+  g_boundaryExtractorBuilds = 0;
+
+  VecPt3d firstTrace;
+  VecDbl firstTimes;
+  tracer->TracePoint(startPoint, startTime, firstTrace, firstTimes);
+  TS_ASSERT_EQUALS(outOfDomain, tracer->GetExitMessage());
+  TS_ASSERT_EQUALS(size_t(1), g_boundaryExtractorBuilds);
+  TS_ASSERT(firstTrace.size() >= 2);
+
+  VecPt3d secondTrace;
+  VecDbl secondTimes;
+  tracer->TracePoint(startPoint, startTime, secondTrace, secondTimes);
+  TS_ASSERT_EQUALS(outOfDomain, tracer->GetExitMessage());
+  TS_ASSERT_EQUALS(size_t(1), g_boundaryExtractorBuilds);
+
+  TS_ASSERT_DELTA_VECPT3D(firstTrace, secondTrace, 1e-12);
+  TS_ASSERT_DELTA_VEC(firstTimes, secondTimes, 1e-12);
+} // XmGridTraceUnitTests::testBoundaryExtractorIsCached
+//------------------------------------------------------------------------------
 /// \brief Measures the cost of tracing many seed points over a realistic grid.
 ///
 /// This is the baseline for routing the "follow flow path" vector display option through
@@ -1722,9 +1782,10 @@ void XmGridTraceUnitTests::testTutorial()
 ///
 ///   interior  seeds far enough from the edge that no trace can reach it -- the pure
 ///             stepping cost, four ExtractData searches per integration step
-///   boundary  seeds in a band along the edge, so traces run out of the domain and pay
-///             for a freshly constructed XmUGrid2dPolylineDataExtractor and
-///             GmMultiPolyIntersector per exit event, inside the stepping loop
+///   boundary  seeds in a band along the edge, so traces run out of the domain and pay for
+///             the XmUGrid2dPolylineDataExtractor path -- a whole-grid triangulation plus a
+///             GmMultiPolyIntersector, once per tracer since that extractor is cached
+///             (it was once per exit event, inside the stepping loop)
 ///   mixed     seeds spread over the whole domain -- what the display actually does
 ///
 /// Reported alongside wall time is the ExtractData call count, so a later optimization
