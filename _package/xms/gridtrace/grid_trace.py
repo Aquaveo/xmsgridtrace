@@ -150,3 +150,68 @@ class GridTrace(object):
             str: The exit message of the last trace_point operation
         """
         return self._instance.get_exit_message()
+
+    def get_exit_reason(self):
+        """Returns why the last trace operation ended.
+
+        Prefer this over get_exit_message when deciding what to do with a trace; the message is for
+        display. WAITING_FOR_TIME_STEP means the path stops early because the field is not known past
+        the second loaded time step, not that the particle came to rest.
+
+        Returns:
+            exit_reason_enum: The exit reason of the last trace operation
+        """
+        return self._instance.get_exit_reason()
+
+    def start_traces(self, pts, pt_times):
+        """Begin tracing a batch of seeds against the currently loaded time steps.
+
+        A trace runs only as far as the second loaded time step, because that is as far as the field is
+        known. Supply the next time step with add_grid_scalars_at_time and call continue_traces to carry
+        every unfinished trace onward::
+
+            tracer.start_traces(seeds, seed_times)
+            while tracer.continue_traces() > 0:
+                step = series.next()
+                if step is None:
+                    break
+                tracer.add_grid_scalars_at_time(*step)
+            traces, times, reasons = tracer.get_trace_results()
+
+        Stopping early is fine: traces still waiting end where they got to. One batch is in flight per
+        tracer; starting a batch discards any previous one.
+
+        Args:
+            pts (iterable): The starting point of each trace
+            pt_times (iterable): The starting time of each trace, one per point
+
+        Raises:
+            ValueError: If pt_times does not have one entry per point
+        """
+        self._instance.start_traces(pts, pt_times)
+
+    def continue_traces(self):
+        """Advance every unfinished trace as far as the loaded time steps allow.
+
+        Releases the GIL while tracing, so calling this from a worker thread does not stall the
+        interpreter.
+
+        Returns:
+            int: How many traces are waiting on a later time step. Zero means every trace has ended for
+            a reason more data cannot change
+        """
+        return self._instance.continue_traces()
+
+    def get_trace_results(self):
+        """Return the batch traced so far.
+
+        Valid at any point, complete once continue_traces has returned zero. An entry can hold fewer
+        than two points: a seed that leaves the grid on its first step yields only the seed itself, so
+        callers must not assume one usable polyline per seed.
+
+        Returns:
+            tuple: The positions of each trace, the times of each trace, and why each trace stopped as
+            an exit_reason_enum. All three are parallel to the seeds passed to start_traces, and each
+            entry's times are parallel to its positions
+        """
+        return self._instance.get_trace_results()
