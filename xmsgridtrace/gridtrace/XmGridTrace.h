@@ -160,6 +160,10 @@ public:
   /// One batch is in flight per tracer, because the time step window it runs against is
   /// itself state on the tracer. Starting a batch discards any previous one.
   ///
+  /// Release times may be staggered, including past the loaded window: a seed whose time is
+  /// later than the second loaded step simply waits, with GTEXIT_WAITING_FOR_TIME_STEP, and
+  /// starts once a window covering it is supplied.
+  ///
   /// \param[in] a_pts The starting point of each trace
   /// \param[in] a_ptTimes The starting time of each trace; must be one per point, or the
   ///            batch is refused entirely
