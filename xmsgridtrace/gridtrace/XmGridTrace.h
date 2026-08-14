@@ -119,6 +119,33 @@ public:
                           VecPt3d& a_outTrace,
                           VecDbl& a_outTimes) = 0;
 
+  /// \brief Runs the Grid Trace for many points against the current two time steps.
+  ///
+  /// Equivalent to calling TracePoint once per point, but crossing a language or module
+  /// boundary once instead of once per point, and reporting why every trace ended rather
+  /// than only the last -- GetExitMessage describes a single operation, so it cannot
+  /// answer that for a batch.
+  ///
+  /// The time steps are not advanced: every trace runs against whichever pair
+  /// AddGridScalarsAtTime has most recently supplied. Callers wanting traces that span more
+  /// of a series feed the next time step and trace again.
+  ///
+  /// A_outTraces[i] can hold fewer than two points. A seed that leaves the grid on its very
+  /// first step yields only the seed itself, so callers must not assume one usable polyline
+  /// per point.
+  ///
+  /// \param[in] a_pts The starting point of each trace
+  /// \param[in] a_ptTimes The starting time of each trace; must be one per point
+  /// \param[out] a_outTraces The resultant positions at each step, one entry per point
+  /// \param[out] a_outTimes The resultant times, parallel to and the same length as
+  ///             the matching entry of a_outTraces
+  /// \param[out] a_outExitMessages What ended each trace, one entry per point
+  virtual void TracePoints(const VecPt3d& a_pts,
+                           const VecDbl& a_ptTimes,
+                           std::vector<VecPt3d>& a_outTraces,
+                           std::vector<VecDbl>& a_outTimes,
+                           VecStr& a_outExitMessages) = 0;
+
   /// \brief returns a message describing what caused trace to exit
   /// \return the exit message of the last TracePoint operation
   virtual std::string GetExitMessage() = 0;
