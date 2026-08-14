@@ -110,6 +110,12 @@ public:
                   VecPt3d& a_outTrace,
                   VecDbl& a_outTimes) final;
 
+  void TracePoints(const VecPt3d& a_pts,
+                   const VecDbl& a_ptTimes,
+                   std::vector<VecPt3d>& a_outTraces,
+                   std::vector<VecDbl>& a_outTimes,
+                   VecStr& a_outExitMessages) final;
+
   std::string GetExitMessage() final;
 
 private:
@@ -522,30 +528,60 @@ void XmGridTraceImpl::TracePoint(const Pt3d& a_pt,
         return;
       }
 
-      // add new pt if not identical to last
-      int size = (int)a_outTrace.size();
-      if (size > 0)
-      {
-        if (!EQ_TOL(pt1.x, a_outTrace.at(size - 1).x, XM_ZERO_TOL) ||
-            !EQ_TOL(pt1.y, a_outTrace.at(size - 1).y, XM_ZERO_TOL))
-        {
-          a_outTrace.push_back(pt1);
-        }
-      }
-      else
-      {
-        a_outTrace.push_back(pt1);
-      }
+      // add new pt if not identical to last -- and push its time only when the point is
+      // pushed. The time push used to be unconditional, so a step shorter than XM_ZERO_TOL
+      // left a_outTimes one longer than a_outTrace and silently misaligned every later
+      // pair, which a caller reading them as parallel arrays cannot detect.
+      const bool moved = a_outTrace.empty() || !EQ_TOL(pt1.x, a_outTrace.back().x, XM_ZERO_TOL) ||
+                         !EQ_TOL(pt1.y, a_outTrace.back().y, XM_ZERO_TOL);
       pt0 = pt1;
       elapsedTime += deltaT;
       vx0 = vx1;
       vy0 = vy1;
       deltaT *= 1.2;
       mag0 = mag1;
-      a_outTimes.push_back(a_ptTime + elapsedTime);
+      if (moved)
+      {
+        a_outTrace.push_back(pt1);
+        a_outTimes.push_back(a_ptTime + elapsedTime);
+      }
     }
   } // while ()
 } // XmGridTraceImpl::TracePoint
+//------------------------------------------------------------------------------
+/// \brief Runs the Grid Trace for many points against the current two time steps
+/// \param[in] a_pts The starting point of each trace
+/// \param[in] a_ptTimes The starting time of each trace; must be one per point
+/// \param[out] a_outTraces The resultant positions at each step, one entry per point
+/// \param[out] a_outTimes The resultant times, one entry per point
+/// \param[out] a_outExitMessages What ended each trace, one entry per point
+//------------------------------------------------------------------------------
+void XmGridTraceImpl::TracePoints(const VecPt3d& a_pts,
+                                  const VecDbl& a_ptTimes,
+                                  std::vector<VecPt3d>& a_outTraces,
+                                  std::vector<VecDbl>& a_outTimes,
+                                  VecStr& a_outExitMessages)
+{
+  a_outTraces.clear();
+  a_outTimes.clear();
+  a_outExitMessages.clear();
+  if (a_pts.size() != a_ptTimes.size())
+  {
+    // Returning empty rather than tracing the common prefix: a caller that mismatched these
+    // has a bug, and a partial result would let it go unnoticed.
+    XM_LOG(xmlog::error, "Gridtracer: TracePoints needs one start time per point.");
+    return;
+  }
+
+  a_outTraces.resize(a_pts.size());
+  a_outTimes.resize(a_pts.size());
+  a_outExitMessages.resize(a_pts.size());
+  for (size_t i = 0; i < a_pts.size(); ++i)
+  {
+    TracePoint(a_pts[i], a_ptTimes[i], a_outTraces[i], a_outTimes[i]);
+    a_outExitMessages[i] = m_exitMessage;
+  }
+} // XmGridTraceImpl::TracePoints
 //------------------------------------------------------------------------------
 /// \brief Returns the velocity scalar for a given point and time
 /// \param[in] a_pt The point
@@ -1857,6 +1893,69 @@ void XmGridTraceUnitTests::testTimeVaryingFieldChangesPath()
   TS_ASSERT(rotating.back().y > startPoint.y + 0.1);
   TS_ASSERT(rotating.back().x < frozen.back().x);
 } // XmGridTraceUnitTests::testTimeVaryingFieldChangesPath
+//------------------------------------------------------------------------------
+/// \brief The batch entry point returns exactly what serial TracePoint calls return.
+///
+/// TracePoints exists to cross a language boundary once instead of once per seed, so its
+/// value depends entirely on it being a faithful stand-in. Comparing against serial
+/// TracePoint on an identical fixture is the strongest oracle available -- stronger than a
+/// recorded baseline, which would drift with the tracer rather than pin the equivalence.
+///
+/// The seeds are chosen to cover the three shapes a caller has to handle: a trace that
+/// leaves the grid, another that leaves it from elsewhere, and a seed outside the grid
+/// entirely, which yields an empty trace rather than a polyline.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testTracePointsMatchesSerialTracePoint()
+{
+  const VecPt3d seeds = {{.5, .5, 0}, {.25, .75, 0}, {-.1, 0, 0}};
+  const VecDbl seedTimes = {.5, .5, .5};
+
+  BSHP<XmGridTrace> serialTracer;
+  iCreateDefaultSingleCell(serialTracer);
+  std::vector<VecPt3d> serialTraces(seeds.size());
+  std::vector<VecDbl> serialTimes(seeds.size());
+  VecStr serialMessages(seeds.size());
+  for (size_t i = 0; i < seeds.size(); ++i)
+  {
+    serialTracer->TracePoint(seeds[i], seedTimes[i], serialTraces[i], serialTimes[i]);
+    serialMessages[i] = serialTracer->GetExitMessage();
+  }
+
+  BSHP<XmGridTrace> batchTracer;
+  iCreateDefaultSingleCell(batchTracer);
+  std::vector<VecPt3d> batchTraces;
+  std::vector<VecDbl> batchTimes;
+  VecStr batchMessages;
+  batchTracer->TracePoints(seeds, seedTimes, batchTraces, batchTimes, batchMessages);
+
+  TS_ASSERT_EQUALS(seeds.size(), batchTraces.size());
+  TS_ASSERT_EQUALS(seeds.size(), batchTimes.size());
+  TS_ASSERT_EQUALS(seeds.size(), batchMessages.size());
+  for (size_t i = 0; i < seeds.size(); ++i)
+  {
+    TS_ASSERT_DELTA_VECPT3D(serialTraces[i], batchTraces[i], 1e-12);
+    TS_ASSERT_DELTA_VEC(serialTimes[i], batchTimes[i], 1e-12);
+    TS_ASSERT_EQUALS(serialMessages[i], batchMessages[i]);
+    // Positions and times are documented as parallel arrays, so a caller may zip them.
+    TS_ASSERT_EQUALS(batchTraces[i].size(), batchTimes[i].size());
+  }
+
+  // The seed outside the grid produces no polyline at all -- callers cannot assume one.
+  TS_ASSERT(batchTraces[2].empty());
+  // ... while the two inside it do.
+  TS_ASSERT(batchTraces[0].size() >= 2);
+  TS_ASSERT(batchTraces[1].size() >= 2);
+
+  // A caller that supplies the wrong number of start times has a bug; tracing the common
+  // prefix would hide it, so nothing is returned.
+  std::vector<VecPt3d> shortTraces;
+  std::vector<VecDbl> shortTimes;
+  VecStr shortMessages;
+  batchTracer->TracePoints(seeds, {.5}, shortTraces, shortTimes, shortMessages);
+  TS_ASSERT(shortTraces.empty());
+  TS_ASSERT(shortTimes.empty());
+  TS_ASSERT(shortMessages.empty());
+} // XmGridTraceUnitTests::testTracePointsMatchesSerialTracePoint
 //------------------------------------------------------------------------------
 /// \brief Verifies the boundary-exit extractor is built once per tracer, not once per exit.
 ///
