@@ -1,4 +1,12 @@
 """Trace the movement of a point through a velocity vector grid."""
+
+# 1. Standard Python modules
+
+# 2. Third party modules
+
+# 3. Aquaveo modules
+
+# 4. Local modules
 from ._xmsgridtrace import gridtrace
 
 
