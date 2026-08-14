@@ -39,6 +39,7 @@ public:
   void testStartInactiveCell();
   void testTutorial();
   void testTimeVaryingFieldChangesPath();
+  void testTracePointsMatchesSerialTracePoint();
   void testBoundaryExtractorIsCached();
   void testTraceBenchmark();
 
