@@ -9,7 +9,16 @@ from xms.gridtrace import GridTrace
 
 
 class TestGridTrace(unittest.TestCase):
-    """GridTrace tests."""
+    """GridTrace tests.
+
+    Traced times are compared approximately, not exactly. They are doubles derived from
+    float32 grid scalars, and the compiler may contract ``a * b + c * d`` into an FMA -- which
+    of the two products lands inside the FMA is computed exactly while the other is rounded,
+    so the last bit depends on the order the terms are written in. These assertions used
+    ``assert_array_equal``, which pinned that decision rather than the tracer's behaviour, and
+    it broke on a correct interpolation fix that only swapped which weight multiplies which
+    time step. Positions were already compared approximately; times now match.
+    """
 
     def create_default_single_cell(self):
         """Create a default single cell.
@@ -70,7 +79,7 @@ class TestGridTrace(unittest.TestCase):
         expected_out_trace = [(.5, .5, 0), (1, 1, 0)]
         expected_out_times = [.5, 1]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_max_change_distance(self):
         """Test max change distance functionality."""
@@ -86,7 +95,7 @@ class TestGridTrace(unittest.TestCase):
                               (1, 1, 0)]
         expected_out_times = [.5, 0.67677668424809445, 0.85355336849618890, 1]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_small_scalars_trace_point(self):
         """Test functionality with small scalars."""
@@ -190,7 +199,7 @@ class TestGridTrace(unittest.TestCase):
                               9.7883171816902319,
                               10.000000000000000]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_max_tracing_time(self):
         """Test functionality of max tracing time."""
@@ -244,7 +253,7 @@ class TestGridTrace(unittest.TestCase):
                               5.2587764123320317,
                               5.5]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_max_tracing_distance(self):
         """Test functionality of max tracing distance."""
@@ -278,7 +287,7 @@ class TestGridTrace(unittest.TestCase):
                               2.1962400000000004,
                               2.4774609356360582]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0], 6)
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_start_out_of_cell(self):
         """Test functionality of starting outside of cell."""
@@ -289,7 +298,7 @@ class TestGridTrace(unittest.TestCase):
 
         expected_out_times = []
         np.testing.assert_equal(0, len(result_tuple[0]))
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_beyond_timestep(self):
         """Test functionality of starting beyond the time step."""
@@ -300,7 +309,7 @@ class TestGridTrace(unittest.TestCase):
 
         expected_out_times = []
         np.testing.assert_equal(0, len(result_tuple[0]))
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_before_timestep(self):
         """Test functionality of starting before the time step."""
@@ -312,7 +321,7 @@ class TestGridTrace(unittest.TestCase):
         expected_out_trace = [(.5, .5, 0), (1, 1, 0)]
         expected_out_times = [-.1, .4]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_vector_multiplier(self):
         """Test functionality of vector multiplier."""
@@ -364,7 +373,7 @@ class TestGridTrace(unittest.TestCase):
                               9.5360834004582404,
                               10.000000000000000]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_multi_cell(self):
         """Test default functionality of multiple cells."""
@@ -390,7 +399,7 @@ class TestGridTrace(unittest.TestCase):
                               9.9299199999999992,
                               9.9683860530914945]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_max_change_velocity(self):
         """Test functionality of max change in velocity."""
@@ -442,7 +451,7 @@ class TestGridTrace(unittest.TestCase):
                               9.1917078801783187,
                               9.6267364611093829]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_unique_time_steps(self):
         """Test functionality of unique time steps."""
@@ -455,20 +464,22 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
-        expected_out_trace = [(.5, .5, 0),
-                              (0.70000000298023224, 0.50000000000000000, 0.00000000000000000),
-                              (0.95200000226497650, 0.50000000000000000, 0.00000000000000000),
-                              (1.2734079944372176, 0.50000000000000000, 0.00000000000000000),
-                              (1.6897536998434066, 0.50000000000000000, 0.00000000000000000),
-                              (2, .5, 0)]
+        expected_out_trace = [(0.5, 0.5, 0),
+                              (0.60000000149011612, 0.5, 0),
+                              (0.74400000184774395, 0.5, 0),
+                              (0.95481600679159162, 0.5, 0),
+                              (1.2691074101881981, 0.5, 0),
+                              (1.747260385068264, 0.5, 0),
+                              (2, 0.5, 0)]
         expected_out_times = [10,
-                              11.000000000000000,
+                              11,
                               12.199999999999999,
                               13.640000000000001,
-                              15.368000000000000,
-                              16.627525378316030]
+                              15.368,
+                              17.441600000000001,
+                              18.362609001148471]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_inactive_cell(self):
         """Test functionality of inactive cells."""
@@ -482,16 +493,18 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
-        expected_out_trace = [(.5, .5, 0),
-                              (0.70000000298023224, 0.50000000000000000, 0.00000000000000000),
-                              (0.93040000677108770, 0.50000000000000000, 0.00000000000000000),
-                              (0.99788877571821222, 0.50000000000000000, 0.00000000000000000)]
+        expected_out_trace = [(0.5, 0.5, 0),
+                              (0.60000000149011612, 0.5, 0),
+                              (0.74280000120401379, 0.5, 0),
+                              (0.94575130454301826, 0.5, 0),
+                              (1, 0.5, 0)]
         expected_out_times = [10,
-                              11.000000000000000,
+                              11,
                               12.199999999999999,
-                              12.560000000000000]
+                              13.640000000000001,
+                              13.969279307058475]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_start_inactive_cell(self):
         """Test functionality of starting in an inactive cell."""
@@ -507,7 +520,7 @@ class TestGridTrace(unittest.TestCase):
 
         expected_out_times = []
         np.testing.assert_equal(0, len(result_tuple[0]))
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
     def test_tutorial(self):
         """A test to serve as a tutorial."""
@@ -566,69 +579,71 @@ class TestGridTrace(unittest.TestCase):
         print(tracer.get_exit_message())
 
         # Expected values for this simulation
-        expected_out_trace = [(0.50000000000000000, 0.50000000000000000, 0.00000000000000000),
-                              (0.50000000000000000, 1.2500000000000000, 0.00000000000000000),
-                              (0.54457812566426578, 1.3391562513285316, 0.00000000000000000),
-                              (0.61632493250262921, 1.4354984729093498, 0.00000000000000000),
-                              (0.72535406450374607, 1.5315533661126233, 0.00000000000000000),
-                              (0.88236797164001590, 1.6126801842666139, 0.00000000000000000),
-                              (0.98873181403598276, 1.6331015959080102, 0.00000000000000000),
-                              (1.0538503898747653, 1.6342606013582104, 0.00000000000000000),
-                              (1.1249433009705341, 1.5683006835455087, 0.00000000000000000),
-                              (1.1895097427498795, 1.3863448896225066, 0.00000000000000000),
-                              (1.2235242118635632, 1.0588590059131318, 0.00000000000000000),
-                              (1.2235242118635632, 0.90477286425654002, 0.00000000000000000),
-                              (1.2005336220528682, 0.85080764250970042, 0.00000000000000000),
-                              (1.1581790674742278, 0.79387770198395835, 0.00000000000000000),
-                              (1.0896874578697060, 0.74131697161132859, 0.00000000000000000),
-                              (0.98966250551038770, 0.70663752692174131, 0.00000000000000000),
-                              (0.95806149614159530, 0.71817980325332686, 0.00000000000000000),
-                              (0.92629620502521459, 0.77371504022050730, 0.00000000000000000),
-                              (0.90239412753251202, 0.88917318465162865, 0.00000000000000000),
-                              (0.89995172701803572, 1.0694875660697027, 0.00000000000000000),
-                              (0.91503139037776327, 1.0911992829869794, 0.00000000000000000),
-                              (0.93816744602651825, 1.1127546977629765, 0.00000000000000000),
-                              (0.97140028507849163, 1.1309789606067331, 0.00000000000000000),
-                              (0.99364912627842006, 1.1358370729524059, 0.00000000000000000),
-                              (1.0071524474802995, 1.1364684019706512, 0.00000000000000000),
-                              (1.0223447138862345, 1.1280655805979485, 0.00000000000000000),
-                              (1.0369737821057583, 1.0971462034407997, 0.00000000000000000),
-                              (1.0467397711865176, 1.0371377237101163, 0.00000000000000000),
-                              (1.0467397711865176, 0.96499504248441559, 0.00000000000000000),
-                              (1.0390576209755447, 0.95473758230148376, 0.00000000000000000),
-                              (1.0276444556154691, 0.94488898976070590, 0.00000000000000000),
-                              (1.0208791233912420, 0.94149540451099356, 0.00000000000000000)]
-        expected_out_times = [0.00000000000000000,
-                              0.37500000000000000,
-                              0.82499999999999996,
-                              1.3649999999999998,
-                              2.0129999999999999,
-                              2.7905999999999995,
-                              3.2571599999999994,
-                              3.5370959999999991,
-                              3.8730191999999990,
-                              4.2761270399999987,
-                              4.7598564479999981,
-                              5.3403317375999979,
-                              6.0369020851199977,
-                              6.8727865021439971,
-                              7.8758478025727969,
-                              9.0795213630873555,
-                              9.4406234312417237,
-                              9.8739459130269651,
-                              10.393932891169255,
-                              11.017917264940003,
-                              11.766698513464901,
-                              12.665236011694777,
-                              13.743481009570628,
-                              14.390428008296139,
-                              14.778596207531445,
-                              15.244398046613812,
-                              15.803360253512654,
-                              16.474114901791264,
-                              17.279020479725595,
-                              18.244907173246794,
-                              19.403971205472232,
-                              20.000000000000000]
+        expected_out_trace = [(0.5, 0.5, 0),
+                              (0.5, 1.5, 0),
+                              (0.62600000187754634, 1.6260000018775462, 0),
+                              (0.82611968728899965, 1.7455603212296962, 0),
+                              (0.97840008102011689, 1.7810753047635555, 0),
+                              (1.0280095840364933, 1.7824472100312621, 0),
+                              (1.0861189816907613, 1.7608732599310344, 0),
+                              (1.1492686295114336, 1.6802752810470523, 0),
+                              (1.2097920698566107, 1.5101408581884392, 0),
+                              (1.2515951471975522, 1.2181485463468757, 0),
+                              (1.2515951471975522, 0.84053651390559747, 0),
+                              (1.2181758214493843, 0.78780883088769804, 0),
+                              (1.1632869448015855, 0.73137186792498654, 0),
+                              (1.0771209832183524, 0.67899546053648097, 0),
+                              (1.0129487663521615, 0.66357815692798783, 0),
+                              (0.97169356095126669, 0.66199025753694563, 0),
+                              (0.92552080990281416, 0.70419149113367874, 0),
+                              (0.88530832700558759, 0.83950990950827409, 0),
+                              (0.87513974259796246, 1.0941588844381676, 0),
+                              (0.90077009637050098, 1.128146252166127, 0),
+                              (0.943692705404238, 1.1613833261644337, 0),
+                              (0.97709108330292604, 1.1730361561747586, 0),
+                              (0.99894959169213471, 1.1759300874982919, 0),
+                              (1.0124203987349505, 1.1760105163064269, 0),
+                              (1.0275428271398932, 1.1645289800266216, 0),
+                              (1.042848666622334, 1.1337546211004945, 0),
+                              (1.055142468614698, 1.0758075939238765, 0),
+                              (1.0585305184379035, 0.98540145004498747, 0),
+                              (1.0556233679912082, 0.97374570199926891, 0),
+                              (1.0492587242876892, 0.9602613226646981, 0),
+                              (1.0375007181419984, 0.94568649411103145, 0),
+                              (1.017827020259642, 0.93210280494582176, 0),
+                              (1.0175992759724071, 0.93204300863222744, 0)]
+        expected_out_times = [0,
+                              1,
+                              2.2000000000000002,
+                              3.6400000000000001,
+                              4.5040000000000004,
+                              4.7632000000000003,
+                              5.0742400000000005,
+                              5.4474880000000008,
+                              5.8953856000000009,
+                              6.432862720000001,
+                              7.0778352640000008,
+                              7.8518023168000006,
+                              8.7805627801600004,
+                              9.8950753361920007,
+                              10.563782869811201,
+                              10.96500738998272,
+                              11.446476814188543,
+                              12.024240123235531,
+                              12.717556094091917,
+                              13.54953525911958,
+                              14.547910257152775,
+                              15.146935255972693,
+                              15.506350255264643,
+                              15.721999254839814,
+                              15.980778054330019,
+                              16.291312613718265,
+                              16.663954084984159,
+                              17.111123850503233,
+                              17.647727569126122,
+                              18.291652031473589,
+                              19.064361386290546,
+                              19.991612612070895,
+                              20]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
-        np.testing.assert_array_equal(expected_out_times, result_tuple[1])
+        np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
