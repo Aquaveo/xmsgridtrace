@@ -5,7 +5,7 @@ import numpy as np
 
 from xms.grid.ugrid import UGrid
 
-from xms.gridtrace import GridTrace
+from xms.gridtrace import exit_reason_enum, GridTrace
 
 
 class TestGridTrace(unittest.TestCase):
@@ -254,6 +254,89 @@ class TestGridTrace(unittest.TestCase):
                               5.5]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
+
+    def create_rotating_field_tracer(self):
+        """Create a tracer over one cell spanning the domain, with the field rotating +x -> +y.
+
+        One cell means the field is spatially uniform, so any change in a path comes from time.
+
+        Returns:
+            GridTrace: A tracer with two time steps loaded
+        """
+        points = [(0, 0, 0), (40, 0, 0), (40, 40, 0), (0, 40, 0)]
+        cells = [UGrid.cell_type_enum.QUAD, 4, 0, 1, 2, 3]
+        tracer = GridTrace(UGrid(points, cells))
+        tracer.vector_multiplier = 1
+        tracer.max_tracing_time = 18
+        tracer.max_tracing_distance = 1000
+        tracer.min_delta_time = .01
+        tracer.max_change_distance = .5
+        tracer.max_change_velocity = -1
+        tracer.max_change_direction_in_radians = np.pi  # never subdivide on direction
+        tracer.add_grid_scalars_at_time([(1, 0, 0)], 'cells', [True], 'cells', 0)
+        tracer.add_grid_scalars_at_time([(0, 1, 0)], 'cells', [True], 'cells', 10)
+        return tracer
+
+    def test_traces_continue_across_time_steps(self):
+        """A trace continues past the second time step once a later one is supplied."""
+        seeds = [(20, 10, 0)]
+        seed_times = [0]
+
+        # Never given the third time step: it must stop at the second and say so.
+        stopped = self.create_rotating_field_tracer()
+        stopped.start_traces(seeds, seed_times)
+        self.assertEqual(1, stopped.continue_traces())
+        stopped_traces, stopped_times, stopped_reasons = stopped.get_trace_results()
+        self.assertEqual(exit_reason_enum.WAITING_FOR_TIME_STEP, stopped_reasons[0])
+        self.assertAlmostEqual(10.0, stopped_times[0][-1])
+
+        # Given the third: it must resume and run out its tracing time instead.
+        tracer = self.create_rotating_field_tracer()
+        tracer.start_traces(seeds, seed_times)
+        self.assertEqual(1, tracer.continue_traces())
+        tracer.add_grid_scalars_at_time([(-1, 0, 0)], 'cells', [True], 'cells', 20)
+        self.assertEqual(0, tracer.continue_traces())
+        traces, times, reasons = tracer.get_trace_results()
+        self.assertEqual(exit_reason_enum.MAX_TRACING_TIME, reasons[0])
+        self.assertAlmostEqual(18.0, times[0][-1])
+
+        # Resuming extends the path; it does not restart it.
+        self.assertGreater(len(traces[0]), len(stopped_traces[0]))
+        np.testing.assert_array_almost_equal(stopped_traces[0], traces[0][:len(stopped_traces[0])])
+        np.testing.assert_array_almost_equal(stopped_times[0], times[0][:len(stopped_times[0])])
+
+        # The third time step reverses the eastward drift, so the path turns back on itself --
+        # something no single pair of these time steps can produce.
+        max_x = max(pt[0] for pt in traces[0])
+        self.assertGreater(max_x, seeds[0][0])
+        self.assertLess(traces[0][-1][0], max_x)
+
+    def test_start_traces_rejects_mismatched_times(self):
+        """A caller supplying the wrong number of start times gets an error, not a silent no-op."""
+        tracer = self.create_rotating_field_tracer()
+        with self.assertRaises(ValueError):
+            tracer.start_traces([(20, 10, 0), (21, 10, 0)], [0])
+
+    def test_batch_matches_trace_point(self):
+        """The batch returns what serial trace_point calls return."""
+        seeds = [(.5, .5, 0), (.25, .75, 0), (-.1, 0, 0)]
+        seed_times = [.5, .5, .5]
+
+        serial = self.create_default_single_cell()
+        expected = [serial.trace_point(pt, t) for pt, t in zip(seeds, seed_times)]
+
+        batch = self.create_default_single_cell()
+        batch.start_traces(seeds, seed_times)
+        batch.continue_traces()
+        traces, times, reasons = batch.get_trace_results()
+
+        self.assertEqual(len(seeds), len(traces))
+        for i, (expected_trace, expected_times) in enumerate(expected):
+            np.testing.assert_array_almost_equal(expected_trace, traces[i])
+            np.testing.assert_array_almost_equal(expected_times, times[i])
+        # The seed outside the grid yields no polyline -- callers cannot assume one per seed.
+        self.assertEqual(0, len(traces[2]))
+        self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[2])
 
     def test_max_tracing_distance(self):
         """Test functionality of max tracing distance."""

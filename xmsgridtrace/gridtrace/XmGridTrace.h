@@ -186,8 +186,17 @@ public:
                                std::vector<VecDbl>& a_outTimes,
                                std::vector<XmGridTraceExitEnum>& a_outExitReasons) const = 0;
 
+  /// \brief Returns why the last trace operation ended.
+  ///
+  /// The single-point TracePoint reports through this what GetTraceResults reports per seed.
+  /// GTEXIT_WAITING_FOR_TIME_STEP means the path stops early because the field is not known
+  /// past the second loaded time step, not that the particle came to rest -- a distinction
+  /// TracePoint cannot otherwise express.
+  /// \return the exit reason of the last trace operation
+  virtual XmGridTraceExitEnum GetExitReason() const = 0;
+
   /// \brief Returns a human-readable description of what ended the last trace operation.
-  ///        Use GetTraceResults' exit reasons to make decisions; this is for display and logs.
+  ///        Use GetExitReason or GetTraceResults to make decisions; this is for display.
   /// \return the exit message of the last trace operation
   virtual const std::string& GetExitMessage() const = 0;
 

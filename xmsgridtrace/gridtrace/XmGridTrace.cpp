@@ -155,6 +155,7 @@ public:
                        std::vector<VecDbl>& a_outTimes,
                        std::vector<XmGridTraceExitEnum>& a_outExitReasons) const final;
 
+  XmGridTraceExitEnum GetExitReason() const final;
   const std::string& GetExitMessage() const final;
 
 private:
@@ -195,7 +196,10 @@ private:
   /// against is itself instance state.
   std::vector<TraceState> m_batch;
 
-  std::string m_exitMessage; ///< exit message for the last TracePoint operation
+  /// Why the last trace operation ended. Kept beside the message so the single-point
+  /// TracePoint can answer the same question GetTraceResults answers per seed.
+  XmGridTraceExitEnum m_exitReason = GTEXIT_NOT_STARTED;
+  std::string m_exitMessage; ///< exit message for the last trace operation
 protected:
 };
 double iGetDirAsCosTheta(double a_vx0, double a_vy0, double a_vx1, double a_vy1)
@@ -334,7 +338,16 @@ void XmGridTraceImpl::SetMaxChangeDirectionInRadians(const double a_maxChangeDir
   m_maxChangeDirectionInRadians = a_maxChangeDirection;
 } // XmGridTraceImpl::SetMaxChangeDirectionInRadians
 //------------------------------------------------------------------------------
+/// \brief returns why the last trace operation ended
+/// \return the exit reason of the last trace operation
+//------------------------------------------------------------------------------
+XmGridTraceExitEnum XmGridTraceImpl::GetExitReason() const
+{
+  return m_exitReason;
+} // XmGridTraceImpl::GetExitReason
+//------------------------------------------------------------------------------
 /// \brief returns a message describing what caused trace to exit
+/// \return the exit message of the last trace operation
 //------------------------------------------------------------------------------
 const std::string& XmGridTraceImpl::GetExitMessage() const
 {
@@ -421,6 +434,7 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     a_state.m_vy = vy0;
     a_state.m_mag = mag0;
     a_state.m_exitReason = a_reason;
+    m_exitReason = a_reason;
     m_exitMessage = XmGridTraceExitReasonToString(a_reason);
   };
 
@@ -2059,8 +2073,12 @@ void XmGridTraceUnitTests::testBatchMatchesSerialTracePoint()
   iCreateDefaultSingleCell(serialTracer);
   std::vector<VecPt3d> serialTraces(seeds.size());
   std::vector<VecDbl> serialTimes(seeds.size());
+  std::vector<XmGridTraceExitEnum> serialReasons(seeds.size());
   for (size_t i = 0; i < seeds.size(); ++i)
+  {
     serialTracer->TracePoint(seeds[i], seedTimes[i], serialTraces[i], serialTimes[i]);
+    serialReasons[i] = serialTracer->GetExitReason();
+  }
 
   BSHP<XmGridTrace> batchTracer;
   iCreateDefaultSingleCell(batchTracer);
@@ -2078,6 +2096,9 @@ void XmGridTraceUnitTests::testBatchMatchesSerialTracePoint()
   {
     TS_ASSERT_DELTA_VECPT3D(serialTraces[i], batchTraces[i], 1e-12);
     TS_ASSERT_DELTA_VEC(serialTimes[i], batchTimes[i], 1e-12);
+    // GetExitReason is the single-point path's answer to what GetTraceResults reports per
+    // seed; if they can disagree, a caller cannot use TracePoint and the batch interchangeably.
+    TS_ASSERT_EQUALS((int)reasons[i], (int)serialReasons[i]);
     // Positions and times are documented as parallel arrays, so a caller may zip them.
     TS_ASSERT_EQUALS(batchTraces[i].size(), batchTimes[i].size());
   }

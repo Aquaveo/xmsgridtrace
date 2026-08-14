@@ -314,6 +314,119 @@ void initXmGridTrace(py::module &m) {
   )pydoc";
   gridtrace.def("get_exit_message", &xms::XmGridTrace::GetExitMessage,
     get_exit_message_doc);
+  // ---------------------------------------------------------------------------
+  // function: get_exit_reason
+  // ---------------------------------------------------------------------------
+  const char* get_exit_reason_doc = R"pydoc(
+      Returns why the last trace operation ended.
+
+      Prefer this over get_exit_message when deciding what to do with a trace; the message
+      is for display. WAITING_FOR_TIME_STEP means the path stops early because the field is
+      not known past the second loaded time step, not that the particle came to rest.
+
+      Returns:
+          exit_reason_enum: The exit reason of the last trace operation.
+  )pydoc";
+  gridtrace.def("get_exit_reason", &xms::XmGridTrace::GetExitReason,
+    get_exit_reason_doc);
+  // ---------------------------------------------------------------------------
+  // function: start_traces
+  // ---------------------------------------------------------------------------
+  const char* start_traces_doc = R"pydoc(
+      Begins tracing a batch of seeds against the currently loaded time steps.
+
+      A trace runs only as far as the second loaded time step, because that is as far as
+      the field is known. Supply the next time step with add_grid_scalars_at_time and call
+      continue_traces to carry every unfinished trace onward::
+
+          tracer.start_traces(seeds, seed_times)
+          while tracer.continue_traces() > 0:
+              step = series.next()
+              if step is None:
+                  break
+              tracer.add_grid_scalars_at_time(*step)
+          traces, times, reasons = tracer.get_trace_results()
+
+      Stopping early is fine: traces still waiting end where they got to. One batch is in
+      flight per tracer; starting a batch discards any previous one.
+
+      Args:
+          pts (iterable): The starting point of each trace.
+
+          pt_times (iterable): The starting time of each trace, one per point.
+  )pydoc";
+  gridtrace.def("start_traces", [](xms::XmGridTrace &self, py::iterable pts,
+    py::iterable pt_times) {
+          boost::shared_ptr<xms::VecPt3d> points = xms::VecPt3dFromPyIter(pts);
+          boost::shared_ptr<xms::VecDbl> times = xms::VecDblFromPyIter(pt_times);
+          if (points->size() != times->size())
+          {
+            // Raised rather than logged: the C++ side refuses the batch and returns empty,
+            // which from Python would look like a tracer that silently did nothing.
+            std::string msg = "start_traces needs one start time per point, got " +
+                              std::to_string(points->size()) + " points and " +
+                              std::to_string(times->size()) + " times";
+            throw py::value_error(msg);
+          }
+          self.StartTraces(*points, *times);
+        }, start_traces_doc, py::arg("pts"), py::arg("pt_times"));
+  // ---------------------------------------------------------------------------
+  // function: continue_traces
+  // ---------------------------------------------------------------------------
+  const char* continue_traces_doc = R"pydoc(
+      Advances every unfinished trace as far as the loaded time steps allow.
+
+      Releases the GIL while tracing, so a caller on a worker thread does not stall the
+      interpreter. Tracing tens of thousands of seeds takes long enough for that to matter.
+
+      Returns:
+          int: How many traces are waiting on a later time step. Zero means every trace has
+          ended for a reason more data cannot change.
+  )pydoc";
+  gridtrace.def("continue_traces", &xms::XmGridTrace::ContinueTraces,
+    continue_traces_doc, py::call_guard<py::gil_scoped_release>());
+  // ---------------------------------------------------------------------------
+  // function: get_trace_results
+  // ---------------------------------------------------------------------------
+  const char* get_trace_results_doc = R"pydoc(
+      Returns the batch traced so far.
+
+      Valid at any point, complete once continue_traces has returned zero. An entry can hold
+      fewer than two points: a seed that leaves the grid on its first step yields only the
+      seed itself, so callers must not assume one usable polyline per seed.
+
+      Returns:
+          tuple: The positions of each trace, the times of each trace, and why each trace
+          stopped as an exit_reason_enum. All three are parallel to the seeds passed to
+          start_traces, and each entry's times are parallel to its positions.
+  )pydoc";
+  gridtrace.def("get_trace_results", [](const xms::XmGridTrace &self) -> py::iterable {
+          std::vector<xms::VecPt3d> outTraces;
+          std::vector<xms::VecDbl> outTimes;
+          std::vector<xms::XmGridTraceExitEnum> outReasons;
+          self.GetTraceResults(outTraces, outTimes, outReasons);
+          py::list traces, times, reasons;
+          for (size_t i = 0; i < outTraces.size(); ++i)
+          {
+            traces.append(xms::PyIterFromVecPt3d(outTraces[i]));
+            times.append(xms::PyIterFromVecDbl(outTimes[i]));
+            reasons.append(outReasons[i]);
+          }
+          return py::make_tuple(traces, times, reasons);
+        }, get_trace_results_doc);
+
+    // XmGridTraceExitEnum
+    py::enum_<xms::XmGridTraceExitEnum>(m, "exit_reason_enum",
+                    "exit_reason_enum why a trace stopped")
+        .value("NOT_STARTED", xms::GTEXIT_NOT_STARTED)
+        .value("WAITING_FOR_TIME_STEP", xms::GTEXIT_WAITING_FOR_TIME_STEP)
+        .value("MAX_TRACING_TIME", xms::GTEXIT_MAX_TRACING_TIME)
+        .value("MAX_TRACING_DISTANCE", xms::GTEXIT_MAX_TRACING_DISTANCE)
+        .value("LEFT_GRID", xms::GTEXIT_LEFT_GRID)
+        .value("ZERO_VELOCITY", xms::GTEXIT_ZERO_VELOCITY)
+        .value("MIN_DELTA_TIME", xms::GTEXIT_MIN_DELTA_TIME)
+        .value("SEED_NOT_TRACEABLE", xms::GTEXIT_SEED_NOT_TRACEABLE)
+        .value("EXTRACTION_FAILED", xms::GTEXIT_EXTRACTION_FAILED);
 
     // DataLocationEnum
     py::enum_<xms::DataLocationEnum>(m, "data_location_enum",
