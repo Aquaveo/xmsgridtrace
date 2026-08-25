@@ -72,6 +72,7 @@ build_test/
 wheelhouse/
 test_artifacts/
 conan_profiles/
+CMakePresets.json
 CMakeUserPresets.json
 **/CMakeUserPresets.json
 
@@ -99,3 +100,7 @@ cov-py-summary.json
 # Python
 .venv/
 __pycache__/
+
+# Claude Code
+.claude/worktrees/
+.worktreeinclude
