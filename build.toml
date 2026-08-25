@@ -3,10 +3,10 @@ description = "Grid tracing library for XMS products"
 ci_type = "github"
 
 xms_dependencies = [
-    { name = "xmscore", version = "7.0.11" },
-    { name = "xmsgrid", version = "9.0.10" },
-    { name = "xmsinterp", version = "7.0.9" },
-    { name = "xmsextractor", version = "10.0.7" },
+    { name = "xmscore", version = "7.0.13" },
+    { name = "xmsgrid", version = "9.1.1" },
+    { name = "xmsinterp", version = "7.0.12" },
+    { name = "xmsextractor", version = "10.0.10" },
 ]
 
 python_namespaced_dir = "gridtrace"
@@ -34,4 +34,9 @@ pybind_headers = [
 ]
 
 [ci]
-python_versions = ["3.10", "3.13"]
+python_versions = ["3.10", "3.13", "3.14"]
+# python_versions fans out Windows only; mac and linux default to the single
+# highest entry, so leaving these unset would move both platforms off 3.13
+# onto 3.14 rather than adding a leg. Named explicitly to keep 3.13 building.
+mac_python_versions = ["3.13", "3.14"]
+linux_python_versions = ["3.13", "3.14"]
