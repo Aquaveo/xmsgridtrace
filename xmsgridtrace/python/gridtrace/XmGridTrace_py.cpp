@@ -361,6 +361,11 @@ void initXmGridTrace(py::module &m) {
           boost::shared_ptr<xms::VecDbl> times = xms::VecDblFromPyIter(pt_times);
           if (points->size() != times->size())
           {
+            // Refuse it through StartTraces first. That clears the batch before validating,
+            // and "starting a batch discards any previous one" has to hold on the error path
+            // too: without this, a caller that catches the error reads the previous batch
+            // back through get_trace_results as though it belonged to these seeds.
+            self.StartTraces(*points, *times);
             // Raised rather than logged: the C++ side refuses the batch and returns empty,
             // which from Python would look like a tracer that silently did nothing.
             std::string msg = "start_traces needs one start time per point, got " +
@@ -414,6 +419,37 @@ void initXmGridTrace(py::module &m) {
           }
           return py::make_tuple(traces, times, reasons);
         }, get_trace_results_doc);
+  // ---------------------------------------------------------------------------
+  // function: get_seed_magnitudes
+  // ---------------------------------------------------------------------------
+  const char* get_seed_magnitudes_doc = R"pydoc(
+      Returns the speed of the field at each seed of the batch, when it was released.
+
+      Reports the batch, exactly as get_trace_results does: empty before start_traces and
+      after a refused one, and untouched by trace_point, which traces through its own state.
+
+      Recorded when the seed is first evaluated, before the vector multiplier is applied, so
+      it describes the field rather than the tracing. Two components -- the tracer is
+      two-dimensional and never reads a z velocity -- so this is sqrt(vx*vx + vy*vy).
+
+      A seed the tracer never evaluated reports the XM_NODATA sentinel, a large negative
+      value, rather than 0.0. Zero is a legal speed -- a seed in still water measures it and
+      exits ZERO_VELOCITY -- so the two must not share a value. The sentinel covers every
+      unevaluated case alike: not started, waiting for a later time step, not traceable, and
+      extraction failed. Which one it was is in get_trace_results' exit reasons.
+
+      Not safe to call while continue_traces runs on another thread: that call releases the
+      GIL, and this one reads the batch it is writing.
+
+      Returns:
+          Sequence[float]: One speed per seed, parallel to the seeds passed to start_traces
+          and to everything get_trace_results returns.
+  )pydoc";
+  gridtrace.def("get_seed_magnitudes", [](const xms::XmGridTrace &self) -> py::iterable {
+          xms::VecDbl outMagnitudes;
+          self.GetSeedMagnitudes(outMagnitudes);
+          return xms::PyIterFromVecDbl(outMagnitudes);
+        }, get_seed_magnitudes_doc);
 
     // XmGridTraceExitEnum
     py::enum_<xms::XmGridTraceExitEnum>(m, "exit_reason_enum",
@@ -428,10 +464,13 @@ void initXmGridTrace(py::module &m) {
         .value("SEED_NOT_TRACEABLE", xms::GTEXIT_SEED_NOT_TRACEABLE)
         .value("EXTRACTION_FAILED", xms::GTEXIT_EXTRACTION_FAILED);
 
-    // DataLocationEnum
-    py::enum_<xms::DataLocationEnum>(m, "data_location_enum",
-                    "data_location_enum location mapping for dataset values")
-        .value("LOC_POINTS", xms::LOC_POINTS)
-        .value("LOC_CELLS", xms::LOC_CELLS)
-        .value("LOC_UNKNOWN", xms::LOC_UNKNOWN);
+    // DataLocationEnum is deliberately NOT registered here. It is xmsextractor's type, and
+    // xms.extractor registers it under this same name; pybind11's type registry is
+    // process-global, so a second registration of the same C++ type makes whichever module
+    // imports second raise "generic_type: type data_location_enum is already registered" --
+    // in either order, which made the two wheels mutually exclusive in one process. Nothing
+    // needed it: this module's location arguments are strings, converted to the enum as a
+    // local in add_grid_scalars_at_time. A caller who does want the type itself finds it at
+    // xms.extractor._xmsextractor.extractor.data_location_enum -- the extractor package does
+    // not re-export it under its public name either, so there is no tidier spelling to give.
 }

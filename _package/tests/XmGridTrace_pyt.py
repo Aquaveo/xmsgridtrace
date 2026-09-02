@@ -10,6 +10,7 @@ import numpy as np
 from xms.grid.ugrid import UGrid
 
 # 4. Local modules
+from xms.gridtrace import _xmsgridtrace as gridtrace_module
 from xms.gridtrace import exit_reason_enum, GridTrace
 
 
@@ -319,8 +320,13 @@ class TestGridTrace(unittest.TestCase):
     def test_start_traces_rejects_mismatched_times(self):
         """A caller supplying the wrong number of start times gets an error, not a silent no-op."""
         tracer = self.create_rotating_field_tracer()
+        tracer.start_traces([(20, 10, 0), (21, 10, 0)], [0, 0])
         with self.assertRaises(ValueError):
             tracer.start_traces([(20, 10, 0), (21, 10, 0)], [0])
+        # Refused, and the batch it refused is gone rather than readable: a caller that catches
+        # this must not get the previous batch's results back as though they were these seeds'.
+        traces, _times, _reasons = tracer.get_trace_results()
+        self.assertEqual(0, len(traces))
 
     def test_batch_matches_trace_point(self):
         """The batch returns what serial trace_point calls return."""
@@ -342,6 +348,70 @@ class TestGridTrace(unittest.TestCase):
         # The seed outside the grid yields no polyline -- callers cannot assume one per seed.
         self.assertEqual(0, len(traces[2]))
         self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[2])
+
+    def test_seed_magnitudes_report_the_field(self):
+        """The seed speeds describe the field, not the tracing."""
+        # The default fixture's field is a uniform (1, 1), so every seed on the grid sees
+        # exactly sqrt(2). The third seed is off the grid and is never evaluated.
+        seeds = [(.5, .5, 0), (.25, .75, 0), (-.1, 0, 0)]
+        seed_times = [.5, .5, .5]
+        expected = np.sqrt(2)
+
+        tracer = self.create_default_single_cell()
+        tracer.start_traces(seeds, seed_times)
+        tracer.continue_traces()
+        _traces, _times, reasons = tracer.get_trace_results()
+        magnitudes = list(tracer.get_seed_magnitudes())
+
+        self.assertEqual(len(seeds), len(magnitudes))
+        self.assertAlmostEqual(expected, magnitudes[0])
+        self.assertAlmostEqual(expected, magnitudes[1])
+        # Negative, not zero: zero is a legal speed, and this seed never got a field value at
+        # all. The wrapper hands back the tracer's XM_NODATA sentinel; asserting only that it is
+        # not a speed keeps the test off the sentinel's exact value. Which unevaluated case it
+        # was is in the exit reason.
+        self.assertLess(magnitudes[2], 0.0)
+        self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[2])
+
+        # The multiplier scales how far the tracer steps, not what the field measures. If it
+        # leaked in here, a caller would be sizing its glyphs by a tracing parameter.
+        scaled = self.create_default_single_cell()
+        scaled.vector_multiplier = 5
+        scaled.start_traces(seeds, seed_times)
+        scaled.continue_traces()
+        scaled_magnitudes = list(scaled.get_seed_magnitudes())
+        self.assertAlmostEqual(expected, scaled_magnitudes[0])
+        self.assertAlmostEqual(expected, scaled_magnitudes[1])
+
+        # A refused batch reports no magnitudes either, rather than a stale set from the batch
+        # before it, so the speeds can never be zipped against a different batch's seeds.
+        with self.assertRaises(ValueError):
+            tracer.start_traces(seeds, [.5])
+        self.assertEqual(0, len(list(tracer.get_seed_magnitudes())))
+
+    def test_extractor_can_be_imported_alongside(self):
+        """xms.extractor and xms.gridtrace must both load in one process.
+
+        Both wheels bind xmsextractor's DataLocationEnum, and pybind11's type registry is
+        process-global, so registering it here too made whichever module imported second raise
+        "generic_type: type data_location_enum is already registered", which made the two
+        mutually exclusive whichever way round a program imported them. This module no longer
+        registers it; its own location arguments are strings.
+
+        This test exercises one of those two orders -- gridtrace is imported at module scope,
+        so extractor is always the one loading second here. The reverse needs its own process.
+        """
+        try:
+            import xms.extractor  # noqa: F401
+        except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional wheel
+            # Deliberately not ImportError: pybind11 reports a duplicate registration through
+            # PyExc_ImportError, so catching the base class would turn the very regression this
+            # test exists to catch into a green skip.
+            self.skipTest(f'xms.extractor not installed: {exc}')
+
+        # On the gridtrace submodule, which is where the enums are registered -- the top-level
+        # extension never had this attribute, so asserting there would pass either way.
+        self.assertFalse(hasattr(gridtrace_module.gridtrace, 'data_location_enum'))
 
     def test_max_tracing_distance(self):
         """Test functionality of max tracing distance."""

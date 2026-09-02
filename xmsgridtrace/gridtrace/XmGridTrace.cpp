@@ -140,6 +140,11 @@ struct TraceState
   double m_vx = 0;           ///< velocity x at m_pt, for the subdivision tests
   double m_vy = 0;           ///< velocity y at m_pt, for the subdivision tests
   double m_mag = 0;          ///< speed at m_pt, for the change-in-velocity test
+  /// Speed of the field at the seed when it was released, unscaled by the vector multiplier,
+  /// or XM_NODATA where the seed was never evaluated. Held apart from m_mag, which advances
+  /// with the trace and picks up the multiplier from the first step onward; this one is
+  /// written once and never again.
+  double m_seedMagnitude = XM_NODATA;
   bool m_started = false;    ///< the seed has been evaluated and recorded
   /// Why it stopped, or that it is waiting. Doubles as the resume flag -- see iIsTerminal --
   /// so there is one source of truth rather than a reason and a separate finished bool that
@@ -197,6 +202,7 @@ public:
 
   XmGridTraceExitEnum GetExitReason() const final;
   const std::string& GetExitMessage() const final;
+  void GetSeedMagnitudes(VecDbl& a_outMagnitudes) const final;
 
 private:
   void StepTrace(TraceState& a_state);
@@ -563,6 +569,10 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     vx0 = vector.x * m_vectorMultiplier;
     vy0 = vector.y * m_vectorMultiplier;
     mag0 = sqrt(vector.x * vector.x + vector.y * vector.y);
+    // Written here and nowhere else: this is the only point at which the field has been
+    // evaluated at the seed itself. Taken from vector rather than aliasing mag0, which is
+    // about to start advancing with the trace and picks up the vector multiplier on the way.
+    a_state.m_seedMagnitude = sqrt(vector.x * vector.x + vector.y * vector.y);
     a_state.m_started = true;
   }
 
@@ -826,6 +836,18 @@ void XmGridTraceImpl::GetTraceResults(std::vector<VecPt3d>& a_outTraces,
     a_outExitReasons.push_back(state.m_exitReason);
   }
 } // XmGridTraceImpl::GetTraceResults
+//------------------------------------------------------------------------------
+/// \brief Copies out the speed of the field at each seed of the batch when it was released
+/// \param[out] a_outMagnitudes The seed speeds, one entry per seed; XM_NODATA for a seed the
+///             tracer never evaluated
+//------------------------------------------------------------------------------
+void XmGridTraceImpl::GetSeedMagnitudes(VecDbl& a_outMagnitudes) const
+{
+  a_outMagnitudes.clear();
+  a_outMagnitudes.reserve(m_batch.size());
+  for (const auto& state : m_batch)
+    a_outMagnitudes.push_back(state.m_seedMagnitude);
+} // XmGridTraceImpl::GetSeedMagnitudes
 //------------------------------------------------------------------------------
 /// \brief Returns the velocity scalar for a given point and time
 /// \param[in] a_pt The point
@@ -2243,6 +2265,65 @@ void XmGridTraceUnitTests::testBatchMatchesSerialTracePoint()
   TS_ASSERT(batchTimes.empty());
   TS_ASSERT(reasons.empty());
 } // XmGridTraceUnitTests::testBatchMatchesSerialTracePoint
+//------------------------------------------------------------------------------
+/// \brief The seed speeds describe the field, not the tracing.
+///
+/// A caller sizing a glyph by speed reads this instead of interpolating the field a second
+/// time, so it has to be the field's own value: unscaled by the vector multiplier, and
+/// XM_NODATA -- not zero, which is a legal speed -- for a seed the tracer never evaluated.
+/// The default fixture's field is a uniform (1, 1),
+/// which makes the expected speed exactly sqrt(2) everywhere the grid covers.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSeedMagnitudesReportTheField()
+{
+  // The third seed is off the grid, so it is never evaluated.
+  const VecPt3d seeds = {{.5, .5, 0}, {.25, .75, 0}, {-.1, 0, 0}};
+  const VecDbl seedTimes = {.5, .5, .5};
+  const double expected = sqrt(2.0);
+
+  BSHP<XmGridTrace> tracer;
+  iCreateDefaultSingleCell(tracer);
+  tracer->StartTraces(seeds, seedTimes);
+  tracer->ContinueTraces();
+
+  VecDbl magnitudes;
+  tracer->GetSeedMagnitudes(magnitudes);
+
+  // Parallel to the seeds, like everything GetTraceResults returns -- a caller matching a
+  // glyph to a seed by index needs all four arrays to agree on length.
+  TS_ASSERT_EQUALS(seeds.size(), magnitudes.size());
+  TS_ASSERT_DELTA(expected, magnitudes[0], 1e-12);
+  TS_ASSERT_DELTA(expected, magnitudes[1], 1e-12);
+
+  // XM_NODATA rather than zero: zero is a legal speed, so a seed that never got a field
+  // value has to be distinguishable from one sitting in still water. Only the exit reason
+  // says which of the unevaluated cases this was.
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+  tracer->GetTraceResults(traces, times, reasons);
+  TS_ASSERT_DELTA(XM_NODATA, magnitudes[2], 1e-12);
+  TS_ASSERT_EQUALS((int)GTEXIT_SEED_NOT_TRACEABLE, (int)reasons[2]);
+
+  // The multiplier scales how far the tracer steps, not what the field measures. If it
+  // leaked in here, a caller would size its glyphs by a tracing parameter.
+  BSHP<XmGridTrace> scaled;
+  iCreateDefaultSingleCell(scaled);
+  scaled->SetVectorMultiplier(5.0);
+  scaled->StartTraces(seeds, seedTimes);
+  scaled->ContinueTraces();
+
+  VecDbl scaledMagnitudes;
+  scaled->GetSeedMagnitudes(scaledMagnitudes);
+  TS_ASSERT_DELTA(expected, scaledMagnitudes[0], 1e-12);
+  TS_ASSERT_DELTA(expected, scaledMagnitudes[1], 1e-12);
+
+  // A batch that was refused reports no magnitudes either, rather than a stale set from the
+  // batch before it.
+  tracer->StartTraces(seeds, {.5});
+  tracer->GetSeedMagnitudes(magnitudes);
+  TS_ASSERT(magnitudes.empty());
+} // XmGridTraceUnitTests::testSeedMagnitudesReportTheField
 //------------------------------------------------------------------------------
 /// \brief A trace continues past the second time step once a later one is supplied.
 ///

@@ -40,6 +40,7 @@ public:
   void testTutorial();
   void testTimeVaryingFieldChangesPath();
   void testBatchMatchesSerialTracePoint();
+  void testSeedMagnitudesReportTheField();
   void testTracesContinueAcrossTimeSteps();
   void testRedundantContinueDoesNotStallTrace();
   void testSeedReleasedAfterWindowWaitsThenTraces();
