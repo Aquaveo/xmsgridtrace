@@ -223,3 +223,28 @@ class GridTrace(object):
             entry's times are parallel to its positions
         """
         return self._instance.get_trace_results()
+
+    def get_seed_magnitudes(self):
+        """Return the speed of the field at each seed of the batch, when it was released.
+
+        Reports the batch, exactly as get_trace_results does: empty before start_traces and after a
+        refused one, and untouched by trace_point, which traces through its own state.
+
+        Recorded when the seed is first evaluated, before the vector multiplier is applied, so it
+        describes the field rather than the tracing. Two components -- the tracer is two-dimensional
+        and never reads a z velocity -- so this is sqrt(vx*vx + vy*vy).
+
+        A seed the tracer never evaluated reports the XM_NODATA sentinel, a large negative value,
+        rather than 0.0. Zero is a legal speed -- a seed in still water measures it and exits
+        ZERO_VELOCITY -- so the two must not share a value. The sentinel covers every unevaluated
+        case alike: not started, waiting for a later time step, not traceable, and extraction failed.
+        Which one it was is in get_trace_results' exit reasons.
+
+        Not safe to call while continue_traces runs on another thread: that call releases the GIL,
+        and this one reads the batch it is writing.
+
+        Returns:
+            Sequence[float]: One speed per seed, parallel to the seeds passed to start_traces and to
+            everything get_trace_results returns
+        """
+        return self._instance.get_seed_magnitudes()

@@ -188,7 +188,6 @@ public:
   virtual void GetTraceResults(std::vector<VecPt3d>& a_outTraces,
                                std::vector<VecDbl>& a_outTimes,
                                std::vector<XmGridTraceExitEnum>& a_outExitReasons) const = 0;
-
   /// \brief Returns why the last trace operation ended.
   ///
   /// The single-point TracePoint reports through this what GetTraceResults reports per seed.
@@ -202,6 +201,33 @@ public:
   ///        Use GetExitReason or GetTraceResults to make decisions; this is for display.
   /// \return the exit message of the last trace operation
   virtual const std::string& GetExitMessage() const = 0;
+
+  //----------------------------------------------------------------------------
+  /// \brief The speed of the field at each seed of the batch, when it was released
+  ///
+  /// Reports the batch, exactly as GetTraceResults does: empty before StartTraces and after
+  /// a refused one, and untouched by TracePoint, which traces through its own state.
+  ///
+  /// Recorded when the seed is first evaluated, before the vector multiplier is applied, so
+  /// it describes the field rather than the tracing. A caller sizing a glyph by speed wants
+  /// this: the tracer already interpolates the field at the seed to start the trace, so
+  /// asking it is free, where interpolating again outside would mean a second point-location
+  /// search per seed against the same triangulation.
+  ///
+  /// Two components, because the tracer is two-dimensional -- it never reads or writes a z
+  /// velocity -- so this is sqrt(vx*vx + vy*vy) and not a three-component norm.
+  ///
+  /// A seed the tracer never evaluated reports XM_NODATA rather than zero. Zero is a legal
+  /// speed -- a seed sitting in still water measures it and exits GTEXIT_ZERO_VELOCITY -- so
+  /// the two must not share a value. XM_NODATA covers every unevaluated case alike: not
+  /// started, waiting for a later time step, not traceable, and extraction failed. Which one
+  /// it was is in GetTraceResults' exit reasons.
+  ///
+  /// Declared last so that adding it appends a vtable slot rather than shifting the ones
+  /// above it.
+  ///
+  /// \param[out] a_outMagnitudes The seed speeds, one per seed, parallel to GetTraceResults
+  virtual void GetSeedMagnitudes(VecDbl& a_outMagnitudes) const = 0;
 
 private:
   XM_DISALLOW_COPY_AND_ASSIGN(XmGridTrace)
