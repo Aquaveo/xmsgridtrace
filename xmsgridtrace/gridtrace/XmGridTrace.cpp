@@ -203,6 +203,7 @@ public:
   XmGridTraceExitEnum GetExitReason() const final;
   const std::string& GetExitMessage() const final;
   void GetSeedMagnitudes(VecDbl& a_outMagnitudes) const final;
+  void SampleVectors(const VecPt3d& a_pts, double a_time, VecPt3d& a_outVectors) const final;
 
 private:
   void StepTrace(TraceState& a_state);
@@ -924,6 +925,34 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
   a_data.y = y1 * weight1 + y2 * weight2;
   return true;
 } // XmGridTraceImpl::GetVectorAtLocationAndTime
+//------------------------------------------------------------------------------
+/// \brief The field at each of a set of points, without tracing any of them
+/// \param[in] a_pts The points to sample
+/// \param[in] a_time The time to sample at, blended between the two loaded steps
+/// \param[out] a_outVectors The field at each point, one entry per point, in order
+//------------------------------------------------------------------------------
+void XmGridTraceImpl::SampleVectors(const VecPt3d& a_pts,
+                                    double a_time,
+                                    VecPt3d& a_outVectors) const
+{
+  // Filled with no-data up front so that every early return still leaves one entry per
+  // point. A caller matching these to glyphs by position needs the count to hold even
+  // when the answer does not.
+  a_outVectors.assign(a_pts.size(), Pt3d(XM_NODATA, XM_NODATA, 0.0));
+
+  for (size_t i = 0; i < a_pts.size(); ++i)
+  {
+    Pt3d vector(0.0, 0.0, 0.0);
+    // The only false return is the refusal to run with fewer than two time steps, which
+    // cannot vary across a batch. Stopping on it leaves the rest as no-data and logs the
+    // reason once, rather than once per point.
+    if (!GetVectorAtLocationAndTime(a_pts[i], a_time, vector))
+      return;
+    // z explicitly, not copied: GetVectorAtLocationAndTime writes x and y and leaves z
+    // as it found it.
+    a_outVectors[i] = Pt3d(vector.x, vector.y, 0.0);
+  }
+} // XmGridTraceImpl::SampleVectors
 } // namespace {}
 ////////////////////////////////////////////////////////////////////////////////
 /// \class XmGridTrace
@@ -2626,6 +2655,99 @@ void XmGridTraceUnitTests::testBoundaryExtractorIsCached()
   TS_ASSERT_DELTA_VECPT3D(firstTrace, secondTrace, 1e-12);
   TS_ASSERT_DELTA_VEC(firstTimes, secondTimes, 1e-12);
 } // XmGridTraceUnitTests::testBoundaryExtractorIsCached
+//------------------------------------------------------------------------------
+/// \brief Verifies SampleVectors reports the field at points it never traces.
+///
+/// The ON_GRID caller matches a glyph to a sample by position in the batch, so the two
+/// properties that matter are that every point gets an entry and that the entries stay in
+/// order -- including across a point the tracer cannot place.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSampleVectorsReportsTheFieldWithoutTracing()
+{
+  BSHP<XmGridTrace> tracer;
+  iCreateDefaultSingleCell(tracer);
+
+  // The miss is in the middle, not at the end. An implementation that stopped at the
+  // first point it could not place would return a short batch here, and a caller matching
+  // by position would bind every later glyph to the wrong sample.
+  const VecPt3d pts = {{.5, .5, 0}, {-1, -1, 0}, {.25, .75, 0}};
+  VecPt3d sampled;
+  tracer->SampleVectors(pts, 0.0, sampled);
+
+  TS_ASSERT_EQUALS(pts.size(), sampled.size());
+  TS_ASSERT_DELTA(1.0, sampled[0].x, 1e-12);
+  TS_ASSERT_DELTA(1.0, sampled[0].y, 1e-12);
+  TS_ASSERT_DELTA(1.0, sampled[2].x, 1e-12);
+  TS_ASSERT_DELTA(1.0, sampled[2].y, 1e-12);
+
+  // XM_NODATA rather than zero, for the reason GetSeedMagnitudes gives: zero is a legal
+  // velocity, so a point with no answer must not share a value with still water.
+  TS_ASSERT_DELTA(XM_NODATA, sampled[1].x, 1e-12);
+  TS_ASSERT_DELTA(XM_NODATA, sampled[1].y, 1e-12);
+
+  // Written, not left as the caller had it: the tracer is two-dimensional.
+  for (size_t i = 0; i < sampled.size(); ++i)
+    TS_ASSERT_DELTA(0.0, sampled[i].z, 1e-12);
+
+  // Agrees with what tracing interpolates at the same point. This is the whole reason to
+  // reuse the tracer's own search rather than sample an extractor alongside it -- if the
+  // two could disagree, a glyph and the path leaving it would start from different fields.
+  const VecPt3d seeds = {{.5, .5, 0}};
+  tracer->StartTraces(seeds, {0.0});
+  tracer->ContinueTraces();
+  VecDbl magnitudes;
+  tracer->GetSeedMagnitudes(magnitudes);
+  TS_ASSERT_EQUALS(size_t(1), magnitudes.size());
+  const double sampledSpeed =
+    sqrt(sampled[0].x * sampled[0].x + sampled[0].y * sampled[0].y);
+  TS_ASSERT_DELTA(magnitudes[0], sampledSpeed, 1e-12);
+
+  // The multiplier scales how far the tracer steps, not what the field measures. If it
+  // leaked in here, a caller would size its glyphs by a tracing parameter.
+  BSHP<XmGridTrace> scaled;
+  iCreateDefaultSingleCell(scaled);
+  scaled->SetVectorMultiplier(5.0);
+  VecPt3d scaledSampled;
+  scaled->SampleVectors(seeds, 0.0, scaledSampled);
+  TS_ASSERT_EQUALS(size_t(1), scaledSampled.size());
+  TS_ASSERT_DELTA(1.0, scaledSampled[0].x, 1e-12);
+  TS_ASSERT_DELTA(1.0, scaledSampled[0].y, 1e-12);
+} // XmGridTraceUnitTests::testSampleVectorsReportsTheFieldWithoutTracing
+//------------------------------------------------------------------------------
+/// \brief Verifies SampleVectors blends the two loaded time steps at the given time.
+///
+/// A glyph is drawn for the time the user is looking at, which is rarely a time step's own
+/// time. Sampling the first loaded step regardless would draw the whole animation from one
+/// instant of the field -- the defect that supplying paths exists to avoid, reappearing in
+/// the glyphs themselves.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps()
+{
+  VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
+  VecInt cells = {XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0};
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(XmUGrid::New(points, cells));
+
+  DynBitset activity;
+  for (int i = 0; i < 4; ++i)
+    activity.push_back(true);
+
+  const VecPt3d slow = {{1, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 0, 0}};
+  const VecPt3d fast = {{3, 0, 0}, {3, 0, 0}, {3, 0, 0}, {3, 0, 0}};
+  tracer->AddGridScalarsAtTime(slow, DataLocationEnum::LOC_POINTS, activity,
+                               DataLocationEnum::LOC_POINTS, 0.0);
+  tracer->AddGridScalarsAtTime(fast, DataLocationEnum::LOC_POINTS, activity,
+                               DataLocationEnum::LOC_POINTS, 10.0);
+
+  const VecPt3d pt = {{.5, .5, 0}};
+  VecPt3d atStart, atMiddle, atEnd;
+  tracer->SampleVectors(pt, 0.0, atStart);
+  tracer->SampleVectors(pt, 5.0, atMiddle);
+  tracer->SampleVectors(pt, 10.0, atEnd);
+
+  TS_ASSERT_DELTA(1.0, atStart[0].x, 1e-12);
+  TS_ASSERT_DELTA(2.0, atMiddle[0].x, 1e-12);
+  TS_ASSERT_DELTA(3.0, atEnd[0].x, 1e-12);
+} // XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps
 //------------------------------------------------------------------------------
 /// \brief Measures the cost of tracing many seed points over a realistic grid.
 ///

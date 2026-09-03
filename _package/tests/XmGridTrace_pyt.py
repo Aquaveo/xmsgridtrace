@@ -389,6 +389,40 @@ class TestGridTrace(unittest.TestCase):
             tracer.start_traces(seeds, [.5])
         self.assertEqual(0, len(list(tracer.get_seed_magnitudes())))
 
+    def test_sample_vectors_reports_the_field_without_tracing(self):
+        """The field can be sampled on its own, and a miss reads as NaN."""
+        # The default fixture's field is a uniform (1, 1). The miss sits between two hits
+        # rather than at the end: a caller matches these rows to glyphs by position, so a
+        # short or shifted result would bind every later glyph to the wrong sample.
+        pts = [(.5, .5, 0), (-1, -1, 0), (.25, .75, 0)]
+
+        tracer = self.create_default_single_cell()
+        vectors = tracer.sample_vectors(pts, 0)
+
+        self.assertEqual((3, 3), vectors.shape)
+        self.assertAlmostEqual(1.0, vectors[0][0])
+        self.assertAlmostEqual(1.0, vectors[0][1])
+        # NaN, not the tracer's XM_NODATA sentinel: this is what xms.extractor reports for a
+        # miss, so one test covers both. get_seed_magnitudes deliberately differs.
+        self.assertTrue(np.isnan(vectors[1][0]))
+        self.assertTrue(np.isnan(vectors[1][1]))
+        self.assertAlmostEqual(1.0, vectors[2][0])
+        self.assertAlmostEqual(1.0, vectors[2][1])
+        # z is written, not left as the tracer found it. The tracer never reads a z velocity.
+        self.assertEqual([0.0, 0.0, 0.0], [row[2] for row in vectors])
+
+        # Sampling touches no tracing state, so a batch started afterward is unaffected and a
+        # tracer that has never traced can still be sampled.
+        tracer.start_traces([(.5, .5, 0)], [.5])
+        tracer.continue_traces()
+        traces, _times, _reasons = tracer.get_trace_results()
+        self.assertEqual(1, len(traces))
+
+        # The multiplier scales how far the tracer steps, not what the field measures.
+        scaled = self.create_default_single_cell()
+        scaled.vector_multiplier = 5
+        self.assertAlmostEqual(1.0, scaled.sample_vectors([(.5, .5, 0)], 0)[0][0])
+
     def test_extractor_can_be_imported_alongside(self):
         """xms.extractor and xms.gridtrace must both load in one process.
 

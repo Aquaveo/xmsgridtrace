@@ -229,6 +229,42 @@ public:
   /// \param[out] a_outMagnitudes The seed speeds, one per seed, parallel to GetTraceResults
   virtual void GetSeedMagnitudes(VecDbl& a_outMagnitudes) const = 0;
 
+  //----------------------------------------------------------------------------
+  /// \brief The field at each of a set of points, without tracing any of them
+  ///
+  /// The interpolation a trace step already performs -- one point-location search per
+  /// point against the cached triangulation, then the two bracketing time steps blended
+  /// at a_time -- exposed for callers that want the field rather than a path through it.
+  ///
+  /// ON_GRID vector placement is the case this exists for. Its glyphs sit on a lattice
+  /// anchored to the view and stepped by the camera's parallel scale, so every pan and
+  /// every zoom moves every one of them and the field has to be resampled at the new
+  /// positions -- whether or not those glyphs are drawn following the flow. Rotation
+  /// alone does not, since it moves neither the anchor nor the step.
+  ///
+  /// Batched because the tracer's search scratch is reused across the batch instead of
+  /// reallocated per point, and because a per-point call across a language boundary
+  /// costs more than the search it would perform.
+  ///
+  /// Two time steps are required, as tracing requires them. With fewer, every entry
+  /// reports no data rather than a partial answer.
+  ///
+  /// Reports the field, not the tracing: the vector multiplier is not applied, matching
+  /// GetSeedMagnitudes. A point outside the grid, in an inactive cell, or missing from
+  /// either bracketing step reports XM_NODATA in x and y -- zero is a legal velocity, so
+  /// the two must not share a value. The z component is always zero; the tracer is
+  /// two-dimensional and never reads or writes one.
+  ///
+  /// Declared last so that adding it appends a vtable slot rather than shifting the ones
+  /// above it.
+  ///
+  /// \param[in] a_pts The points to sample
+  /// \param[in] a_time The time to sample at, blended between the two loaded steps
+  /// \param[out] a_outVectors The field at each point, one entry per point, in order
+  virtual void SampleVectors(const VecPt3d& a_pts,
+                             double a_time,
+                             VecPt3d& a_outVectors) const = 0;
+
 private:
   XM_DISALLOW_COPY_AND_ASSIGN(XmGridTrace)
 
