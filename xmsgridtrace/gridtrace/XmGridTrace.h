@@ -223,9 +223,6 @@ public:
   /// started, waiting for a later time step, not traceable, and extraction failed. Which one
   /// it was is in GetTraceResults' exit reasons.
   ///
-  /// Declared last so that adding it appends a vtable slot rather than shifting the ones
-  /// above it.
-  ///
   /// \param[out] a_outMagnitudes The seed speeds, one per seed, parallel to GetTraceResults
   virtual void GetSeedMagnitudes(VecDbl& a_outMagnitudes) const = 0;
 
@@ -236,11 +233,9 @@ public:
   /// point against the cached triangulation, then the two bracketing time steps blended
   /// at a_time -- exposed for callers that want the field rather than a path through it.
   ///
-  /// ON_GRID vector placement is the case this exists for. Its glyphs sit on a lattice
-  /// anchored to the view and stepped by the camera's parallel scale, so every pan and
-  /// every zoom moves every one of them and the field has to be resampled at the new
-  /// positions -- whether or not those glyphs are drawn following the flow. Rotation
-  /// alone does not, since it moves neither the anchor nor the step.
+  /// The case this exists for is a display that draws a glyph per position on a moving
+  /// set of positions: the field has to be resampled wherever they land, whether or not
+  /// those glyphs go on to follow the flow.
   ///
   /// Batched because the tracer's search scratch is reused across the batch instead of
   /// reallocated per point, and because a per-point call across a language boundary
@@ -248,6 +243,10 @@ public:
   ///
   /// Two time steps are required, as tracing requires them. With fewer, every entry
   /// reports no data rather than a partial answer.
+  ///
+  /// One tracer serves one thread at a time, as everything else on it does: the
+  /// point-location search writes scratch held on the tracer, so concurrent calls race on
+  /// it even though this one is const.
   ///
   /// Reports the field, not the tracing: the vector multiplier is not applied, matching
   /// GetSeedMagnitudes. A point outside the grid, in an inactive cell, or missing from
@@ -259,7 +258,9 @@ public:
   /// above it.
   ///
   /// \param[in] a_pts The points to sample
-  /// \param[in] a_time The time to sample at, blended between the two loaded steps
+  /// \param[in] a_time The time to sample at, blended between the two loaded steps. A time
+  /// outside them is clamped to the nearer one, which is where a trace given the same time
+  /// comes to rest
   /// \param[out] a_outVectors The field at each point, one entry per point, in order
   virtual void SampleVectors(const VecPt3d& a_pts,
                              double a_time,

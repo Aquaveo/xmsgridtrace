@@ -940,6 +940,23 @@ void XmGridTraceImpl::SampleVectors(const VecPt3d& a_pts,
   // when the answer does not.
   a_outVectors.assign(a_pts.size(), Pt3d(XM_NODATA, XM_NODATA, 0.0));
 
+  // Clamped to the loaded window, once for the batch rather than once per point. The blend
+  // weights each step by its distance from the *other*, which sums to one only inside the
+  // window: at a time of 20 with steps at 0 and 10 the weights are 1 and 2, so a field of 1
+  // and 3 reports 7 -- not the 5 an extrapolation would give, and not flagged as anything.
+  // Tracing never reached that arithmetic, because StepTrace refuses a seed released past
+  // m_time2 and clamps every step to it; this is the first entry point handed a bare time,
+  // and a display clock running ahead of a lagging window hands it one routinely.
+  //
+  // Clamping rather than reporting no-data matches what a trace does with the same time --
+  // it stops at m_time2 and waits there -- so the glyphs hold the last known field instead
+  // of blanking mid-animation. Doing it here rather than in GetVectorAtLocationAndTime also
+  // keeps that function's low-side warning from firing once per lattice point.
+  if (a_time < m_time1)
+    a_time = m_time1;
+  else if (a_time > m_time2)
+    a_time = m_time2;
+
   for (size_t i = 0; i < a_pts.size(); ++i)
   {
     Pt3d vector(0.0, 0.0, 0.0);
@@ -2747,7 +2764,52 @@ void XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps()
   TS_ASSERT_DELTA(1.0, atStart[0].x, 1e-12);
   TS_ASSERT_DELTA(2.0, atMiddle[0].x, 1e-12);
   TS_ASSERT_DELTA(3.0, atEnd[0].x, 1e-12);
+
+  // Outside the window the field is not known, and the blend does not degrade into an
+  // extrapolation there -- its weights stop summing to one. Both ends report the nearer
+  // step, which is where a trace given the same time comes to rest. Without the clamp the
+  // later time reports 7.0: neither field, neither step, and no warning.
+  VecPt3d pastEnd, beforeStart;
+  tracer->SampleVectors(pt, 20.0, pastEnd);
+  tracer->SampleVectors(pt, -10.0, beforeStart);
+  TS_ASSERT_DELTA(3.0, pastEnd[0].x, 1e-12);
+  TS_ASSERT_DELTA(1.0, beforeStart[0].x, 1e-12);
 } // XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps
+//------------------------------------------------------------------------------
+/// \brief Verifies SampleVectors reports no data when a second time step is missing.
+///
+/// Documented in three places and asserted in none until now. A caller matches these rows
+/// to glyphs by position, so the one-entry-per-point shape has to survive the refusal as
+/// much as it survives a miss -- and the refusal is the state every tracer passes through
+/// on its way to being usable, not an exotic one.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSampleVectorsNeedsTwoTimeSteps()
+{
+  VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
+  VecInt cells = {XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0};
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(XmUGrid::New(points, cells));
+
+  const VecPt3d pts = {{.5, .5, 0}, {.25, .75, 0}};
+  VecPt3d sampled;
+
+  // No time steps at all.
+  tracer->SampleVectors(pts, 0.0, sampled);
+  TS_ASSERT_EQUALS(size_t(2), sampled.size());
+  TS_ASSERT_DELTA(XM_NODATA, sampled[0].x, 1e-6);
+  TS_ASSERT_DELTA(XM_NODATA, sampled[1].x, 1e-6);
+
+  // One is still not two: the blend has nothing to blend against.
+  DynBitset activity;
+  for (int i = 0; i < 4; ++i)
+    activity.push_back(true);
+  const VecPt3d field = {{1, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 0, 0}};
+  tracer->AddGridScalarsAtTime(field, DataLocationEnum::LOC_POINTS, activity,
+                               DataLocationEnum::LOC_POINTS, 0.0);
+  tracer->SampleVectors(pts, 0.0, sampled);
+  TS_ASSERT_EQUALS(size_t(2), sampled.size());
+  TS_ASSERT_DELTA(XM_NODATA, sampled[0].x, 1e-6);
+  TS_ASSERT_DELTA(XM_NODATA, sampled[1].x, 1e-6);
+} // XmGridTraceUnitTests::testSampleVectorsNeedsTwoTimeSteps
 //------------------------------------------------------------------------------
 /// \brief Measures the cost of tracing many seed points over a realistic grid.
 ///
