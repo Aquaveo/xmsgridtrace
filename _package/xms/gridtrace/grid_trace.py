@@ -248,3 +248,36 @@ class GridTrace(object):
             everything get_trace_results returns
         """
         return self._instance.get_seed_magnitudes()
+
+    def sample_vectors(self, pts, time):
+        """Return the field's vector at each of the given points, without tracing anything.
+
+        The interpolation a trace performs at its first step, exposed on its own. ON_GRID vector
+        placement draws glyphs on a lattice anchored to the view and stepped by the camera's
+        parallel scale, so every pan and every zoom moves all of them and the field has to be
+        resampled -- whether or not those glyphs go on to follow the flow. Rotation alone does
+        not, since it moves neither the anchor nor the step.
+
+        Reads the tracer's loaded time steps and touches none of its tracing state: safe to call
+        before start_traces, between batches, or never having traced at all, and it neither
+        starts nor disturbs a batch. Two time steps must be loaded, as for any trace; with fewer
+        every point reports no data.
+
+        The vector multiplier is not applied, matching get_seed_magnitudes: this describes the
+        field, not how far the tracer would step through it.
+
+        Not safe to call while continue_traces runs on another thread. Both release the GIL, and
+        they read the same loaded time steps.
+
+        Args:
+            pts (iterable): The points to sample, in grid coordinates
+            time (float): The time to sample at, interpolated between the loaded time steps
+
+        Returns:
+            numpy.ndarray: An (n, 3) array of vectors, one row per point in order. A point the
+            field does not cover reports NaN in x and y -- what xms.extractor reports for a miss,
+            so numpy.isnan is the single test for one, and unlike get_seed_magnitudes, which
+            passes the tracer's sentinel through unchanged. z is always zero; the tracer is
+            two-dimensional and never reads a z velocity
+        """
+        return self._instance.sample_vectors(pts, time)

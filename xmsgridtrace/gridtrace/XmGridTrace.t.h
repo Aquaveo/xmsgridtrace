@@ -46,6 +46,8 @@ public:
   void testSeedReleasedAfterWindowWaitsThenTraces();
   void testDataLocationChangeIsNotShared();
   void testBoundaryExtractorIsCached();
+  void testSampleVectorsReportsTheFieldWithoutTracing();
+  void testSampleVectorsBlendsBetweenTimeSteps();
   void testTraceBenchmark();
 
 }; // XmGridTraceUnitTests
