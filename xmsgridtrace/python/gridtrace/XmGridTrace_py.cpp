@@ -477,12 +477,17 @@ void initXmGridTrace(py::module &m) {
       get_seed_magnitudes.
 
       Releases the GIL while sampling, so a caller on a worker thread does not stall the
-      interpreter.
+      interpreter. One tracer still serves one thread at a time: the point-location search
+      writes scratch held on the tracer, so two threads sampling the same tracer race on it,
+      and so does a sample running alongside continue_traces. Give each thread its own
+      tracer, or serialize the calls.
 
       Args:
           pts (iterable): The points to sample.
 
-          time (float): The time to sample at, blended between the two loaded steps.
+          time (float): The time to sample at, blended between the two loaded steps. A time
+              outside them is clamped to the nearer one, which is where a trace given the
+              same time comes to rest.
 
       Returns:
           numpy.ndarray: The field at each point, shape (N, 3), one row per point in the

@@ -48,6 +48,7 @@ public:
   void testBoundaryExtractorIsCached();
   void testSampleVectorsReportsTheFieldWithoutTracing();
   void testSampleVectorsBlendsBetweenTimeSteps();
+  void testSampleVectorsNeedsTwoTimeSteps();
   void testTraceBenchmark();
 
 }; // XmGridTraceUnitTests

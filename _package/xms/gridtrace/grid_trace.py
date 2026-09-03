@@ -266,12 +266,16 @@ class GridTrace(object):
         The vector multiplier is not applied, matching get_seed_magnitudes: this describes the
         field, not how far the tracer would step through it.
 
-        Not safe to call while continue_traces runs on another thread. Both release the GIL, and
-        they read the same loaded time steps.
+        One tracer serves one thread at a time. The point-location search writes scratch held on
+        the tracer, so two threads sampling the same tracer race on it -- and so does a sample
+        running alongside continue_traces, which releases the GIL for the same reason this does.
+        Give each thread its own tracer, or serialize the calls.
 
         Args:
             pts (iterable): The points to sample, in grid coordinates
-            time (float): The time to sample at, interpolated between the loaded time steps
+            time (float): The time to sample at, interpolated between the loaded time steps. A
+                time outside them is clamped to the nearer one, which is where a trace given the
+                same time comes to rest
 
         Returns:
             numpy.ndarray: An (n, 3) array of vectors, one row per point in order. A point the
