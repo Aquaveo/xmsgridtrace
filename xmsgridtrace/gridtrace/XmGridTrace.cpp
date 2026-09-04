@@ -203,7 +203,10 @@ public:
   XmGridTraceExitEnum GetExitReason() const final;
   const std::string& GetExitMessage() const final;
   void GetSeedMagnitudes(VecDbl& a_outMagnitudes) const final;
-  void SampleVectors(const VecPt3d& a_pts, double a_time, VecPt3d& a_outVectors) const final;
+  void SampleVectors(const VecPt3d& a_pts,
+                     double a_time,
+                     VecPt3d& a_outPts,
+                     VecPt3d& a_outVectors) const final;
 
 private:
   void StepTrace(TraceState& a_state);
@@ -926,19 +929,25 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
   return true;
 } // XmGridTraceImpl::GetVectorAtLocationAndTime
 //------------------------------------------------------------------------------
-/// \brief The field at each of a set of points, without tracing any of them
+/// \brief The field at each of a set of points that has one, without tracing any of them
 /// \param[in] a_pts The points to sample
 /// \param[in] a_time The time to sample at, blended between the two loaded steps
-/// \param[out] a_outVectors The field at each point, one entry per point, in order
+/// \param[out] a_outPts The points that had a value, a subset of a_pts in the order given
+/// \param[out] a_outVectors The field at each, parallel to a_outPts
 //------------------------------------------------------------------------------
 void XmGridTraceImpl::SampleVectors(const VecPt3d& a_pts,
                                     double a_time,
+                                    VecPt3d& a_outPts,
                                     VecPt3d& a_outVectors) const
 {
-  // Filled with no-data up front so that every early return still leaves one entry per
-  // point. A caller matching these to glyphs by position needs the count to hold even
-  // when the answer does not.
-  a_outVectors.assign(a_pts.size(), Pt3d(XM_NODATA, XM_NODATA, 0.0));
+  // Only the points that resolved come back, each beside its own vector, so the caller has
+  // position-paired output and never sees a sentinel. A lattice covering a view is mostly
+  // outside the grid or over inactive cells -- reporting those as no-data would hand every
+  // caller the same filtering step, and one that forgot it would size a glyph by XM_NODATA.
+  a_outPts.clear();
+  a_outVectors.clear();
+  a_outPts.reserve(a_pts.size());
+  a_outVectors.reserve(a_pts.size());
 
   // Clamped to the loaded window, once for the batch rather than once per point. The blend
   // weights each step by its distance from the *other*, which sums to one only inside the
@@ -948,9 +957,9 @@ void XmGridTraceImpl::SampleVectors(const VecPt3d& a_pts,
   // m_time2 and clamps every step to it; this is the first entry point handed a bare time,
   // and a display clock running ahead of a lagging window hands it one routinely.
   //
-  // Clamping rather than reporting no-data matches what a trace does with the same time --
+  // Clamping rather than dropping the point matches what a trace does with the same time --
   // it stops at m_time2 and waits there -- so the glyphs hold the last known field instead
-  // of blanking mid-animation. Doing it here rather than in GetVectorAtLocationAndTime also
+  // of emptying mid-animation. Doing it here rather than in GetVectorAtLocationAndTime also
   // keeps that function's low-side warning from firing once per lattice point.
   if (a_time < m_time1)
     a_time = m_time1;
@@ -961,13 +970,18 @@ void XmGridTraceImpl::SampleVectors(const VecPt3d& a_pts,
   {
     Pt3d vector(0.0, 0.0, 0.0);
     // The only false return is the refusal to run with fewer than two time steps, which
-    // cannot vary across a batch. Stopping on it leaves the rest as no-data and logs the
-    // reason once, rather than once per point.
+    // cannot vary across a batch. Stopping on it drops the rest and logs the reason once,
+    // rather than once per point.
     if (!GetVectorAtLocationAndTime(a_pts[i], a_time, vector))
       return;
+    // The sentinel is answered here rather than passed on: a point outside the grid, in an
+    // inactive cell, or missing from either bracketing step simply is not in the output.
+    if (EQ_TOL(vector.x, XM_NODATA, 1) || EQ_TOL(vector.y, XM_NODATA, 1))
+      continue;
+    a_outPts.push_back(a_pts[i]);
     // z explicitly, not copied: GetVectorAtLocationAndTime writes x and y and leaves z
     // as it found it.
-    a_outVectors[i] = Pt3d(vector.x, vector.y, 0.0);
+    a_outVectors.push_back(Pt3d(vector.x, vector.y, 0.0));
   }
 } // XmGridTraceImpl::SampleVectors
 } // namespace {}
@@ -2675,32 +2689,36 @@ void XmGridTraceUnitTests::testBoundaryExtractorIsCached()
 //------------------------------------------------------------------------------
 /// \brief Verifies SampleVectors reports the field at points it never traces.
 ///
-/// The ON_GRID caller matches a glyph to a sample by position in the batch, so the two
-/// properties that matter are that every point gets an entry and that the entries stay in
-/// order -- including across a point the tracer cannot place.
+/// The caller draws a glyph per reported point, so the two properties that matter are that
+/// a point it cannot place is absent rather than reported with a marker value, and that the
+/// two arrays stay paired across that absence.
 //------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testSampleVectorsReportsTheFieldWithoutTracing()
 {
   BSHP<XmGridTrace> tracer;
   iCreateDefaultSingleCell(tracer);
 
-  // The miss is in the middle, not at the end. An implementation that stopped at the
-  // first point it could not place would return a short batch here, and a caller matching
-  // by position would bind every later glyph to the wrong sample.
+  // The miss is in the middle, not at the end. An implementation that stopped at the first
+  // point it could not place would drop the third point too; one that let the two outputs
+  // slip would pair the third point with the second's vector.
   const VecPt3d pts = {{.5, .5, 0}, {-1, -1, 0}, {.25, .75, 0}};
-  VecPt3d sampled;
-  tracer->SampleVectors(pts, 0.0, sampled);
+  VecPt3d sampledPts, sampled;
+  tracer->SampleVectors(pts, 0.0, sampledPts, sampled);
 
-  TS_ASSERT_EQUALS(pts.size(), sampled.size());
+  TS_ASSERT_EQUALS(size_t(2), sampledPts.size());
+  TS_ASSERT_EQUALS(size_t(2), sampled.size());
+
+  // The points that survived are the caller's own, echoed unchanged and in order -- which
+  // is what lets a glyph be drawn without consulting the input at all.
+  TS_ASSERT_DELTA(pts[0].x, sampledPts[0].x, 1e-12);
+  TS_ASSERT_DELTA(pts[0].y, sampledPts[0].y, 1e-12);
+  TS_ASSERT_DELTA(pts[2].x, sampledPts[1].x, 1e-12);
+  TS_ASSERT_DELTA(pts[2].y, sampledPts[1].y, 1e-12);
+
   TS_ASSERT_DELTA(1.0, sampled[0].x, 1e-12);
   TS_ASSERT_DELTA(1.0, sampled[0].y, 1e-12);
-  TS_ASSERT_DELTA(1.0, sampled[2].x, 1e-12);
-  TS_ASSERT_DELTA(1.0, sampled[2].y, 1e-12);
-
-  // XM_NODATA rather than zero, for the reason GetSeedMagnitudes gives: zero is a legal
-  // velocity, so a point with no answer must not share a value with still water.
-  TS_ASSERT_DELTA(XM_NODATA, sampled[1].x, 1e-12);
-  TS_ASSERT_DELTA(XM_NODATA, sampled[1].y, 1e-12);
+  TS_ASSERT_DELTA(1.0, sampled[1].x, 1e-12);
+  TS_ASSERT_DELTA(1.0, sampled[1].y, 1e-12);
 
   // Written, not left as the caller had it: the tracer is two-dimensional.
   for (size_t i = 0; i < sampled.size(); ++i)
@@ -2724,8 +2742,8 @@ void XmGridTraceUnitTests::testSampleVectorsReportsTheFieldWithoutTracing()
   BSHP<XmGridTrace> scaled;
   iCreateDefaultSingleCell(scaled);
   scaled->SetVectorMultiplier(5.0);
-  VecPt3d scaledSampled;
-  scaled->SampleVectors(seeds, 0.0, scaledSampled);
+  VecPt3d scaledPts, scaledSampled;
+  scaled->SampleVectors(seeds, 0.0, scaledPts, scaledSampled);
   TS_ASSERT_EQUALS(size_t(1), scaledSampled.size());
   TS_ASSERT_DELTA(1.0, scaledSampled[0].x, 1e-12);
   TS_ASSERT_DELTA(1.0, scaledSampled[0].y, 1e-12);
@@ -2756,10 +2774,10 @@ void XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps()
                                DataLocationEnum::LOC_POINTS, 10.0);
 
   const VecPt3d pt = {{.5, .5, 0}};
-  VecPt3d atStart, atMiddle, atEnd;
-  tracer->SampleVectors(pt, 0.0, atStart);
-  tracer->SampleVectors(pt, 5.0, atMiddle);
-  tracer->SampleVectors(pt, 10.0, atEnd);
+  VecPt3d keptStart, keptMiddle, keptEnd, atStart, atMiddle, atEnd;
+  tracer->SampleVectors(pt, 0.0, keptStart, atStart);
+  tracer->SampleVectors(pt, 5.0, keptMiddle, atMiddle);
+  tracer->SampleVectors(pt, 10.0, keptEnd, atEnd);
 
   TS_ASSERT_DELTA(1.0, atStart[0].x, 1e-12);
   TS_ASSERT_DELTA(2.0, atMiddle[0].x, 1e-12);
@@ -2769,9 +2787,9 @@ void XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps()
   // extrapolation there -- its weights stop summing to one. Both ends report the nearer
   // step, which is where a trace given the same time comes to rest. Without the clamp the
   // later time reports 7.0: neither field, neither step, and no warning.
-  VecPt3d pastEnd, beforeStart;
-  tracer->SampleVectors(pt, 20.0, pastEnd);
-  tracer->SampleVectors(pt, -10.0, beforeStart);
+  VecPt3d keptPastEnd, keptBeforeStart, pastEnd, beforeStart;
+  tracer->SampleVectors(pt, 20.0, keptPastEnd, pastEnd);
+  tracer->SampleVectors(pt, -10.0, keptBeforeStart, beforeStart);
   TS_ASSERT_DELTA(3.0, pastEnd[0].x, 1e-12);
   TS_ASSERT_DELTA(1.0, beforeStart[0].x, 1e-12);
 } // XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps
@@ -2790,13 +2808,12 @@ void XmGridTraceUnitTests::testSampleVectorsNeedsTwoTimeSteps()
   BSHP<XmGridTrace> tracer = XmGridTrace::New(XmUGrid::New(points, cells));
 
   const VecPt3d pts = {{.5, .5, 0}, {.25, .75, 0}};
-  VecPt3d sampled;
+  VecPt3d sampledPts, sampled;
 
   // No time steps at all.
-  tracer->SampleVectors(pts, 0.0, sampled);
-  TS_ASSERT_EQUALS(size_t(2), sampled.size());
-  TS_ASSERT_DELTA(XM_NODATA, sampled[0].x, 1e-6);
-  TS_ASSERT_DELTA(XM_NODATA, sampled[1].x, 1e-6);
+  tracer->SampleVectors(pts, 0.0, sampledPts, sampled);
+  TS_ASSERT_EQUALS(size_t(0), sampledPts.size());
+  TS_ASSERT_EQUALS(size_t(0), sampled.size());
 
   // One is still not two: the blend has nothing to blend against.
   DynBitset activity;
@@ -2805,11 +2822,62 @@ void XmGridTraceUnitTests::testSampleVectorsNeedsTwoTimeSteps()
   const VecPt3d field = {{1, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 0, 0}};
   tracer->AddGridScalarsAtTime(field, DataLocationEnum::LOC_POINTS, activity,
                                DataLocationEnum::LOC_POINTS, 0.0);
-  tracer->SampleVectors(pts, 0.0, sampled);
-  TS_ASSERT_EQUALS(size_t(2), sampled.size());
-  TS_ASSERT_DELTA(XM_NODATA, sampled[0].x, 1e-6);
-  TS_ASSERT_DELTA(XM_NODATA, sampled[1].x, 1e-6);
+  tracer->SampleVectors(pts, 0.0, sampledPts, sampled);
+  TS_ASSERT_EQUALS(size_t(0), sampledPts.size());
+  TS_ASSERT_EQUALS(size_t(0), sampled.size());
 } // XmGridTraceUnitTests::testSampleVectorsNeedsTwoTimeSteps
+//------------------------------------------------------------------------------
+/// \brief Verifies the points SampleVectors keeps are the seeds a trace will accept.
+///
+/// A caller following the flow traces from the same positions it draws glyphs at, so the
+/// two answers have to be the same set. Both come from GetVectorAtLocationAndTime and both
+/// test its result for XM_NODATA -- StepTrace to refuse the seed as SEED_NOT_TRACEABLE,
+/// SampleVectors to leave the point out -- and this pins that agreement rather than
+/// leaving it as a coincidence of two call sites.
+///
+/// The inactive cell is the case worth stating: it is not off-grid, so a hit test that
+/// only asked whether a point lands inside the mesh would keep it and then hand the caller
+/// a seed that traces nothing.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSampleVectorsKeepsOnlyTraceableSeeds()
+{
+  BSHP<XmGridTrace> tracer;
+  iCreateDefaultTwoCell(tracer);
+
+  // Two quads side by side. The second is inactive in both loaded steps, so a point in it
+  // has no field even though it is inside the grid.
+  const VecPt3d scalars = {{1, 0, 0}, {1, 0, 0}};
+  DynBitset activity;
+  activity.push_back(true);
+  activity.push_back(false);
+  tracer->AddGridScalarsAtTime(scalars, DataLocationEnum::LOC_CELLS, activity,
+                               DataLocationEnum::LOC_CELLS, 20.0);
+  tracer->AddGridScalarsAtTime(scalars, DataLocationEnum::LOC_CELLS, activity,
+                               DataLocationEnum::LOC_CELLS, 30.0);
+
+  // In the active cell, in the inactive one, and off the grid entirely.
+  const VecPt3d pts = {{.5, .5, 0}, {1.5, .5, 0}, {-1, -1, 0}};
+  VecPt3d keptPts, vectors;
+  tracer->SampleVectors(pts, 20.0, keptPts, vectors);
+
+  TS_ASSERT_EQUALS(size_t(1), keptPts.size());
+  TS_ASSERT_DELTA(pts[0].x, keptPts[0].x, 1e-12);
+  TS_ASSERT_DELTA(pts[0].y, keptPts[0].y, 1e-12);
+
+  // The same three as seeds: only the one SampleVectors kept produces a path.
+  tracer->StartTraces(pts, {20.0, 20.0, 20.0});
+  tracer->ContinueTraces();
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+  tracer->GetTraceResults(traces, times, reasons);
+  TS_ASSERT_EQUALS(size_t(3), traces.size());
+  TS_ASSERT(!traces[0].empty());
+  TS_ASSERT(traces[1].empty());
+  TS_ASSERT(traces[2].empty());
+  TS_ASSERT_EQUALS(GTEXIT_SEED_NOT_TRACEABLE, reasons[1]);
+  TS_ASSERT_EQUALS(GTEXIT_SEED_NOT_TRACEABLE, reasons[2]);
+} // XmGridTraceUnitTests::testSampleVectorsKeepsOnlyTraceableSeeds
 //------------------------------------------------------------------------------
 /// \brief Measures the cost of tracing many seed points over a realistic grid.
 ///

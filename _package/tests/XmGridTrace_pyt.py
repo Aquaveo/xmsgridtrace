@@ -390,26 +390,29 @@ class TestGridTrace(unittest.TestCase):
         self.assertEqual(0, len(list(tracer.get_seed_magnitudes())))
 
     def test_sample_vectors_reports_the_field_without_tracing(self):
-        """The field can be sampled on its own, and a miss reads as NaN."""
-        # The default fixture's field is a uniform (1, 1). The miss sits between two hits
-        # rather than at the end: a caller matches these rows to glyphs by position, so a
-        # short or shifted result would bind every later glyph to the wrong sample.
+        """A point with no field is absent from the result rather than marked in it."""
+        # The default fixture's field is a uniform (1, 1). The miss sits between two hits: an
+        # implementation that stopped at the first point it could not place would drop the
+        # third too, and one that let the two outputs slip would pair the third point with
+        # the second's vector.
         pts = [(.5, .5, 0), (-1, -1, 0), (.25, .75, 0)]
 
         tracer = self.create_default_single_cell()
-        vectors = tracer.sample_vectors(pts, 0)
+        kept, vectors = tracer.sample_vectors(pts, 0)
 
-        self.assertEqual((3, 3), vectors.shape)
-        self.assertAlmostEqual(1.0, vectors[0][0])
-        self.assertAlmostEqual(1.0, vectors[0][1])
-        # NaN, not the tracer's XM_NODATA sentinel: this is what xms.extractor reports for a
-        # miss, so one test covers both. get_seed_magnitudes deliberately differs.
-        self.assertTrue(np.isnan(vectors[1][0]))
-        self.assertTrue(np.isnan(vectors[1][1]))
-        self.assertAlmostEqual(1.0, vectors[2][0])
-        self.assertAlmostEqual(1.0, vectors[2][1])
-        # z is written, not left as the tracer found it. The tracer never reads a z velocity.
-        self.assertEqual([0.0, 0.0, 0.0], [row[2] for row in vectors])
+        self.assertEqual(2, len(kept))
+        self.assertEqual(2, len(vectors))
+        # The points that survived are the caller's own, echoed in order -- which is what
+        # lets a glyph be drawn from the result without consulting the input at all.
+        self.assertAlmostEqual(pts[0][0], kept[0][0])
+        self.assertAlmostEqual(pts[0][1], kept[0][1])
+        self.assertAlmostEqual(pts[2][0], kept[1][0])
+        self.assertAlmostEqual(pts[2][1], kept[1][1])
+        for vector in vectors:
+            self.assertAlmostEqual(1.0, vector[0])
+            self.assertAlmostEqual(1.0, vector[1])
+            # z is written, not left as the tracer found it. It never reads a z velocity.
+            self.assertEqual(0.0, vector[2])
 
         # Sampling touches no tracing state, so a batch started afterward is unaffected and a
         # tracer that has never traced can still be sampled.
@@ -421,7 +424,47 @@ class TestGridTrace(unittest.TestCase):
         # The multiplier scales how far the tracer steps, not what the field measures.
         scaled = self.create_default_single_cell()
         scaled.vector_multiplier = 5
-        self.assertAlmostEqual(1.0, scaled.sample_vectors([(.5, .5, 0)], 0)[0][0])
+        _scaled_pts, scaled_vectors = scaled.sample_vectors([(.5, .5, 0)], 0)
+        self.assertAlmostEqual(1.0, scaled_vectors[0][0])
+
+    def test_sample_vectors_keeps_only_traceable_seeds(self):
+        """The points kept are the seeds start_traces will accept, inactive cells included."""
+        # Two quads side by side, the second inactive in both loaded steps. A point in it is
+        # inside the grid, so a hit test that only asked whether a point lands in the mesh
+        # would keep it and then hand the caller a seed that traces nothing.
+        points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0), (2, 0, 0), (2, 1, 0)]
+        cells = [UGrid.cell_type_enum.QUAD, 4, 0, 1, 2, 3,
+                 UGrid.cell_type_enum.QUAD, 4, 1, 4, 5, 2]
+        tracer = GridTrace(UGrid(points, cells))
+        tracer.vector_multiplier = 1
+        tracer.max_tracing_time = 100
+        tracer.max_tracing_distance = 100
+        tracer.min_delta_time = .1
+        tracer.max_change_distance = 100
+        tracer.max_change_velocity = 100
+        tracer.max_change_direction_in_radians = 1.5 * np.pi
+        scalars = [(1, 0, 0), (1, 0, 0)]
+        activity = [True, False]
+        tracer.add_grid_scalars_at_time(scalars, "cells", activity, "cells", 20)
+        tracer.add_grid_scalars_at_time(scalars, "cells", activity, "cells", 30)
+
+        # In the active cell, in the inactive one, and off the grid entirely.
+        pts = [(.5, .5, 0), (1.5, .5, 0), (-1, -1, 0)]
+        kept, _vectors = tracer.sample_vectors(pts, 20)
+
+        self.assertEqual(1, len(kept))
+        self.assertAlmostEqual(pts[0][0], kept[0][0])
+
+        # The same three as seeds: only the one sample_vectors kept produces a path.
+        tracer.start_traces(pts, [20, 20, 20])
+        tracer.continue_traces()
+        traces, _times, reasons = tracer.get_trace_results()
+        self.assertEqual(3, len(traces))
+        self.assertTrue(len(traces[0]) > 0)
+        self.assertEqual(0, len(traces[1]))
+        self.assertEqual(0, len(traces[2]))
+        self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[1])
+        self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[2])
 
     def test_extractor_can_be_imported_alongside(self):
         """xms.extractor and xms.gridtrace must both load in one process.

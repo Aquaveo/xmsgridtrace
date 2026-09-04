@@ -9,9 +9,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <boost/shared_ptr.hpp>
-#include <limits>
-#include <xmscore/math/math.h>      // EQ_TOL
-#include <xmscore/misc/xmstype.h>   // XM_NODATA
 #include <xmscore/python/misc/PyUtils.h>
 #include <xmscore/misc/DynBitset.h>
 #include <xmscore/stl/vector.h>
@@ -457,21 +454,25 @@ void initXmGridTrace(py::module &m) {
   // function: sample_vectors
   // ---------------------------------------------------------------------------
   const char* sample_vectors_doc = R"pydoc(
-      Returns the field at each of a set of points, without tracing any of them.
+      Returns the field at each of a set of points that has one, without tracing them.
 
       The interpolation a trace step already performs -- one point-location search per
       point against the cached triangulation, then the two loaded time steps blended at
       the given time -- for callers that want the field itself rather than a path through
       it.
 
-      ON_GRID vector placement is the case this exists for. Its glyphs sit on a lattice
-      anchored to the view and stepped by the camera's parallel scale, so every pan and
-      every zoom moves all of them and the field has to be resampled at the new positions
-      -- whether or not those glyphs are drawn following the flow. Rotation alone does
-      not, since it moves neither the anchor nor the step.
+      The case this exists for is a display that draws a glyph per position on a moving set
+      of positions: the field has to be resampled wherever they land, whether or not those
+      glyphs go on to follow the flow.
 
-      Two time steps must have been added, as tracing requires them. With fewer, every
-      row is NaN rather than a partial answer.
+      Only the points that resolved come back, each beside its own vector. A set of
+      positions covering a view is mostly outside the grid or over inactive cells, so
+      reporting those would hand every caller the same filtering step. Both arrays follow
+      the order given, so a caller that does want to know which of its points missed can
+      walk its own list and the returned points in step.
+
+      Two time steps must have been added, as tracing requires them. With fewer, both
+      arrays come back empty rather than a partial answer.
 
       Reports the field, not the tracing: the vector multiplier is not applied, matching
       get_seed_magnitudes.
@@ -490,41 +491,26 @@ void initXmGridTrace(py::module &m) {
               same time comes to rest.
 
       Returns:
-          numpy.ndarray: The field at each point, shape (N, 3), one row per point in the
-          order given. A point outside the grid, in an inactive cell, or missing from
-          either bracketing time step reports NaN in x and y. That is what xms.extractor's
-          own binding reports for a miss, so numpy.isnan is the single test for one; note
-          it differs from get_seed_magnitudes, which passes the C++ XM_NODATA sentinel
-          through unchanged. The z column is always zero -- the tracer is two-dimensional
-          and never reads or writes a z velocity.
+          tuple(numpy.ndarray, numpy.ndarray): The points that had a value, shape (N, 3),
+          echoed from the input unchanged; and the field at each, shape (N, 3), parallel to
+          them. The vectors' z column is always zero -- the tracer is two-dimensional and
+          never reads or writes a z velocity.
   )pydoc";
   gridtrace.def("sample_vectors", [](const xms::XmGridTrace &self, py::iterable pts,
-    double time) -> py::array {
+    double time) -> py::tuple {
           boost::shared_ptr<xms::VecPt3d> points = xms::VecPt3dFromPyIter(pts);
-          xms::VecPt3d out;
+          xms::VecPt3d outPts, outVectors;
           {
             // Pure computation over C++ state, as continue_traces is: nothing here
             // touches a Python object while the GIL is released.
             py::gil_scoped_release release;
-            self.SampleVectors(*points, time, out);
+            self.SampleVectors(*points, time, outPts, outVectors);
           }
-          py::array_t<double> result({static_cast<py::ssize_t>(out.size()),
-                                      static_cast<py::ssize_t>(3)});
-          auto rows = result.mutable_unchecked<2>();
-          const double nan = std::numeric_limits<double>::quiet_NaN();
-          for (py::ssize_t i = 0; i < rows.shape(0); ++i)
-          {
-            const xms::Pt3d& v = out[static_cast<size_t>(i)];
-            // Translated at the boundary rather than in the caller: every consumer would
-            // otherwise have to know a magic negative, and one that forgot would take
-            // -9999999 for a velocity and size a glyph by it.
-            const bool noData =
-              xms::EQ_TOL(v.x, XM_NODATA, 1) || xms::EQ_TOL(v.y, XM_NODATA, 1);
-            rows(i, 0) = noData ? nan : v.x;
-            rows(i, 1) = noData ? nan : v.y;
-            rows(i, 2) = 0.0;
-          }
-          return result;
+          // Two (N, 3) arrays rather than one (N, 6): the caller feeds the positions to a
+          // glyph's points and the vectors to its vector array, and splitting a combined
+          // array to do that would copy both again on the Python side.
+          return py::make_tuple(xms::PyIterFromVecPt3d(outPts),
+                                xms::PyIterFromVecPt3d(outVectors));
         }, sample_vectors_doc, py::arg("pts"), py::arg("time"));
 
     // XmGridTraceExitEnum

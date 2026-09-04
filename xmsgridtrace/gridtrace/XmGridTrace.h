@@ -227,7 +227,7 @@ public:
   virtual void GetSeedMagnitudes(VecDbl& a_outMagnitudes) const = 0;
 
   //----------------------------------------------------------------------------
-  /// \brief The field at each of a set of points, without tracing any of them
+  /// \brief The field at each of a set of points that has one, without tracing any of them
   ///
   /// The interpolation a trace step already performs -- one point-location search per
   /// point against the cached triangulation, then the two bracketing time steps blended
@@ -237,22 +237,28 @@ public:
   /// set of positions: the field has to be resampled wherever they land, whether or not
   /// those glyphs go on to follow the flow.
   ///
+  /// Only the points that resolved are reported, each beside its own vector, so a caller
+  /// gets position-paired output and never handles a no-data marker. A set of positions
+  /// covering a view is mostly outside the grid or over inactive cells; reporting those
+  /// would hand every caller the same filtering step, and one that forgot it would take
+  /// XM_NODATA for a velocity. Both outputs are subsets of a_pts' order, so a caller that
+  /// does want to know which of its points missed can walk the two in step.
+  ///
   /// Batched because the tracer's search scratch is reused across the batch instead of
   /// reallocated per point, and because a per-point call across a language boundary
   /// costs more than the search it would perform.
   ///
-  /// Two time steps are required, as tracing requires them. With fewer, every entry
-  /// reports no data rather than a partial answer.
+  /// Two time steps are required, as tracing requires them. With fewer, nothing is
+  /// reported rather than a partial answer.
   ///
   /// One tracer serves one thread at a time, as everything else on it does: the
   /// point-location search writes scratch held on the tracer, so concurrent calls race on
   /// it even though this one is const.
   ///
   /// Reports the field, not the tracing: the vector multiplier is not applied, matching
-  /// GetSeedMagnitudes. A point outside the grid, in an inactive cell, or missing from
-  /// either bracketing step reports XM_NODATA in x and y -- zero is a legal velocity, so
-  /// the two must not share a value. The z component is always zero; the tracer is
-  /// two-dimensional and never reads or writes one.
+  /// GetSeedMagnitudes. The z component of every reported vector is zero; the tracer is
+  /// two-dimensional and never reads or writes one. The reported points are the caller's
+  /// own, echoed unchanged, z included.
   ///
   /// Declared last so that adding it appends a vtable slot rather than shifting the ones
   /// above it.
@@ -261,9 +267,11 @@ public:
   /// \param[in] a_time The time to sample at, blended between the two loaded steps. A time
   /// outside them is clamped to the nearer one, which is where a trace given the same time
   /// comes to rest
-  /// \param[out] a_outVectors The field at each point, one entry per point, in order
+  /// \param[out] a_outPts The points that had a value, a subset of a_pts in the order given
+  /// \param[out] a_outVectors The field at each, parallel to a_outPts
   virtual void SampleVectors(const VecPt3d& a_pts,
                              double a_time,
+                             VecPt3d& a_outPts,
                              VecPt3d& a_outVectors) const = 0;
 
 private:
