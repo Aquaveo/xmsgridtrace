@@ -49,6 +49,7 @@ public:
   void testSampleVectorsReportsTheFieldWithoutTracing();
   void testSampleVectorsBlendsBetweenTimeSteps();
   void testSampleVectorsNeedsTwoTimeSteps();
+  void testSampleVectorsKeepsOnlyTraceableSeeds();
   void testTraceBenchmark();
 
 }; // XmGridTraceUnitTests
