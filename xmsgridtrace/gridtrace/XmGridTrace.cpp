@@ -13,6 +13,7 @@
 #include <xmsgridtrace/gridtrace/XmGridTrace.h>
 
 // 3. Standard library headers
+#include <cmath>
 #include <sstream>
 
 // 4. External library headers
@@ -976,7 +977,15 @@ void XmGridTraceImpl::SampleVectors(const VecPt3d& a_pts,
       return;
     // The sentinel is answered here rather than passed on: a point outside the grid, in an
     // inactive cell, or missing from either bracketing step simply is not in the output.
-    if (EQ_TOL(vector.x, XM_NODATA, 1) || EQ_TOL(vector.y, XM_NODATA, 1))
+    //
+    // Non-finite is tested beside it because the sentinel test alone does not catch it --
+    // EQ_TOL(NaN, XM_NODATA, 1) is false, so a NaN would be reported as a measured field.
+    // Two routes reach one, both from the caller: a NaN a_time passes the clamp above
+    // untouched, since NaN compares false against either bound; and two steps loaded at the
+    // same time make totalTime zero, so the blend weights are 0/0. Testing the result rather
+    // than either cause covers both, and whatever else divides by that window later.
+    if (EQ_TOL(vector.x, XM_NODATA, 1) || EQ_TOL(vector.y, XM_NODATA, 1) ||
+        !std::isfinite(vector.x) || !std::isfinite(vector.y))
       continue;
     a_outPts.push_back(a_pts[i]);
     // z explicitly, not copied: GetVectorAtLocationAndTime writes x and y and leaves z
@@ -1118,6 +1127,24 @@ void iCreateDefaultSingleCell(BSHP<XmGridTrace>& a_tracer)
   a_tracer->AddGridScalarsAtTime(scalars, DataLocationEnum::LOC_POINTS, pointActivity,
                                  DataLocationEnum::LOC_POINTS, time);
 } // iCreateDefaultSingleCell
+//------------------------------------------------------------------------------
+/// \brief Returns a tracer over the default grid with no time steps loaded
+/// \param[out] a_tracer The tracer, holding the grid and nothing else
+/// \param[out] a_activity Every point active, sized to the grid
+///
+/// iCreateDefaultSingleCell and iCreateDefaultTwoCell each load two time steps of their
+/// own, which a test that chooses its own field or times then has to displace. This stops
+/// short of that so such a test can start from an empty window.
+//------------------------------------------------------------------------------
+void iCreateBareDefaultGrid(BSHP<XmGridTrace>& a_tracer, DynBitset& a_activity)
+{
+  VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
+  VecInt cells = {XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0};
+  a_tracer = XmGridTrace::New(XmUGrid::New(points, cells));
+  a_activity.clear();
+  for (int i = 0; i < 4; ++i)
+    a_activity.push_back(true);
+} // iCreateBareDefaultGrid
 //------------------------------------------------------------------------------
 /// \brief Returns a tracer for two default cells
 /// \param[out] a_tracer The tracer for two default cells
@@ -2720,9 +2747,10 @@ void XmGridTraceUnitTests::testSampleVectorsReportsTheFieldWithoutTracing()
   TS_ASSERT_DELTA(1.0, sampled[1].x, 1e-12);
   TS_ASSERT_DELTA(1.0, sampled[1].y, 1e-12);
 
-  // Written, not left as the caller had it: the tracer is two-dimensional.
-  for (size_t i = 0; i < sampled.size(); ++i)
-    TS_ASSERT_DELTA(0.0, sampled[i].z, 1e-12);
+  // Written, not left as the caller had it: the tracer is two-dimensional. Unrolled rather
+  // than looped so a failure names which vector it was.
+  TS_ASSERT_DELTA(0.0, sampled[0].z, 1e-12);
+  TS_ASSERT_DELTA(0.0, sampled[1].z, 1e-12);
 
   // Agrees with what tracing interpolates at the same point. This is the whole reason to
   // reuse the tracer's own search rather than sample an extractor alongside it -- if the
@@ -2733,9 +2761,10 @@ void XmGridTraceUnitTests::testSampleVectorsReportsTheFieldWithoutTracing()
   VecDbl magnitudes;
   tracer->GetSeedMagnitudes(magnitudes);
   TS_ASSERT_EQUALS(size_t(1), magnitudes.size());
-  const double sampledSpeed =
-    sqrt(sampled[0].x * sampled[0].x + sampled[0].y * sampled[0].y);
-  TS_ASSERT_DELTA(magnitudes[0], sampledSpeed, 1e-12);
+  // sqrt(2) written out rather than recomputed from sampled[0]: that vector is pinned to
+  // (1, 1) ten lines above, and deriving the expected value from the same output it is
+  // compared against would let both sides be wrong together.
+  TS_ASSERT_DELTA(sqrt(2.0), magnitudes[0], 1e-12);
 
   // The multiplier scales how far the tracer steps, not what the field measures. If it
   // leaked in here, a caller would size its glyphs by a tracing parameter.
@@ -2758,13 +2787,9 @@ void XmGridTraceUnitTests::testSampleVectorsReportsTheFieldWithoutTracing()
 //------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps()
 {
-  VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
-  VecInt cells = {XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0};
-  BSHP<XmGridTrace> tracer = XmGridTrace::New(XmUGrid::New(points, cells));
-
+  BSHP<XmGridTrace> tracer;
   DynBitset activity;
-  for (int i = 0; i < 4; ++i)
-    activity.push_back(true);
+  iCreateBareDefaultGrid(tracer, activity);
 
   const VecPt3d slow = {{1, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 0, 0}};
   const VecPt3d fast = {{3, 0, 0}, {3, 0, 0}, {3, 0, 0}, {3, 0, 0}};
@@ -2779,6 +2804,11 @@ void XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps()
   tracer->SampleVectors(pt, 5.0, keptMiddle, atMiddle);
   tracer->SampleVectors(pt, 10.0, keptEnd, atEnd);
 
+  // Size first: the point is on the grid at every one of these times, so an empty result
+  // is a regression, and reading [0] of one would report a garbage value rather than say so.
+  TS_ASSERT_EQUALS(size_t(1), atStart.size());
+  TS_ASSERT_EQUALS(size_t(1), atMiddle.size());
+  TS_ASSERT_EQUALS(size_t(1), atEnd.size());
   TS_ASSERT_DELTA(1.0, atStart[0].x, 1e-12);
   TS_ASSERT_DELTA(2.0, atMiddle[0].x, 1e-12);
   TS_ASSERT_DELTA(3.0, atEnd[0].x, 1e-12);
@@ -2790,8 +2820,13 @@ void XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps()
   VecPt3d keptPastEnd, keptBeforeStart, pastEnd, beforeStart;
   tracer->SampleVectors(pt, 20.0, keptPastEnd, pastEnd);
   tracer->SampleVectors(pt, -10.0, keptBeforeStart, beforeStart);
+  TS_ASSERT_EQUALS(size_t(1), pastEnd.size());
+  TS_ASSERT_EQUALS(size_t(1), beforeStart.size());
   TS_ASSERT_DELTA(3.0, pastEnd[0].x, 1e-12);
   TS_ASSERT_DELTA(1.0, beforeStart[0].x, 1e-12);
+  // Clamping keeps the point, so the kept arrays track the vectors at both ends too.
+  TS_ASSERT_EQUALS(size_t(1), keptPastEnd.size());
+  TS_ASSERT_EQUALS(size_t(1), keptBeforeStart.size());
 } // XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps
 //------------------------------------------------------------------------------
 /// \brief Verifies SampleVectors reports no data when a second time step is missing.
@@ -2803,9 +2838,9 @@ void XmGridTraceUnitTests::testSampleVectorsBlendsBetweenTimeSteps()
 //------------------------------------------------------------------------------
 void XmGridTraceUnitTests::testSampleVectorsNeedsTwoTimeSteps()
 {
-  VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
-  VecInt cells = {XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0};
-  BSHP<XmGridTrace> tracer = XmGridTrace::New(XmUGrid::New(points, cells));
+  BSHP<XmGridTrace> tracer;
+  DynBitset activity;
+  iCreateBareDefaultGrid(tracer, activity);
 
   const VecPt3d pts = {{.5, .5, 0}, {.25, .75, 0}};
   VecPt3d sampledPts, sampled;
@@ -2816,9 +2851,6 @@ void XmGridTraceUnitTests::testSampleVectorsNeedsTwoTimeSteps()
   TS_ASSERT_EQUALS(size_t(0), sampled.size());
 
   // One is still not two: the blend has nothing to blend against.
-  DynBitset activity;
-  for (int i = 0; i < 4; ++i)
-    activity.push_back(true);
   const VecPt3d field = {{1, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 0, 0}};
   tracer->AddGridScalarsAtTime(field, DataLocationEnum::LOC_POINTS, activity,
                                DataLocationEnum::LOC_POINTS, 0.0);
@@ -2846,6 +2878,10 @@ void XmGridTraceUnitTests::testSampleVectorsKeepsOnlyTraceableSeeds()
 
   // Two quads side by side. The second is inactive in both loaded steps, so a point in it
   // has no field even though it is inside the grid.
+  //
+  // The helper has already loaded steps at 0 and 10. AddGridScalarsAtTime keeps only the
+  // last two, so the pair below displaces them entirely and the loaded window becomes
+  // [20, 30] -- which is why the sampling and the tracing below both use 20.
   const VecPt3d scalars = {{1, 0, 0}, {1, 0, 0}};
   DynBitset activity;
   activity.push_back(true);

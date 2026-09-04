@@ -288,8 +288,9 @@ class GridTrace(object):
                 same time comes to rest
 
         Returns:
-            tuple: The points that had a value, echoed from the input unchanged and in order;
-            and the field at each, parallel to them. Every vector's z is zero -- the tracer is
-            two-dimensional and never reads a z velocity
+            tuple(numpy.ndarray, numpy.ndarray): The points that had a value, shape (N, 3),
+            echoed from the input unchanged and in order; and the field at each, shape (N, 3),
+            parallel to them. Every vector's z is zero -- the tracer is two-dimensional and
+            never reads a z velocity
         """
         return self._instance.sample_vectors(pts, time)

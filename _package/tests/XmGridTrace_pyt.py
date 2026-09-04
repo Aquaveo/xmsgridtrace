@@ -75,6 +75,21 @@ class TestGridTrace(unittest.TestCase):
         tracer.add_grid_scalars_at_time(scalars, "cells", point_activity, "cells", 10)
         return tracer
 
+    def create_bare_default_grid(self):
+        """Create the default grid with no time steps loaded.
+
+        create_default_single_cell loads two steps of its own, which a test that chooses its
+        own field or times then has to displace. This stops short of that so such a test can
+        start from an empty window.
+
+        Returns:
+            GridTrace: A tracer holding the two triangle grid and nothing else
+        """
+        points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        cells = [UGrid.cell_type_enum.TRIANGLE, 3, 0, 1, 2,
+                 UGrid.cell_type_enum.TRIANGLE, 3, 2, 3, 0]
+        return GridTrace(UGrid(points, cells))
+
     def test_basic_trace_point(self):
         """Test basic tracing functionality."""
         tracer = self.create_default_single_cell()
@@ -400,31 +415,38 @@ class TestGridTrace(unittest.TestCase):
         tracer = self.create_default_single_cell()
         kept, vectors = tracer.sample_vectors(pts, 0)
 
-        self.assertEqual(2, len(kept))
-        self.assertEqual(2, len(vectors))
+        # Shape rather than length: the binding returns an (N, 3) float64 array, and a caller
+        # feeding it straight to a glyph mapper depends on that, not merely on the count.
+        self.assertEqual((2, 3), kept.shape)
+        self.assertEqual((2, 3), vectors.shape)
+        self.assertEqual(np.float64, kept.dtype)
+        self.assertEqual(np.float64, vectors.dtype)
         # The points that survived are the caller's own, echoed in order -- which is what
         # lets a glyph be drawn from the result without consulting the input at all.
         self.assertAlmostEqual(pts[0][0], kept[0][0])
         self.assertAlmostEqual(pts[0][1], kept[0][1])
         self.assertAlmostEqual(pts[2][0], kept[1][0])
         self.assertAlmostEqual(pts[2][1], kept[1][1])
-        for vector in vectors:
-            self.assertAlmostEqual(1.0, vector[0])
-            self.assertAlmostEqual(1.0, vector[1])
-            # z is written, not left as the tracer found it. It never reads a z velocity.
-            self.assertEqual(0.0, vector[2])
+        # Compared as one array so a failure names the row. z is written, not left as the
+        # tracer found it -- it never reads a z velocity.
+        np.testing.assert_array_almost_equal([[1., 1., 0.], [1., 1., 0.]], vectors)
 
         # Sampling touches no tracing state, so a batch started afterward is unaffected and a
         # tracer that has never traced can still be sampled.
         tracer.start_traces([(.5, .5, 0)], [.5])
         tracer.continue_traces()
-        traces, _times, _reasons = tracer.get_trace_results()
+        traces, _times, reasons = tracer.get_trace_results()
         self.assertEqual(1, len(traces))
+        # The count alone would not show it: get_trace_results returns a slot per seed even
+        # for one it refused, so a tracer left corrupted would still report a batch of one.
+        self.assertGreater(len(traces[0]), 0)
+        self.assertNotEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[0])
 
         # The multiplier scales how far the tracer steps, not what the field measures.
         scaled = self.create_default_single_cell()
         scaled.vector_multiplier = 5
         _scaled_pts, scaled_vectors = scaled.sample_vectors([(.5, .5, 0)], 0)
+        self.assertEqual(1, len(scaled_vectors))
         self.assertAlmostEqual(1.0, scaled_vectors[0][0])
 
     def test_sample_vectors_keeps_only_traceable_seeds(self):
@@ -454,17 +476,65 @@ class TestGridTrace(unittest.TestCase):
 
         self.assertEqual(1, len(kept))
         self.assertAlmostEqual(pts[0][0], kept[0][0])
+        self.assertAlmostEqual(pts[0][1], kept[0][1])
 
         # The same three as seeds: only the one sample_vectors kept produces a path.
         tracer.start_traces(pts, [20, 20, 20])
         tracer.continue_traces()
         traces, _times, reasons = tracer.get_trace_results()
         self.assertEqual(3, len(traces))
-        self.assertTrue(len(traces[0]) > 0)
+        self.assertGreater(len(traces[0]), 0)
         self.assertEqual(0, len(traces[1]))
         self.assertEqual(0, len(traces[2]))
         self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[1])
         self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[2])
+
+    def test_sample_vectors_needs_two_time_steps(self):
+        """With fewer than two steps loaded there is nothing to blend, so nothing comes back."""
+        tracer = self.create_bare_default_grid()
+        pts = [(.5, .5, 0), (.25, .75, 0)]
+        field = [(1, 1, 0)] * 4
+        activity = [True] * 4
+
+        # No time steps at all. Empty, and still shaped -- a caller that reshapes or stacks
+        # the result must not have to special-case the empty case.
+        kept, vectors = tracer.sample_vectors(pts, 0)
+        self.assertEqual((0, 3), kept.shape)
+        self.assertEqual((0, 3), vectors.shape)
+
+        # One is still not two: the blend has nothing to blend against.
+        tracer.add_grid_scalars_at_time(field, "points", activity, "points", 0)
+        kept, vectors = tracer.sample_vectors(pts, 0)
+        self.assertEqual(0, len(kept))
+        self.assertEqual(0, len(vectors))
+
+        # The second step closes the window and the same call now measures the field.
+        tracer.add_grid_scalars_at_time(field, "points", activity, "points", 10)
+        kept, vectors = tracer.sample_vectors(pts, 0)
+        self.assertEqual(2, len(kept))
+        self.assertEqual(2, len(vectors))
+
+    def test_sample_vectors_clamps_the_time_to_the_loaded_window(self):
+        """A time outside the loaded window reads the nearest end instead of extrapolating."""
+        tracer = self.create_bare_default_grid()
+        activity = [True] * 4
+        tracer.add_grid_scalars_at_time([(1, 0, 0)] * 4, "points", activity, "points", 0)
+        tracer.add_grid_scalars_at_time([(3, 0, 0)] * 4, "points", activity, "points", 10)
+        pt = [(.5, .5, 0)]
+
+        # Inside the window the two steps blend linearly: halfway between 1 and 3.
+        _kept, middle = tracer.sample_vectors(pt, 5)
+        self.assertEqual(1, len(middle))
+        self.assertAlmostEqual(2.0, middle[0][0])
+
+        # Past either end the value holds at that end. Extrapolated, t=20 would read 7 --
+        # a speed the field never had, drawn as a glyph the user would believe.
+        _kept, past_end = tracer.sample_vectors(pt, 20)
+        _kept, before_start = tracer.sample_vectors(pt, -10)
+        self.assertEqual(1, len(past_end))
+        self.assertEqual(1, len(before_start))
+        self.assertAlmostEqual(3.0, past_end[0][0])
+        self.assertAlmostEqual(1.0, before_start[0][0])
 
     def test_extractor_can_be_imported_alongside(self):
         """xms.extractor and xms.gridtrace must both load in one process.
