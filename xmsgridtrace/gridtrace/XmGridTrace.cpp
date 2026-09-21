@@ -13,6 +13,7 @@
 #include <xmsgridtrace/gridtrace/XmGridTrace.h>
 
 // 3. Standard library headers
+#include <algorithm>
 #include <cmath>
 #include <sstream>
 
@@ -27,6 +28,7 @@
 #include <xmsextractor/extractor/XmUGrid2dPolylineDataExtractor.h>
 #include <xmsextractor/ugrid/XmUGridTriangles2d.h>
 #include <xmsgrid/geometry/geoms.h>
+#include <xmsgrid/ugrid/XmUGrid.h>
 
 // 6. Non-shared code headers
 
@@ -72,10 +74,129 @@ size_t g_boundaryExtractorBuilds = 0;
 
 //----- Class / Function definitions -------------------------------------------
 
-/// Step size a trace begins with, and the value a resumed trace falls back to when the
-/// window it just finished clamped its step to zero. See StepTrace for why zero cannot be
-/// carried forward.
-const double kInitialDeltaT = 1.0;
+/// Speed at or below which the field counts as still, as a fraction of the fastest the loaded
+/// time steps reach anywhere on the grid. Relative because the tracer is never told the units
+/// of speed or of time: the absolute 1e-4 this replaces was a crawl in metres per second but an
+/// ordinary groundwater speed in metres per day, and it ended every trace in a uniformly slow
+/// field at its first step.
+const double kStillFraction = 1e-4;
+/// First step of a trace when there is no max change distance to derive one from, in the time
+/// series' own units. It is the fixed value every trace used to begin with.
+const double kFallbackDeltaT = 1.0;
+
+//------------------------------------------------------------------------------
+/// \brief Whether a velocity counts as still.
+/// \param[in] a_vx The x component
+/// \param[in] a_vy The y component
+/// \param[in] a_stillSpeed The speed at or below which the field is still
+/// \return true if the speed is at most a_stillSpeed
+//------------------------------------------------------------------------------
+bool iIsStill(double a_vx, double a_vy, double a_stillSpeed)
+{
+  return a_vx * a_vx + a_vy * a_vy <= a_stillSpeed * a_stillSpeed;
+} // iIsStill
+
+//------------------------------------------------------------------------------
+/// \brief Which cells a field can be extracted from, exactly as XmUGrid2dDataExtractor
+///        derives it.
+///
+/// Empty activity means all active, point activity switches off every cell touching an
+/// inactive point, and cell activity is used as given. The extractor has already rejected a
+/// bitset of the wrong size by the time this runs; the bounds tests are only there so a short
+/// one cannot read past its end.
+/// \param[in] a_ugrid The grid
+/// \param[in] a_activity The activity; empty means all active
+/// \param[in] a_activityLoc Whether a_activity is per point or per cell
+/// \return One flag per cell, nonzero where the cell is active
+//------------------------------------------------------------------------------
+std::vector<char> iCellActivity(const XmUGrid& a_ugrid,
+                                const DynBitset& a_activity,
+                                DataLocationEnum a_activityLoc)
+{
+  const int cellCount = a_ugrid.GetCellCount();
+  std::vector<char> cellActive(cellCount, 1);
+  if (!a_activity.empty() && a_activityLoc == DataLocationEnum::LOC_CELLS)
+  {
+    for (int cellIdx = 0; cellIdx < cellCount; ++cellIdx)
+      cellActive[cellIdx] = cellIdx < (int)a_activity.size() && a_activity[cellIdx];
+  }
+  else if (!a_activity.empty() && a_activityLoc == DataLocationEnum::LOC_POINTS)
+  {
+    VecInt adjacentCells;
+    const int pointCount = std::min(a_ugrid.GetPointCount(), (int)a_activity.size());
+    for (int pointIdx = 0; pointIdx < pointCount; ++pointIdx)
+    {
+      if (a_activity[pointIdx])
+        continue;
+      a_ugrid.GetPointAdjacentCells(pointIdx, adjacentCells);
+      for (int cellIdx : adjacentCells)
+        cellActive[cellIdx] = 0;
+    }
+  }
+  return cellActive;
+} // iCellActivity
+
+//------------------------------------------------------------------------------
+/// \brief The fastest speed a time step's field reaches anywhere it can be extracted.
+///
+/// Only vectors that interpolation can reach are counted: the vectors of active cells, or the
+/// points of active cells for point data. An inactive location can hold anything, and a
+/// placeholder there large enough to dominate would make every real speed look still. Every
+/// extracted value is a convex combination of the counted ones -- within a triangle, between a
+/// cell's points and its centroid, among the cells around a point -- so no extracted speed can
+/// exceed the result.
+/// \param[in] a_ugrid The grid the vectors belong to
+/// \param[in] a_scalars The vectors, one per point or one per cell
+/// \param[in] a_scalarLoc Whether a_scalars is per point or per cell
+/// \param[in] a_activity The activity; empty means all active
+/// \param[in] a_activityLoc Whether a_activity is per point or per cell
+/// \return The peak speed, or 0 when nothing is active
+//------------------------------------------------------------------------------
+double iPeakSpeed(const XmUGrid& a_ugrid,
+                  const VecPt3d& a_scalars,
+                  DataLocationEnum a_scalarLoc,
+                  const DynBitset& a_activity,
+                  DataLocationEnum a_activityLoc)
+{
+  const int cellCount = a_ugrid.GetCellCount();
+  const std::vector<char> cellActive = iCellActivity(a_ugrid, a_activity, a_activityLoc);
+
+  double peakSquared = 0.0;
+  auto consider = [&](const Pt3d& a_vector) {
+    if (EQ_TOL(a_vector.x, XM_NODATA, 1) || EQ_TOL(a_vector.y, XM_NODATA, 1))
+      return;
+    const double speedSquared = a_vector.x * a_vector.x + a_vector.y * a_vector.y;
+    if (std::isfinite(speedSquared) && speedSquared > peakSquared)
+      peakSquared = speedSquared;
+  };
+  // Point data only for LOC_POINTS, because that is the one location AddGridScalarsAtTime
+  // hands the extractor as point data -- every other location, LOC_UNKNOWN included, is read
+  // as one vector per cell.
+  if (a_scalarLoc == DataLocationEnum::LOC_POINTS)
+  {
+    VecInt cellPoints;
+    for (int cellIdx = 0; cellIdx < cellCount; ++cellIdx)
+    {
+      if (!cellActive[cellIdx])
+        continue;
+      a_ugrid.GetCellPoints(cellIdx, cellPoints);
+      for (int pointIdx : cellPoints)
+      {
+        if (pointIdx >= 0 && pointIdx < (int)a_scalars.size())
+          consider(a_scalars[pointIdx]);
+      }
+    }
+  }
+  else
+  {
+    for (int cellIdx = 0; cellIdx < cellCount && cellIdx < (int)a_scalars.size(); ++cellIdx)
+    {
+      if (cellActive[cellIdx])
+        consider(a_scalars[cellIdx]);
+    }
+  }
+  return sqrt(peakSquared);
+} // iPeakSpeed
 
 //------------------------------------------------------------------------------
 /// \brief Whether a reason means the trace can never advance again.
@@ -137,7 +258,10 @@ struct TraceState
   double m_ptTime = 0;       ///< time the trace was released; never advanced
   double m_elapsedTime = 0;  ///< time advanced since release, against m_maxTracingTime
   double m_distTraveled = 0; ///< distance covered, against m_maxTracingDistance
-  double m_deltaT = kInitialDeltaT; ///< adaptive step size carried into the next step
+  /// Adaptive step size carried into the next step. Zero until the trace has one: StepTrace
+  /// picks the first once the seed has been evaluated, because deriving it needs the seed's
+  /// speed.
+  double m_deltaT = 0;
   double m_vx = 0;           ///< velocity x at m_pt, for the subdivision tests
   double m_vy = 0;           ///< velocity y at m_pt, for the subdivision tests
   double m_mag = 0;          ///< speed at m_pt, for the change-in-velocity test
@@ -209,12 +333,20 @@ public:
                      VecPt3d& a_outPts,
                      VecPt3d& a_outVectors) const final;
 
+  double GetInitialDeltaTime() const final;
+  void SetInitialDeltaTime(double a_initialDeltaTime) final;
+
 private:
   void StepTrace(TraceState& a_state);
+  double StillSpeed() const;
+  double FirstDeltaT(double a_vx, double a_vy, double a_stillSpeed) const;
+  bool StillAtBothSteps(const Pt3d& a_atTime1, const Pt3d& a_atTime2, double a_stillSpeed) const;
 
   bool GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
                                   double a_currentTime,
-                                  xms::Pt3d& a_data) const;
+                                  xms::Pt3d& a_data,
+                                  xms::Pt3d* a_atTime1 = nullptr,
+                                  xms::Pt3d* a_atTime2 = nullptr) const;
 
   std::shared_ptr<XmUGrid> m_ugrid;                ///< UGrid for the TracePoint operation
   double m_vectorMultiplier=1;          ///< multiplier for all vectors in grid
@@ -224,17 +356,20 @@ private:
   double m_maxChangeDistance=-1;        ///< maximum distance per trace step
   double m_maxChangeVelocity=-1;        ///< maximum change in velocity per trace step
   double m_maxChangeDirectionInRadians=XM_PI/4; ///< maxmium change in direction per trace step
+  double m_initialDeltaTime=-1;         ///< first step of a trace; <= 0 derives it from the field
 
   /// data extractor for the x component for the first time step
   BSHP<XmUGrid2dDataExtractor> m_extractor1x;
   /// data extractor for the y component for the first time step
   BSHP<XmUGrid2dDataExtractor> m_extractor1y;
   double m_time1=-1;  ///< time of the first time step
+  double m_peakSpeed1=0; ///< fastest speed in the first time step's field; see iPeakSpeed
   /// data extractor for the x component for the second time step
   BSHP<XmUGrid2dDataExtractor> m_extractor2x;
   /// data extractor for the y component for the second time step
   BSHP<XmUGrid2dDataExtractor> m_extractor2y;
   double m_time2=-1;        ///< time of the second time step
+  double m_peakSpeed2=0;    ///< fastest speed in the second time step's field; see iPeakSpeed
   xms::DynBitset m_activity2; ///< activity of the second time step, to compare with the next
   /// Data location of the second time step's scalars, to compare with the next. The
   /// triangulation is built for a location, so a change here forbids sharing.
@@ -406,6 +541,22 @@ void XmGridTraceImpl::SetMaxChangeDirectionInRadians(const double a_maxChangeDir
   m_maxChangeDirectionInRadians = a_maxChangeDirection;
 } // XmGridTraceImpl::SetMaxChangeDirectionInRadians
 //------------------------------------------------------------------------------
+/// \brief Returns the step size a trace begins with
+/// \return the initial delta time, or a value <= 0 when it is derived from the field
+//------------------------------------------------------------------------------
+double XmGridTraceImpl::GetInitialDeltaTime() const
+{
+  return m_initialDeltaTime;
+} // XmGridTraceImpl::GetInitialDeltaTime
+//------------------------------------------------------------------------------
+/// \brief Sets the step size a trace begins with
+/// \param[in] a_initialDeltaTime the first step, or <= 0 to derive it from the field
+//------------------------------------------------------------------------------
+void XmGridTraceImpl::SetInitialDeltaTime(double a_initialDeltaTime)
+{
+  m_initialDeltaTime = a_initialDeltaTime;
+} // XmGridTraceImpl::SetInitialDeltaTime
+//------------------------------------------------------------------------------
 /// \brief returns why the last trace operation ended
 /// \return the exit reason of the last trace operation
 //------------------------------------------------------------------------------
@@ -443,6 +594,7 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars,
     m_extractor1x = m_extractor2x;
     m_extractor1y = m_extractor2y;
     m_time1 = m_time2;
+    m_peakSpeed1 = m_peakSpeed2;
   }
 
   m_time2 = a_time;
@@ -490,7 +642,74 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars,
   m_activity2 = a_activity;
   m_scalarLoc2 = a_scalarLoc;
   m_activityLoc2 = a_activityLoc;
+  // After the extractors, which reject scalars or activity of the wrong size, so the peak is
+  // only ever taken over input they accepted.
+  m_peakSpeed2 = iPeakSpeed(*m_ugrid, a_scalars, a_scalarLoc, a_activity, a_activityLoc);
 }
+//------------------------------------------------------------------------------
+/// \brief The speed at or below which the field counts as still in the loaded window.
+///
+/// A fraction of the fastest either loaded time step reaches, scaled by the vector multiplier
+/// like every velocity the tracer steps with. Zero for a field that is still everywhere, in
+/// which case only an exactly zero velocity is still -- and that is every velocity there is.
+/// \return The still speed, in the units the tracer steps with
+//------------------------------------------------------------------------------
+double XmGridTraceImpl::StillSpeed() const
+{
+  return kStillFraction * std::max(m_peakSpeed1, m_peakSpeed2) * fabs(m_vectorMultiplier);
+} // XmGridTraceImpl::StillSpeed
+//------------------------------------------------------------------------------
+/// \brief The step a trace begins with, for a seed moving at (a_vx, a_vy).
+///
+/// Sized so the first step covers at most the max change distance, which is a length the
+/// caller chose in the grid's own units. A step fixed in time units cannot do that: 1.0 was
+/// most of a window on an axis in days and one second of a window on an axis in seconds. A
+/// still seed measures no speed of its own -- a field spinning up from rest is the usual case
+/// -- so the fastest speed in the window stands in, which cannot overshoot whatever the seed
+/// picks up during the step.
+/// \param[in] a_vx The seed's x velocity, after the vector multiplier
+/// \param[in] a_vy The seed's y velocity, after the vector multiplier
+/// \param[in] a_stillSpeed The speed at or below which the field is still
+/// \return The first step, in the time series' units
+//------------------------------------------------------------------------------
+double XmGridTraceImpl::FirstDeltaT(double a_vx, double a_vy, double a_stillSpeed) const
+{
+  if (m_initialDeltaTime > 0)
+    return m_initialDeltaTime;
+  if (m_maxChangeDistance <= 0)
+    return kFallbackDeltaT; // no length to derive a step from
+  double speed = sqrt(a_vx * a_vx + a_vy * a_vy);
+  if (iIsStill(a_vx, a_vy, a_stillSpeed))
+    speed = std::max(m_peakSpeed1, m_peakSpeed2) * fabs(m_vectorMultiplier);
+  if (speed <= 0)
+    return kFallbackDeltaT; // the field is still everywhere; any step finds that out
+  return m_maxChangeDistance / speed;
+} // XmGridTraceImpl::FirstDeltaT
+//------------------------------------------------------------------------------
+/// \brief Whether the field at a point is still at both loaded time steps.
+///
+/// If it is, it is still for the whole window: speed at a fixed point under linear time
+/// interpolation is the length of a vector moving along a straight line, which is convex in
+/// time and so never exceeds the larger of its two endpoint values.
+///
+/// Takes the two steps' vectors rather than a point because the lookup that found the field
+/// still has them already (see GetVectorAtLocationAndTime). Looking the point up again cost
+/// two to four more point-location searches on every step of a hold, and a cold start holds
+/// every seed in a batch for its first several steps.
+/// \param[in] a_atTime1 The field at the point at m_time1, before the vector multiplier
+/// \param[in] a_atTime2 The field at the point at m_time2, before the vector multiplier
+/// \param[in] a_stillSpeed The speed at or below which the field is still
+/// \return true if the field is still at m_time1 and at m_time2
+//------------------------------------------------------------------------------
+bool XmGridTraceImpl::StillAtBothSteps(const Pt3d& a_atTime1,
+                                       const Pt3d& a_atTime2,
+                                       double a_stillSpeed) const
+{
+  return iIsStill(a_atTime1.x * m_vectorMultiplier, a_atTime1.y * m_vectorMultiplier,
+                  a_stillSpeed) &&
+         iIsStill(a_atTime2.x * m_vectorMultiplier, a_atTime2.y * m_vectorMultiplier,
+                  a_stillSpeed);
+} // XmGridTraceImpl::StillAtBothSteps
 
 //------------------------------------------------------------------------------
 /// \brief Advances one trace as far as the currently loaded pair of time steps allows.
@@ -508,21 +727,13 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
   const double ptTime = a_state.m_ptTime;
   Pt3d pt0 = a_state.m_pt, pt1;
   double deltaT = a_state.m_deltaT;
-  // A window that ended exactly on m_time2 left deltaT clamped to zero (see the time step
-  // clamp in the loop below), and zero cannot be carried into the next window: a zero-length
-  // step moves nothing and changes no velocity, so it satisfies none of the loop's exit
-  // tests -- not the clamps, which need elapsedTime to advance, and not the subdivision
-  // tests, which compare a step against the one before it and would see no change. The loop
-  // would spin forever. Start the next window from the initial step and let the clamps size
-  // it again, which is what a fresh trace does.
-  if (deltaT <= 0)
-    deltaT = kInitialDeltaT;
   double elapsedTime = a_state.m_elapsedTime;
   double distTraveled = a_state.m_distTraveled;
   double vx0 = a_state.m_vx, vy0 = a_state.m_vy, mag0 = a_state.m_mag;
   double vx1 = 0, vy1 = 0, mag1 = 0;
   bool bContinue = true;
   Pt3d vtkVec;
+  Pt3d vtkVecAtTime1, vtkVecAtTime2; // the two loaded steps' fields at pt1, for the still test
   Pt3d vector;
   VecPt3d& outTrace = a_state.m_trace;
   VecDbl& outTimes = a_state.m_times;
@@ -581,6 +792,17 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     a_state.m_started = true;
   }
 
+  const double stillSpeed = StillSpeed();
+  // A trace with no step size yet gets its first one here, after the seed has been evaluated
+  // because deriving it needs the seed's speed. That is a fresh trace, and one whose window
+  // ended before it could step, which keeps the zero it came in with (see the time step clamp
+  // below). Zero cannot be stepped with: a zero-length step moves nothing and changes no
+  // velocity, so it satisfies none of the loop's exit tests -- not the clamps, which need
+  // elapsedTime to advance, and not the subdivision tests, which compare a step against the
+  // one before it and would see no change. The loop would spin forever.
+  if (deltaT <= 0)
+    deltaT = FirstDeltaT(vx0, vy0, stillSpeed);
+
   double maxAngleChange = cos(m_maxChangeDirectionInRadians);
   // Which reason the loop will stop with. Tracked explicitly rather than inferred afterwards:
   // several conditions in one iteration overwrite each other, and a later split can put the
@@ -591,9 +813,12 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
   {
     if (m_maxChangeDistance > 0)
     {
-      // make sure deltaT is small enough to not go past the max dist
+      // make sure deltaT is small enough to not go past the max dist. The still speed keeps
+      // the cap finite for a particle at rest. It replaced max_change_distance * XM_ZERO_TOL,
+      // a length where a squared speed belongs, which outweighed the particle's own speed
+      // throughout a slow field and held every step far below max_change_distance.
       double d2 = m_maxChangeDistance * m_maxChangeDistance;
-      double denom = (vx0 * vx0) + (vy0 * vy0) + (m_maxChangeDistance * XM_ZERO_TOL);
+      double denom = (vx0 * vx0) + (vy0 * vy0) + (stillSpeed * stillSpeed);
       double dt = sqrt(d2 / denom);
       if (deltaT > dt)
         deltaT = dt;
@@ -630,7 +855,8 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     pt1.x = pt0.x + deltaT * vx0;
     pt1.y = pt0.y + deltaT * vy0;
 
-    if (!GetVectorAtLocationAndTime(pt1, ptTime + elapsedTime + deltaT, vtkVec))
+    if (!GetVectorAtLocationAndTime(pt1, ptTime + elapsedTime + deltaT, vtkVec, &vtkVecAtTime1,
+                                    &vtkVecAtTime2))
     {
       outTrace.clear();
       outTimes.clear();
@@ -664,7 +890,8 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
       deltaT *= (newSegDist / segDist);
       bContinue = false;
       stopReason = GTEXIT_LEFT_GRID;
-      if (!GetVectorAtLocationAndTime(pt1, ptTime + elapsedTime + deltaT, vtkVec) ||
+      if (!GetVectorAtLocationAndTime(pt1, ptTime + elapsedTime + deltaT, vtkVec,
+                                      &vtkVecAtTime1, &vtkVecAtTime2) ||
           vtkVec.x == XM_NODATA || vtkVec.y == XM_NODATA)
       {
         stopWith(GTEXIT_EXTRACTION_FAILED);
@@ -676,7 +903,15 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     vx1 *= m_vectorMultiplier;
     vy1 *= m_vectorMultiplier;
 
-    if (EQ_TOL(vx1, 0.0, .0001) && EQ_TOL(vy1, 0.0, .0001)) // No velocity
+    // The field has gone still under the particle. That ends the trace only if it is still
+    // there at both loaded time steps, and so for the whole window (see StillAtBothSteps).
+    // Otherwise the calm is passing -- most often a field spinning up from rest, which would
+    // otherwise end every trace at its first step -- and the particle holds: the step is
+    // accepted like any other, and the trace moves off again as the field picks up, or reaches
+    // the end of the window and waits for the next time step. It does not wait mid-window: a
+    // resumed trace restarts from where it stopped, and the rest of this window would be lost.
+    const bool still1 = iIsStill(vx1, vy1, stillSpeed);
+    if (still1 && StillAtBothSteps(vtkVecAtTime1, vtkVecAtTime2, stillSpeed))
     {
       outTrace.push_back(pt1);
       outTimes.push_back(ptTime + elapsedTime + deltaT);
@@ -697,7 +932,10 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
       if (changeVel > m_maxChangeVelocity)
         bSplit = true;
     }
-    if (!bSplit && m_maxChangeDirectionInRadians > 0)
+    // A still velocity has no meaningful direction -- what is left of it is interpolation
+    // noise -- so turning towards or away from one is not a change of direction to resolve.
+    if (!bSplit && m_maxChangeDirectionInRadians > 0 && !still1 &&
+        !iIsStill(vx0, vy0, stillSpeed))
     {
       double dir = iGetDirAsCosTheta(vx0, vy0, vx1, vy1);
       if (dir < maxAngleChange)
@@ -858,10 +1096,15 @@ void XmGridTraceImpl::GetSeedMagnitudes(VecDbl& a_outMagnitudes) const
 /// \param[in] a_pt The point
 /// \param[in] a_currentTime The time at extraction
 /// \param[out] a_data the resultant velocity scalar
+/// \param[out] a_atTime1 If given, the first time step's vector at a_pt, before blending --
+/// what a_data would be at m_time1. Written only when a_data is not no-data.
+/// \param[out] a_atTime2 If given, the second time step's vector at a_pt, likewise
 //------------------------------------------------------------------------------
 bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
                                                  double a_currentTime,
-                                                 xms::Pt3d& a_data) const
+                                                 xms::Pt3d& a_data,
+                                                 xms::Pt3d* a_atTime1,
+                                                 xms::Pt3d* a_atTime2) const
 {
   if (!m_extractor1x || !m_extractor1y || !m_extractor2x || !m_extractor2y)
   {
@@ -927,6 +1170,13 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
   double weight2 = fabs(a_currentTime - m_time1) / totalTime;
   a_data.x = x1 * weight1 + x2 * weight2;
   a_data.y = y1 * weight1 + y2 * weight2;
+  // The unblended values the blend was made from. They are what interpolating at either
+  // step's own time returns -- one weight is exactly 1 there and the other exactly 0 -- without
+  // searching for a_pt again.
+  if (a_atTime1)
+    *a_atTime1 = Pt3d(x1, y1, 0.0);
+  if (a_atTime2)
+    *a_atTime2 = Pt3d(x2, y2, 0.0);
   return true;
 } // XmGridTraceImpl::GetVectorAtLocationAndTime
 //------------------------------------------------------------------------------
@@ -1056,6 +1306,7 @@ const char* XmGridTraceExitReasonToString(XmGridTraceExitEnum a_reason)
 
 #include <chrono>
 #include <cstdlib>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <algorithm>
@@ -1452,6 +1703,9 @@ void XmGridTraceUnitTests::testSmallScalarsTracePoint()
 {
   BSHP<XmGridTrace> tracer;
   iCreateDefaultSingleCell(tracer);
+  // Pinned to the fixed first step these expected values were computed with; the default
+  // now derives it from max change distance (see SetInitialDeltaTime).
+  tracer->SetInitialDeltaTime(1.0);
 
   // Push on different scalars
   double time = 0;
@@ -1874,6 +2128,9 @@ void XmGridTraceUnitTests::testMultiCell()
 {
   BSHP<XmGridTrace> tracer;
   iCreateDefaultTwoCell(tracer);
+  // Pinned to the fixed first step these expected values were computed with; the default
+  // now derives it from max change distance (see SetInitialDeltaTime).
+  tracer->SetInitialDeltaTime(1.0);
 
   VecPt3d outTrace;
   VecDbl outTimes;
@@ -1910,6 +2167,9 @@ void XmGridTraceUnitTests::testMaxChangeVelocity()
 {
   BSHP<XmGridTrace> tracer;
   iCreateDefaultTwoCell(tracer);
+  // Pinned to the fixed first step these expected values were computed with; the default
+  // now derives it from max change distance (see SetInitialDeltaTime).
+  tracer->SetInitialDeltaTime(1.0);
   tracer->SetMaxChangeVelocity(.01);
   tracer->SetMinDeltaTime(0.001);
 
@@ -1970,6 +2230,9 @@ void XmGridTraceUnitTests::testUniqueTimeSteps()
 {
   BSHP<XmGridTrace> tracer;
   iCreateDefaultTwoCell(tracer);
+  // Pinned to the fixed first step these expected values were computed with; the default
+  // now derives it from max change distance (see SetInitialDeltaTime).
+  tracer->SetInitialDeltaTime(1.0);
 
   double time = 20;
   VecPt3d scalars = {{.2, 0, 0}, {.3, 0, 0}};
@@ -2014,6 +2277,9 @@ void XmGridTraceUnitTests::testInactiveCell()
 {
   BSHP<XmGridTrace> tracer;
   iCreateDefaultTwoCell(tracer);
+  // Pinned to the fixed first step these expected values were computed with; the default
+  // now derives it from max change distance (see SetInitialDeltaTime).
+  tracer->SetInitialDeltaTime(1.0);
 
   double time = 20;
   VecPt3d scalars = {{.2, 0, 0}, {99999, 0, 0}};
@@ -2914,6 +3180,349 @@ void XmGridTraceUnitTests::testSampleVectorsKeepsOnlyTraceableSeeds()
   TS_ASSERT_EQUALS(GTEXIT_SEED_NOT_TRACEABLE, reasons[1]);
   TS_ASSERT_EQUALS(GTEXIT_SEED_NOT_TRACEABLE, reasons[2]);
 } // XmGridTraceUnitTests::testSampleVectorsKeepsOnlyTraceableSeeds
+//------------------------------------------------------------------------------
+/// \brief One seed traced through a series of time steps.
+//------------------------------------------------------------------------------
+struct SeriesTrace
+{
+  VecPt3d m_trace;                                   ///< positions
+  VecDbl m_times;                                    ///< times, parallel to m_trace
+  XmGridTraceExitEnum m_reason = GTEXIT_NOT_STARTED; ///< why it stopped
+};
+//------------------------------------------------------------------------------
+/// \brief Traces one seed through a series of time steps on an 11 x 11 grid of unit cells,
+///        loading each step only as the trace asks for it, as next_ms does.
+///
+/// The max change distance is half a cell, which is how next_ms sizes it, and nothing else is
+/// set: the tests using this are about what the tracer does with its own defaults.
+/// \param[in] a_field The x speed of the field at a grid point location, per time step
+/// \param[in] a_stepCount How many time steps to supply
+/// \param[in] a_stepSpan The time between consecutive steps; the first is at time 0
+/// \param[in] a_seed Where the trace starts; it is released at time 0
+/// \param[in] a_configure If given, applied to the tracer after the max change distance
+/// \return the trace, its times and why it stopped
+//------------------------------------------------------------------------------
+SeriesTrace iTraceSeries(const std::function<double(int, const Pt3d&)>& a_field,
+                         int a_stepCount,
+                         double a_stepSpan,
+                         const Pt3d& a_seed,
+                         const std::function<void(XmGridTrace&)>& a_configure = {})
+{
+  BenchmarkGrid grid = iBuildBenchmarkGrid(11, 11.0);
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(grid.m_ugrid);
+  tracer->SetMaxChangeDistance(0.5);
+  if (a_configure)
+    a_configure(*tracer);
+  const DynBitset allActive;
+  auto load = [&](int a_step) {
+    VecPt3d vectors;
+    for (const auto& pt : grid.m_points)
+      vectors.push_back({a_field(a_step, pt), 0.0, 0.0});
+    tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, allActive,
+                                 DataLocationEnum::LOC_POINTS, a_step * a_stepSpan);
+  };
+  load(0);
+  load(1);
+  tracer->StartTraces({a_seed}, {0.0});
+  int next = 2;
+  while (tracer->ContinueTraces() > 0 && next < a_stepCount)
+    load(next++);
+
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+  tracer->GetTraceResults(traces, times, reasons);
+  SeriesTrace result;
+  result.m_trace = traces[0];
+  result.m_times = times[0];
+  result.m_reason = reasons[0];
+  return result;
+} // iTraceSeries
+//------------------------------------------------------------------------------
+/// \brief Asserts two traces follow the same path, with b's times a_timeScale times a's.
+/// \param[in] a_a One trace
+/// \param[in] a_b The other, on a time axis a_timeScale times finer
+/// \param[in] a_timeScale How many of b's time units make one of a's
+//------------------------------------------------------------------------------
+void iAssertSamePath(const SeriesTrace& a_a, const SeriesTrace& a_b, double a_timeScale)
+{
+  TS_ASSERT_EQUALS((int)a_a.m_reason, (int)a_b.m_reason);
+  TS_ASSERT_EQUALS(a_a.m_trace.size(), a_b.m_trace.size());
+  if (a_a.m_trace.size() != a_b.m_trace.size())
+    return;
+  for (size_t i = 0; i < a_a.m_trace.size(); ++i)
+  {
+    TS_ASSERT_DELTA(a_a.m_trace[i].x, a_b.m_trace[i].x, 1e-6);
+    TS_ASSERT_DELTA(a_a.m_trace[i].y, a_b.m_trace[i].y, 1e-6);
+    TS_ASSERT_DELTA(a_a.m_times[i], a_b.m_times[i] / a_timeScale, 1e-6 * (1 + a_a.m_times[i]));
+  }
+} // iAssertSamePath
+//------------------------------------------------------------------------------
+/// \brief With no initial delta time set, the first step covers the max change distance.
+///
+/// A fixed first step is a time, and the tracer is never told what unit time is in. Derived
+/// from max change distance -- a length in the grid's own units -- it means the same thing on
+/// every time axis. A positive initial delta time still fixes it, and with no max change
+/// distance there is no length to derive from, so the old 1.0 remains the fallback.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testInitialDeltaTimeIsDerivedByDefault()
+{
+  BenchmarkGrid grid = iBuildBenchmarkGrid(11, 11.0);
+  const DynBitset allActive;
+  const VecPt3d vectors(grid.m_points.size(), Pt3d(0.01, 0, 0));
+  auto firstStep = [&](double a_initialDeltaTime, double a_maxChangeDistance) {
+    BSHP<XmGridTrace> tracer = XmGridTrace::New(grid.m_ugrid);
+    TS_ASSERT(tracer->GetInitialDeltaTime() <= 0); // derived unless set
+    tracer->SetInitialDeltaTime(a_initialDeltaTime);
+    TS_ASSERT_EQUALS(a_initialDeltaTime, tracer->GetInitialDeltaTime());
+    tracer->SetMaxChangeDistance(a_maxChangeDistance);
+    tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, allActive,
+                                 DataLocationEnum::LOC_POINTS, 0.0);
+    tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, allActive,
+                                 DataLocationEnum::LOC_POINTS, 1000.0);
+    VecPt3d trace;
+    VecDbl times;
+    tracer->TracePoint({0.5, 5.5, 0}, 0.0, trace, times);
+    TS_ASSERT(trace.size() >= 2);
+    return trace.size() >= 2 ? times[1] - times[0] : -1.0;
+  };
+
+  // 0.5 over a speed of 0.01: the step that covers exactly the max change distance.
+  TS_ASSERT_DELTA(50.0, firstStep(-1, 0.5), 1e-6);
+  TS_ASSERT_DELTA(50.0, firstStep(0, 0.5), 1e-6);
+  TS_ASSERT_DELTA(2.0, firstStep(2, 0.5), 1e-12);
+  TS_ASSERT_DELTA(1.0, firstStep(-1, -1), 1e-12);
+} // XmGridTraceUnitTests::testInitialDeltaTimeIsDerivedByDefault
+//------------------------------------------------------------------------------
+/// \brief A uniformly slow field traces, and traces the same on an axis in days or seconds.
+///
+/// The zero-velocity test used to be an absolute 1e-4 in whatever units the field was in. A
+/// groundwater-like 1e-5 per day fell under it everywhere, so every trace ended at its first
+/// step with ZERO_VELOCITY. Still is now relative to the fastest the field gets, so a field
+/// that is slow everywhere is simply a field, and restating it per second instead of per day
+/// changes nothing but the time labels.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSlowSteadyFieldTraces()
+{
+  const double perDay = 1e-5, secondsPerDay = 86400;
+  const int stepCount = 12;
+  SeriesTrace days = iTraceSeries([&](int, const Pt3d&) { return perDay; }, stepCount, 1.0,
+                                  {0.5, 5.5, 0});
+  SeriesTrace seconds = iTraceSeries([&](int, const Pt3d&) { return perDay / secondsPerDay; },
+                                     stepCount, secondsPerDay, {0.5, 5.5, 0});
+
+  // It ran to the end of the series, so it is waiting for more, not stopped.
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)days.m_reason);
+  TS_ASSERT_EQUALS(stepCount, (int)days.m_trace.size());
+  TS_ASSERT_DELTA(0.5 + 11 * perDay, days.m_trace.back().x, 1e-9);
+  TS_ASSERT_DELTA(11.0, days.m_times.back(), 1e-9);
+  iAssertSamePath(days, seconds, secondsPerDay);
+} // XmGridTraceUnitTests::testSlowSteadyFieldTraces
+//------------------------------------------------------------------------------
+/// \brief A trace released into a field spinning up from rest follows it, on any time axis.
+///
+/// The field is still at the first time step and moving at the second, a day later. On an axis
+/// in seconds the trace used to take a fixed first step of one second, find the field still
+/// barely moving -- one 86400th of the way up -- and end with ZERO_VELOCITY where it was
+/// released. The field is still at that moment but not at the second step, so now the
+/// particle holds until the field picks up, and the first step is sized by max change
+/// distance rather than fixed in time units.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testColdStartOnWideWindowTraces()
+{
+  const double secondsPerDay = 86400;
+  auto spinUp = [](double a_speed) {
+    return [a_speed](int a_step, const Pt3d&) { return a_step == 0 ? 0.0 : a_speed; };
+  };
+  // One metre per second, stated per second and per day.
+  SeriesTrace seconds = iTraceSeries(spinUp(1.0), 2, secondsPerDay, {0.5, 5.5, 0});
+  SeriesTrace days = iTraceSeries(spinUp(secondsPerDay), 2, 1.0, {0.5, 5.5, 0});
+
+  // Accelerating east from rest, it crosses the grid and leaves it well inside the day.
+  TS_ASSERT_EQUALS((int)GTEXIT_LEFT_GRID, (int)seconds.m_reason);
+  TS_ASSERT(seconds.m_trace.size() > 2);
+  TS_ASSERT_DELTA(11.0, seconds.m_trace.back().x, 1e-6);
+  TS_ASSERT_DELTA(5.5, seconds.m_trace.back().y, 1e-6);
+  TS_ASSERT(seconds.m_times.back() < secondsPerDay);
+  iAssertSamePath(days, seconds, secondsPerDay);
+} // XmGridTraceUnitTests::testColdStartOnWideWindowTraces
+//------------------------------------------------------------------------------
+/// \brief A field still under the particle at both loaded steps still ends the trace.
+///
+/// The field runs east over the west of the grid and is still from x = 4 on, the same at both
+/// steps. A seed in the still part never moves, and one released in the moving part coasts
+/// into the still part and stops there -- ZERO_VELOCITY is still terminal when the stillness
+/// is not passing. Scaling the field down by a million, and time up to match, changes nothing:
+/// still is relative to the field, where the old absolute 1e-4 would have stopped the slow
+/// field's moving seed on its first step.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testStillSteadyFieldStopsTrace()
+{
+  auto stagnant = [](double a_speed) {
+    return [a_speed](int, const Pt3d& a_pt) { return a_pt.x < 3.5 ? a_speed : 0.0; };
+  };
+  for (double speed : {1.0, 1e-6})
+  {
+    SeriesTrace still = iTraceSeries(stagnant(speed), 2, 100 / speed, {8, 5.5, 0});
+    TS_ASSERT_EQUALS((int)GTEXIT_ZERO_VELOCITY, (int)still.m_reason);
+    TS_ASSERT_DELTA(8.0, still.m_trace.back().x, 1e-12);
+    TS_ASSERT_DELTA(5.5, still.m_trace.back().y, 1e-12);
+  }
+
+  SeriesTrace fast = iTraceSeries(stagnant(1.0), 2, 100, {0.5, 5.5, 0});
+  SeriesTrace slow = iTraceSeries(stagnant(1e-6), 2, 1e8, {0.5, 5.5, 0});
+  TS_ASSERT_EQUALS((int)GTEXIT_ZERO_VELOCITY, (int)fast.m_reason);
+  TS_ASSERT(fast.m_trace.back().x > 3.9); // it reached the still part before stopping
+  iAssertSamePath(fast, slow, 1e6);
+} // XmGridTraceUnitTests::testStillSteadyFieldStopsTrace
+//------------------------------------------------------------------------------
+/// \brief A field that goes still only in passing leaves the trace waiting, not ended.
+///
+/// A uniform eastward field winds down to nothing at the second time step and back up by the
+/// third, like a tide through slack water. The particle is under a still field at the end of
+/// the first window, which used to end the trace with ZERO_VELOCITY although the field had
+/// been moving at the first step and would move again. It is not still at both loaded steps,
+/// so the particle holds instead, the window ends it with WAITING_FOR_TIME_STEP, and the third
+/// step carries it on.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testPassingCalmWaitsInsteadOfStopping()
+{
+  auto slack = [](int a_step, const Pt3d&) { return a_step == 1 ? 0.0 : 0.1; };
+  // Positions are only asserted to have advanced. How far is the explicit Euler stepping's
+  // business, and in a field changing this fast in time it is coarse: nothing sizes the steps
+  // against the field's change over time except the window's own end.
+  SeriesTrace firstWindow = iTraceSeries(slack, 2, 10.0, {0.5, 5.5, 0});
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)firstWindow.m_reason);
+  TS_ASSERT_DELTA(10.0, firstWindow.m_times.back(), 1e-9);
+  TS_ASSERT(firstWindow.m_trace.back().x > 0.9);
+
+  SeriesTrace bothWindows = iTraceSeries(slack, 3, 10.0, {0.5, 5.5, 0});
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)bothWindows.m_reason);
+  TS_ASSERT_DELTA(20.0, bothWindows.m_times.back(), 1e-9);
+  TS_ASSERT(bothWindows.m_trace.back().x > firstWindow.m_trace.back().x + 0.1);
+} // XmGridTraceUnitTests::testPassingCalmWaitsInsteadOfStopping
+//------------------------------------------------------------------------------
+/// \brief Verifies what a flow reversal whose slack falls between loaded steps does.
+///
+/// The step that straddles the slack sees the flow turn back on itself, which is a sharp turn
+/// like any other, so it is halved. Each accepted half lands nearer the slack, until the
+/// velocity it starts from is still and the direction test no longer applies. Whether the
+/// halving gets that close first depends on min delta time: with a small one the trace crosses
+/// and follows the flow back, and with the default of 1 it runs out and stops. The second case
+/// pins a known limitation -- min delta time is in time units the tracer is never told, as the
+/// first step used to be -- so a change to that default is expected to change it.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testReversalBetweenStepsDependsOnMinDeltaTime()
+{
+  // +1 at time 0 and -1 at time 12: under linear time interpolation the slack is at time 6,
+  // halfway through the only window.
+  auto reversal = [](int a_step, const Pt3d&) { return a_step == 0 ? 1.0 : -1.0; };
+
+  SeriesTrace crosses = iTraceSeries(reversal, 2, 12.0, {5.5, 5.5, 0},
+                                     [](XmGridTrace& a_tracer) { a_tracer.SetMinDeltaTime(0.0); });
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)crosses.m_reason);
+  TS_ASSERT_DELTA(12.0, crosses.m_times.back(), 1e-9);
+  double furthest = 0.0;
+  for (const Pt3d& pt : crosses.m_trace)
+    furthest = std::max(furthest, pt.x);
+  // Out to about 8.5 by the slack and back to about 5.5 by the end of the window. Euler with
+  // the default 1.2 growth factor is coarse in a field that varies in time, so only the shape
+  // is asserted: it went well out and came well back.
+  TS_ASSERT(furthest > 8.0);
+  TS_ASSERT(crosses.m_trace.back().x < furthest - 1.0);
+
+  SeriesTrace stops = iTraceSeries(reversal, 2, 12.0, {5.5, 5.5, 0});
+  TS_ASSERT_EQUALS((int)GTEXIT_MIN_DELTA_TIME, (int)stops.m_reason);
+  TS_ASSERT(stops.m_times.back() < 6.0);
+} // XmGridTraceUnitTests::testReversalBetweenStepsDependsOnMinDeltaTime
+//------------------------------------------------------------------------------
+/// \brief Verifies an inactive point's placeholder does not set the field's speed scale.
+///
+/// Still is relative to the fastest speed in the loaded steps. Counting a vector interpolation
+/// can never reach would let one placeholder at an inactive location make every real speed
+/// look still. The placeholder here is 1e11 times the field; counted, it would put the still
+/// speed at 100 times the field, and the seed -- nowhere near the inactive point -- would stop
+/// at its first step with GTEXIT_ZERO_VELOCITY.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testPeakSpeedIgnoresInactivePoints()
+{
+  BenchmarkGrid grid = iBuildBenchmarkGrid(11, 11.0);
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(grid.m_ugrid);
+  tracer->SetMaxChangeDistance(0.5);
+
+  // Point (10, 10) is inactive and holds the placeholder; the 12 x 12 points are row major.
+  const int inactivePoint = 10 * 12 + 10;
+  DynBitset activity(grid.m_points.size());
+  activity.set();
+  activity[inactivePoint] = false;
+  VecPt3d vectors(grid.m_points.size(), Pt3d(1e-5, 0.0, 0.0));
+  vectors[inactivePoint] = Pt3d(1e6, 0.0, 0.0);
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, activity,
+                               DataLocationEnum::LOC_POINTS, 0.0);
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, activity,
+                               DataLocationEnum::LOC_POINTS, 1e4);
+
+  tracer->StartTraces({{0.5, 5.5, 0.0}}, {0.0});
+  tracer->ContinueTraces();
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+  tracer->GetTraceResults(traces, times, reasons);
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)reasons[0]);
+  // 1e-6 rather than tighter: the extractor holds the field as float, and 1e-5f is short of
+  // 1e-5 by a few parts in 1e8.
+  TS_ASSERT_DELTA(0.6, traces[0].back().x, 1e-6);
+} // XmGridTraceUnitTests::testPeakSpeedIgnoresInactivePoints
+//------------------------------------------------------------------------------
+/// \brief Verifies a seed released exactly at the end of the window derives its first step
+///        once the next time step arrives.
+///
+/// This is the one way a started trace resumes with no step size: the seed is evaluated and
+/// recorded, but no time is left in the window to step through, so it waits with the zero it
+/// began with. The resumed call has to derive a step then. Stepping with the zero instead
+/// would move nothing and trip none of the loop's exits, and the call would never return.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSeedReleasedAtWindowEndDerivesItsFirstStep()
+{
+  BenchmarkGrid grid = iBuildBenchmarkGrid(11, 11.0);
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(grid.m_ugrid);
+  tracer->SetMaxChangeDistance(0.5);
+  const DynBitset allActive;
+  const VecPt3d vectors(grid.m_points.size(), Pt3d(0.1, 0.0, 0.0));
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, allActive,
+                               DataLocationEnum::LOC_POINTS, 0.0);
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, allActive,
+                               DataLocationEnum::LOC_POINTS, 1.0);
+
+  tracer->StartTraces({{0.5, 5.5, 0.0}}, {1.0});
+  tracer->ContinueTraces();
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+  tracer->GetTraceResults(traces, times, reasons);
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)reasons[0]);
+  TS_ASSERT_EQUALS(size_t(1), traces[0].size());
+
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, allActive,
+                               DataLocationEnum::LOC_POINTS, 11.0);
+  tracer->ContinueTraces();
+  tracer->GetTraceResults(traces, times, reasons);
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)reasons[0]);
+  // 1e-6 rather than tighter: the field is held as float, and the distance cap counts the still
+  // speed beside the particle's own, which shortens each step by a few parts in 1e9 and leaves a
+  // sliver of window too short a move to record.
+  TS_ASSERT_DELTA(11.0, times[0].back(), 1e-6);
+  TS_ASSERT_DELTA(1.5, traces[0].back().x, 1e-6);
+  // The first step is the max change distance over the seed's speed, five time units. A fixed
+  // first step of 1.0 would have reached only 0.6 by time 2, and the cap would not have
+  // lengthened it.
+  TS_ASSERT(traces[0].size() >= 3);
+  if (traces[0].size() >= 3)
+  {
+    TS_ASSERT_DELTA(6.0, times[0][1], 1e-6);
+    TS_ASSERT_DELTA(1.0, traces[0][1].x, 1e-6);
+  }
+} // XmGridTraceUnitTests::testSeedReleasedAtWindowEndDerivesItsFirstStep
 //------------------------------------------------------------------------------
 /// \brief Measures the cost of tracing many seed points over a realistic grid.
 ///

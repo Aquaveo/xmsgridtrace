@@ -38,7 +38,7 @@ void initXmGridTrace(py::module &m) {
                 py::object vector_multiplier, py::object max_tracing_time,
                 py::object max_tracing_distance, py::object min_delta_time,
                 py::object max_change_distance, py::object max_change_velocity,
-                py::object max_change_direction_in_radians)
+                py::object max_change_direction_in_radians, py::object initial_delta_time)
       {
         boost::shared_ptr<xms::XmGridTrace> rval(xms::XmGridTrace::New(ugrid));
         if (!vector_multiplier.is_none())
@@ -69,11 +69,16 @@ void initXmGridTrace(py::module &m) {
         {
           rval->SetMaxChangeDirectionInRadians(max_change_direction_in_radians.cast<double>());
         }
+        if (!initial_delta_time.is_none())
+        {
+          rval->SetInitialDeltaTime(initial_delta_time.cast<double>());
+        }
         return rval;
       }), py::arg("ugrid"), py::arg("vector_multiplier") = py::none(), py::arg("max_tracing_time") = py::none(),
           py::arg("max_tracing_distance") = py::none(), py::arg("min_delta_time") = py::none(),
           py::arg("max_change_distance") = py::none(), py::arg("max_change_velocity") = py::none(),
-          py::arg("max_change_direction_in_radians") = py::none());
+          py::arg("max_change_direction_in_radians") = py::none(),
+          py::arg("initial_delta_time") = py::none());
 
   // -------------------------------------------------------------------------
   // function: __repr__
@@ -86,7 +91,8 @@ void initXmGridTrace(py::module &m) {
     ss << "min_delta_time: " << self.GetMinDeltaTime() << "\n";
     ss << "max_change_distance: " << self.GetMaxChangeDistance() << "\n";
     ss << "max_change_velocity: " << self.GetMaxChangeVelocity() << "\n";
-    ss << "max_change_direction_in_radians: " << self.GetMaxChangeDirectionInRadians();
+    ss << "max_change_direction_in_radians: " << self.GetMaxChangeDirectionInRadians() << "\n";
+    ss << "initial_delta_time: " << self.GetInitialDeltaTime();
     return ss.str();
   });
 
@@ -209,6 +215,28 @@ void initXmGridTrace(py::module &m) {
         self.SetMaxChangeDirectionInRadians(max_change_direction_in_radians);
       },
       max_change_direction_in_radians_doc);
+
+  // ---------------------------------------------------------------------------
+  // property: initial_delta_time
+  // ---------------------------------------------------------------------------
+  const char* initial_delta_time_doc = R"pydoc(
+      The step size a trace begins with. Zero or negative, the default, derives it from
+      the field so the first step covers at most max_change_distance whatever unit time
+      is in: max_change_distance over the seed's speed, or over the fastest speed in the
+      loaded time steps where the seed is still. With no max_change_distance, or in a
+      field still everywhere, the first step is 1.0. A positive value fixes it. Both are
+      in the time series' units.
+  )pydoc";
+  gridtrace.def_property("initial_delta_time",
+      [](xms::XmGridTrace &self) -> double
+      {
+        return self.GetInitialDeltaTime();
+      },
+      [](xms::XmGridTrace &self, double initial_delta_time)
+      {
+        self.SetInitialDeltaTime(initial_delta_time);
+      },
+      initial_delta_time_doc);
 
 
 
@@ -433,8 +461,9 @@ void initXmGridTrace(py::module &m) {
       two-dimensional and never reads a z velocity -- so this is sqrt(vx*vx + vy*vy).
 
       A seed the tracer never evaluated reports the XM_NODATA sentinel, a large negative
-      value, rather than 0.0. Zero is a legal speed -- a seed in still water measures it and
-      exits ZERO_VELOCITY -- so the two must not share a value. The sentinel covers every
+      value, rather than 0.0. Zero is a legal speed -- a seed in still water measures it,
+      whether the trace then stops with ZERO_VELOCITY or holds until the field picks up --
+      so the two must not share a value. The sentinel covers every
       unevaluated case alike: not started, waiting for a later time step, not traceable, and
       extraction failed. Which one it was is in get_trace_results' exit reasons.
 

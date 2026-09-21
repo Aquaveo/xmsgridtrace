@@ -102,6 +102,28 @@ class TestGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
+    def test_initial_delta_time(self):
+        """The first step is derived from max_change_distance unless it is set."""
+        tracer = self.create_default_single_cell()
+        self.assertLessEqual(tracer.initial_delta_time, 0.0)
+        self.assertIn('initial_delta_time', repr(tracer))
+
+        # The fixture's field is (1, 1), so a first step covering max_change_distance = .25 lasts
+        # .25 / sqrt(2) -- which is what the derived default takes.
+        tracer.max_change_distance = .25
+        _trace, times = tracer.trace_point((.5, .5, 0), .5)
+        self.assertAlmostEqual(.25 / np.sqrt(2), times[1] - times[0])
+
+        tracer.initial_delta_time = .05
+        self.assertAlmostEqual(.05, tracer.initial_delta_time)
+        _trace, times = tracer.trace_point((.5, .5, 0), .5)
+        self.assertAlmostEqual(.05, times[1] - times[0])
+
+        points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        cells = [UGrid.cell_type_enum.TRIANGLE, 3, 0, 1, 2, UGrid.cell_type_enum.TRIANGLE, 3, 2, 3, 0]
+        constructed = GridTrace(UGrid(points, cells), initial_delta_time=2.5)
+        self.assertAlmostEqual(2.5, constructed.initial_delta_time)
+
     def test_max_change_distance(self):
         """Test max change distance functionality."""
         tracer = self.create_default_single_cell()
@@ -121,6 +143,9 @@ class TestGridTrace(unittest.TestCase):
     def test_small_scalars_trace_point(self):
         """Test functionality with small scalars."""
         tracer = self.create_default_single_cell()
+        # Pinned to the fixed first step these expected values were computed with; the default now
+        # derives it from max_change_distance.
+        tracer.initial_delta_time = 1.0
         start_time = .5
         tracer.max_change_distance = .25
         scalars = [(.1, .1, 0), (.1, .1, 0), (.1, .1, 0), (.1, .1, 0)]
@@ -688,6 +713,9 @@ class TestGridTrace(unittest.TestCase):
     def test_multi_cell(self):
         """Test default functionality of multiple cells."""
         tracer = self.create_default_two_cell()
+        # Pinned to the fixed first step these expected values were computed with; the default now
+        # derives it from max_change_distance.
+        tracer.initial_delta_time = 1.0
         start_time = 0
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
@@ -714,6 +742,9 @@ class TestGridTrace(unittest.TestCase):
     def test_max_change_velocity(self):
         """Test functionality of max change in velocity."""
         tracer = self.create_default_two_cell()
+        # Pinned to the fixed first step these expected values were computed with; the default now
+        # derives it from max_change_distance.
+        tracer.initial_delta_time = 1.0
         tracer.max_change_velocity = .01
         tracer.min_delta_time = .001
         start_time = 0
@@ -766,6 +797,9 @@ class TestGridTrace(unittest.TestCase):
     def test_unique_time_steps(self):
         """Test functionality of unique time steps."""
         tracer = self.create_default_two_cell()
+        # Pinned to the fixed first step these expected values were computed with; the default now
+        # derives it from max_change_distance.
+        tracer.initial_delta_time = 1.0
         start_time = 10
 
         scalars = [(.2, 0, 0), (.3, 0, 0)]
@@ -794,6 +828,9 @@ class TestGridTrace(unittest.TestCase):
     def test_inactive_cell(self):
         """Test functionality of inactive cells."""
         tracer = self.create_default_two_cell()
+        # Pinned to the fixed first step these expected values were computed with; the default now
+        # derives it from max_change_distance.
+        tracer.initial_delta_time = 1.0
         start_time = 10
 
         scalars = [(.2, 0, 0), (99999, 0, 0)]

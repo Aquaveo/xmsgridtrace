@@ -15,7 +15,7 @@ class GridTrace(object):
 
     def __init__(self, ugrid=None, vector_multiplier=None, max_tracing_time=None, max_tracing_distance=None,
                  min_delta_time=None, max_change_distance=None, max_change_velocity=None,
-                 max_change_direction_in_radians=None, **kwargs):
+                 max_change_direction_in_radians=None, initial_delta_time=None, **kwargs):
         """Constructor.
 
         Args:
@@ -27,6 +27,7 @@ class GridTrace(object):
             max_change_distance (float): Maximum distance between trace steps
             max_change_velocity (float): Maximum change in velocity between trace steps
             max_change_direction_in_radians (float): Maximum change in direction between trace steps
+            initial_delta_time (float): Step size a trace begins with; zero or negative derives it from the field
             **kwargs (dict): Generic keyword arguments
         """
         if 'instance' in kwargs:
@@ -45,6 +46,7 @@ class GridTrace(object):
             max_change_distance=max_change_distance,
             max_change_velocity=max_change_velocity,
             max_change_direction_in_radians=max_change_direction_in_radians,
+            initial_delta_time=initial_delta_time,
         )
 
     def __repr__(self):
@@ -124,6 +126,23 @@ class GridTrace(object):
     def max_change_direction_in_radians(self, value):
         """Set the maximum change in direction between trace steps, in radians."""
         self._instance.max_change_direction_in_radians = value
+
+    @property
+    def initial_delta_time(self):
+        """Step size a trace begins with.
+
+        Zero or negative, the default, derives it from the field: max_change_distance over the seed's
+        speed, or over the fastest speed in the loaded time steps where the seed is still, so the first
+        step covers at most max_change_distance whatever unit time is in. With no max_change_distance,
+        or in a field still everywhere, the first step is 1.0 in the time series' units. A positive
+        value fixes the first step.
+        """
+        return self._instance.initial_delta_time
+
+    @initial_delta_time.setter
+    def initial_delta_time(self, value):
+        """Set the step size a trace begins with; zero or negative derives it from the field."""
+        self._instance.initial_delta_time = value
 
     def add_grid_scalars_at_time(self, scalars, scalar_loc, cell_activity, activity_loc, time):
         """Assign velocity vectors to each point or cell for a time step.
@@ -235,9 +254,10 @@ class GridTrace(object):
         and never reads a z velocity -- so this is sqrt(vx*vx + vy*vy).
 
         A seed the tracer never evaluated reports the XM_NODATA sentinel, a large negative value,
-        rather than 0.0. Zero is a legal speed -- a seed in still water measures it and exits
-        ZERO_VELOCITY -- so the two must not share a value. The sentinel covers every unevaluated
-        case alike: not started, waiting for a later time step, not traceable, and extraction failed.
+        rather than 0.0. Zero is a legal speed -- a seed in still water measures it, whether the trace
+        then stops with ZERO_VELOCITY or holds until the field picks up -- so the two must not share a
+        value. The sentinel covers every unevaluated case alike: not started, waiting for a later time
+        step, not traceable, and extraction failed.
         Which one it was is in get_trace_results' exit reasons.
 
         Not safe to call while continue_traces runs on another thread: that call releases the GIL,
