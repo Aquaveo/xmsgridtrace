@@ -50,6 +50,14 @@ public:
   void testSampleVectorsBlendsBetweenTimeSteps();
   void testSampleVectorsNeedsTwoTimeSteps();
   void testSampleVectorsKeepsOnlyTraceableSeeds();
+  void testInitialDeltaTimeIsDerivedByDefault();
+  void testSlowSteadyFieldTraces();
+  void testColdStartOnWideWindowTraces();
+  void testStillSteadyFieldStopsTrace();
+  void testPassingCalmWaitsInsteadOfStopping();
+  void testReversalBetweenStepsDependsOnMinDeltaTime();
+  void testPeakSpeedIgnoresInactivePoints();
+  void testSeedReleasedAtWindowEndDerivesItsFirstStep();
   void testTraceBenchmark();
 
 }; // XmGridTraceUnitTests

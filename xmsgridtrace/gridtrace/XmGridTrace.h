@@ -40,13 +40,35 @@ class dyn_bitset;
 /// the grid, draw it short" from "spent its distance budget, this is the normal ending"
 /// without comparing strings. The old messages could not support that anyway: they were
 /// composed by appending, so no fixed string identified a case.
+///
+/// GTEXIT_ZERO_VELOCITY is relative to the field: still means a speed at most 1e-4 of the
+/// fastest either loaded time step reaches anywhere on the grid, after the vector multiplier,
+/// so a uniformly slow field traces just as a fast one does. The scale is one number for the
+/// whole grid, so one fast location sets it for every other: a single cell 1e4 times faster
+/// than the rest makes the rest still. Only locations interpolation can reach count, so an
+/// inactive placeholder cannot do that, but a genuine outlier can.
+///
+/// ZERO_VELOCITY is also reserved for a field that is still under the particle at *both*
+/// loaded time steps, which under linear time interpolation means still for the whole window.
+/// A field that is still at the particle only for the moment -- one spinning up from rest, or
+/// at a slack that falls on a loaded time step -- holds the particle in place instead: it moves
+/// off again as the field picks up, or waits with GTEXIT_WAITING_FOR_TIME_STEP at the end of
+/// the window. A reversal whose slack falls *between* loaded steps is a sharp turn instead, and
+/// is subdivided like one: the trace crosses the slack only if min delta time lets the halving
+/// get close enough to it, and otherwise stops with GTEXIT_MIN_DELTA_TIME, as it usually does
+/// with the default min delta time of 1.
+///
+/// ZERO_VELOCITY stays terminal even though a time step not yet loaded might move the particle
+/// again. The tracer cannot see past the second loaded step, and treating dead water as waiting
+/// would keep every trace seeded in it alive, and every time step loading, for the rest of the
+/// series.
 enum XmGridTraceExitEnum {
   GTEXIT_NOT_STARTED,           ///< no stepping has happened yet
   GTEXIT_WAITING_FOR_TIME_STEP, ///< reached the 2nd loaded step; supply a later one to resume
   GTEXIT_MAX_TRACING_TIME,      ///< the trace spent its time budget
   GTEXIT_MAX_TRACING_DISTANCE,  ///< the trace spent its distance budget
   GTEXIT_LEFT_GRID,             ///< stepped out of the grid; the path stops at the boundary
-  GTEXIT_ZERO_VELOCITY,         ///< the field went still under the particle
+  GTEXIT_ZERO_VELOCITY,         ///< the field is still under the particle at both loaded steps
   GTEXIT_MIN_DELTA_TIME,        ///< subdividing reached the smallest allowed step
   GTEXIT_SEED_NOT_TRACEABLE,    ///< the seed was outside the grid or in an inactive cell
   GTEXIT_EXTRACTION_FAILED      ///< a field lookup failed; the trace is discarded
@@ -218,8 +240,9 @@ public:
   /// velocity -- so this is sqrt(vx*vx + vy*vy) and not a three-component norm.
   ///
   /// A seed the tracer never evaluated reports XM_NODATA rather than zero. Zero is a legal
-  /// speed -- a seed sitting in still water measures it and exits GTEXIT_ZERO_VELOCITY -- so
-  /// the two must not share a value. XM_NODATA covers every unevaluated case alike: not
+  /// speed -- a seed in still water measures it, whether the trace then stops with
+  /// GTEXIT_ZERO_VELOCITY or holds until the field picks up -- so the two must not share a
+  /// value. XM_NODATA covers every unevaluated case alike: not
   /// started, waiting for a later time step, not traceable, and extraction failed. Which one
   /// it was is in GetTraceResults' exit reasons.
   ///
@@ -260,8 +283,8 @@ public:
   /// two-dimensional and never reads or writes one. The reported points are the caller's
   /// own, echoed unchanged, z included.
   ///
-  /// Declared last so that adding it appends a vtable slot rather than shifting the ones
-  /// above it.
+  /// Declared after GetSeedMagnitudes so that adding it appended a vtable slot rather than
+  /// shifting the ones above it.
   ///
   /// \param[in] a_pts The points to sample
   /// \param[in] a_time The time to sample at, blended between the two loaded steps. A time
@@ -273,6 +296,30 @@ public:
                              double a_time,
                              VecPt3d& a_outPts,
                              VecPt3d& a_outVectors) const = 0;
+
+  //----------------------------------------------------------------------------
+  /// \brief Returns the step size a trace begins with.
+  /// \return the initial delta time, or a value <= 0 when it is derived from the field
+  virtual double GetInitialDeltaTime() const = 0;
+  /// \brief Sets the step size a trace begins with.
+  ///
+  /// Zero or negative, the default, derives it from the field: the max change distance over
+  /// the seed's speed, or over the fastest speed in the loaded time steps where the seed is
+  /// still, so the first step covers at most the max change distance whatever unit time is
+  /// in. The first step is 1.0 in the time series' units where there is nothing to derive it
+  /// from: with no max change distance, or in a field still everywhere in both loaded steps.
+  /// A step too long for the window is shortened to the window's end, as every step is.
+  ///
+  /// 1.0 was the only first step before this existed. On a time axis in days that was harmless,
+  /// because the distance cap shrank it at once. On an axis in seconds it was one second of a
+  /// window that could be a day long. A positive value restores a fixed step, which is what a
+  /// caller that pinned its results to the old first step needs.
+  ///
+  /// Declared last, after SampleVectors, so that adding these appends vtable slots rather than
+  /// shifting the ones above them.
+  ///
+  /// \param[in] a_initialDeltaTime the first step, or <= 0 to derive it from the field
+  virtual void SetInitialDeltaTime(double a_initialDeltaTime) = 0;
 
 private:
   XM_DISALLOW_COPY_AND_ASSIGN(XmGridTrace)
