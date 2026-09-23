@@ -133,6 +133,11 @@ public:
   /// \return the maximum change in direction between trace steps
   virtual double GetMaxChangeDirectionInRadians() const = 0;
   /// \brief Sets the max change in direction in radians
+  ///
+  /// Applies only between two velocities the field actually measures. A step that begins or
+  /// ends with a still velocity is never split for direction: what is left of a still vector
+  /// is interpolation noise, and the angle between noise and a real velocity says nothing
+  /// about how sharply the flow turns. XmGridTraceExitEnum documents what counts as still.
   /// \param[in] a_maxChangeDirection the new max change in direction in radians
   virtual void SetMaxChangeDirectionInRadians(const double a_maxChangeDirection) = 0;
 

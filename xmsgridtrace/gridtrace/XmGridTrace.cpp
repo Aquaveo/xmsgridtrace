@@ -80,8 +80,9 @@ size_t g_boundaryExtractorBuilds = 0;
 /// ordinary groundwater speed in metres per day, and it ended every trace in a uniformly slow
 /// field at its first step.
 const double kStillFraction = 1e-4;
-/// First step of a trace when there is no max change distance to derive one from, in the time
-/// series' own units. It is the fixed value every trace used to begin with.
+/// First step of a trace where there is nothing to derive one from, in the time series' own
+/// units: no max change distance, or a field still everywhere in both loaded steps, which
+/// leaves no speed to divide by. It is the fixed value every trace used to begin with.
 const double kFallbackDeltaT = 1.0;
 
 //------------------------------------------------------------------------------
@@ -97,13 +98,18 @@ bool iIsStill(double a_vx, double a_vy, double a_stillSpeed)
 } // iIsStill
 
 //------------------------------------------------------------------------------
-/// \brief Which cells a field can be extracted from, exactly as XmUGrid2dDataExtractor
-///        derives it.
+/// \brief Which cells a field can be extracted from.
 ///
-/// Empty activity means all active, point activity switches off every cell touching an
-/// inactive point, and cell activity is used as given. The extractor has already rejected a
-/// bitset of the wrong size by the time this runs; the bounds tests are only there so a short
-/// one cannot read past its end.
+/// Meant to derive activity the way XmUGrid2dDataExtractor does, so the peak is taken over the
+/// vectors interpolation can actually reach. That is a claim about a dependency this library
+/// has only as a binary, so what follows is what this function does, not what the extractor
+/// promises.
+///
+/// Empty activity is all cells active; LOC_CELLS activity is used as given; LOC_POINTS activity
+/// switches off every cell touching an inactive point; and any other location -- LOC_UNKNOWN is
+/// the only one left -- is all cells active. A bitset shorter than the grid is read within its
+/// bounds rather than rejected: a cell past its end reads as inactive, a point past its end is
+/// left alone.
 /// \param[in] a_ugrid The grid
 /// \param[in] a_activity The activity; empty means all active
 /// \param[in] a_activityLoc Whether a_activity is per point or per cell
@@ -162,6 +168,10 @@ double iPeakSpeed(const XmUGrid& a_ugrid,
   const std::vector<char> cellActive = iCellActivity(a_ugrid, a_activity, a_activityLoc);
 
   double peakSquared = 0.0;
+  // Two values that are not speeds are skipped rather than counted. XM_NODATA is what the
+  // extractor writes where it cannot interpolate, so a caller handing it back is passing a
+  // marker rather than a velocity. A non-finite square comes from an infinity or a NaN in the
+  // input, and has no ordering to take a maximum over.
   auto consider = [&](const Pt3d& a_vector) {
     if (EQ_TOL(a_vector.x, XM_NODATA, 1) || EQ_TOL(a_vector.y, XM_NODATA, 1))
       return;
@@ -642,8 +652,9 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars,
   m_activity2 = a_activity;
   m_scalarLoc2 = a_scalarLoc;
   m_activityLoc2 = a_activityLoc;
-  // After the extractors, which reject scalars or activity of the wrong size, so the peak is
-  // only ever taken over input they accepted.
+  // After the extractors, so the peak is taken over the same arrays they were handed. What
+  // they do with an array of the wrong size is not visible from here, which is why iPeakSpeed
+  // and iCellActivity bounds-test rather than assume.
   m_peakSpeed2 = iPeakSpeed(*m_ugrid, a_scalars, a_scalarLoc, a_activity, a_activityLoc);
 }
 //------------------------------------------------------------------------------
@@ -819,9 +830,16 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
       // throughout a slow field and held every step far below max_change_distance.
       double d2 = m_maxChangeDistance * m_maxChangeDistance;
       double denom = (vx0 * vx0) + (vy0 * vy0) + (stillSpeed * stillSpeed);
-      double dt = sqrt(d2 / denom);
-      if (deltaT > dt)
-        deltaT = dt;
+      // Zero where there is no speed to cap against -- a particle at rest in a field of
+      // zeros, or any field with a zero vector multiplier -- and where a real field underflows
+      // to it. No step covers any distance at that speed, so leave deltaT alone instead of
+      // leaning on the infinity the divide would hand back.
+      if (denom > 0)
+      {
+        double dt = sqrt(d2 / denom);
+        if (deltaT > dt)
+          deltaT = dt;
+      }
     }
     // If the change in DeltaT would push us beyond the time step, set it to hit the timestep
     if (elapsedTime + deltaT + ptTime > m_time2)
@@ -1320,20 +1338,29 @@ using namespace xms;
 namespace
 {
 //------------------------------------------------------------------------------
+/// \brief The unit square split into two triangles, the grid most of these tests run on.
+///
+///  3----2
+///  | 1 /|
+///  |  / |
+///  | /  |
+///  |/ 0 |
+///  0----1
+/// \return The grid
+//------------------------------------------------------------------------------
+std::shared_ptr<XmUGrid> iCreateTwoTriangleUGrid()
+{
+  VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
+  VecInt cells = {XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0};
+  return XmUGrid::New(points, cells);
+} // iCreateTwoTriangleUGrid
+//------------------------------------------------------------------------------
 /// \brief Returns a tracer for a default cell
 /// \param[out] a_tracer The tracer for a default cell
 //------------------------------------------------------------------------------
 void iCreateDefaultSingleCell(BSHP<XmGridTrace>& a_tracer)
 {
-  //  3----2
-  //  | 1 /|
-  //  |  / |
-  //  | /  |
-  //  |/ 0 |
-  //  0----1
-  VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
-  VecInt cells = {XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0};
-  std::shared_ptr<XmUGrid> ugrid = XmUGrid::New(points, cells);
+  std::shared_ptr<XmUGrid> ugrid = iCreateTwoTriangleUGrid();
   a_tracer = XmGridTrace::New(ugrid);
   const double vm = 1;
   a_tracer->SetVectorMultiplier(vm);
@@ -1389,9 +1416,7 @@ void iCreateDefaultSingleCell(BSHP<XmGridTrace>& a_tracer)
 //------------------------------------------------------------------------------
 void iCreateBareDefaultGrid(BSHP<XmGridTrace>& a_tracer, DynBitset& a_activity)
 {
-  VecPt3d points = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
-  VecInt cells = {XMU_TRIANGLE, 3, 0, 1, 2, XMU_TRIANGLE, 3, 2, 3, 0};
-  a_tracer = XmGridTrace::New(XmUGrid::New(points, cells));
+  a_tracer = XmGridTrace::New(iCreateTwoTriangleUGrid());
   a_activity.clear();
   for (int i = 0; i < 4; ++i)
     a_activity.push_back(true);
@@ -3473,6 +3498,48 @@ void XmGridTraceUnitTests::testPeakSpeedIgnoresInactivePoints()
   // 1e-5 by a few parts in 1e8.
   TS_ASSERT_DELTA(0.6, traces[0].back().x, 1e-6);
 } // XmGridTraceUnitTests::testPeakSpeedIgnoresInactivePoints
+//------------------------------------------------------------------------------
+/// \brief test that an activity bitset shorter than the grid is read within its bounds
+///
+/// The extractors see the activity before iCellActivity does, and what they make of one that
+/// is too short is not visible from this library. So the bounds tests are the only thing
+/// between a short bitset and a read past its end, and nothing reaching iCellActivity through
+/// the public API can exercise them. This calls it directly, the way testDotProduct calls
+/// iGetDirAsCosTheta, and pins what the missing entries are taken to mean.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testCellActivityStaysInsideAShortBitset()
+{
+  std::shared_ptr<XmUGrid> ugrid = iCreateTwoTriangleUGrid();
+
+  // Empty activity is every cell active, whatever location it claims to be in.
+  const std::vector<char> none = iCellActivity(*ugrid, DynBitset(), DataLocationEnum::LOC_CELLS);
+  TS_ASSERT_EQUALS(2, (int)none.size());
+  TS_ASSERT_EQUALS(1, (int)none[0]);
+  TS_ASSERT_EQUALS(1, (int)none[1]);
+
+  // One flag for two cells. Cell 0 is read from it; cell 1 is past the end and reads as
+  // inactive. This pins what the missing flag means rather than the guard itself: the bitset
+  // keeps its storage block zeroed past its size, so dropping the bounds test would read a
+  // false there and give the same answer. The point case below is the one that fails without
+  // its guard.
+  DynBitset shortCells(1);
+  shortCells[0] = true;
+  const std::vector<char> byCell = iCellActivity(*ugrid, shortCells, DataLocationEnum::LOC_CELLS);
+  TS_ASSERT_EQUALS(2, (int)byCell.size());
+  TS_ASSERT_EQUALS(1, (int)byCell[0]);
+  TS_ASSERT_EQUALS(0, (int)byCell[1]);
+
+  // Two flags for four points. Point 1 is inactive and belongs to cell 0 alone, so cell 0
+  // switches off; points 2 and 3 are past the end and leave cell 1 active.
+  DynBitset shortPoints(2);
+  shortPoints[0] = true;
+  shortPoints[1] = false;
+  const std::vector<char> byPoint =
+    iCellActivity(*ugrid, shortPoints, DataLocationEnum::LOC_POINTS);
+  TS_ASSERT_EQUALS(2, (int)byPoint.size());
+  TS_ASSERT_EQUALS(0, (int)byPoint[0]);
+  TS_ASSERT_EQUALS(1, (int)byPoint[1]);
+} // XmGridTraceUnitTests::testCellActivityStaysInsideAShortBitset
 //------------------------------------------------------------------------------
 /// \brief Verifies a seed released exactly at the end of the window derives its first step
 ///        once the next time step arrives.

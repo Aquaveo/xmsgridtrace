@@ -57,6 +57,7 @@ public:
   void testPassingCalmWaitsInsteadOfStopping();
   void testReversalBetweenStepsDependsOnMinDeltaTime();
   void testPeakSpeedIgnoresInactivePoints();
+  void testCellActivityStaysInsideAShortBitset();
   void testSeedReleasedAtWindowEndDerivesItsFirstStep();
   void testTraceBenchmark();
 
