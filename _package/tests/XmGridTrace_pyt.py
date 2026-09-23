@@ -26,16 +26,35 @@ class TestGridTrace(unittest.TestCase):
     time step. Positions were already compared approximately; times now match.
     """
 
+    def default_two_triangle_ugrid(self):
+        """Create the two triangle grid the fixtures below are built on.
+
+        Returns:
+            UGrid: The unit square split into two triangles
+        """
+        points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        cells = [UGrid.cell_type_enum.TRIANGLE, 3, 0, 1, 2,
+                 UGrid.cell_type_enum.TRIANGLE, 3, 2, 3, 0]
+        return UGrid(points, cells)
+
+    def pin_legacy_first_step(self, tracer):
+        """Pin the first step to the fixed 1.0 a test's expected values were computed with.
+
+        The default derives the first step from max_change_distance, which moves the numbers of
+        any test whose expectations predate that.
+
+        Args:
+            tracer (GridTrace): The tracer to pin
+        """
+        tracer.initial_delta_time = 1.0
+
     def create_default_single_cell(self):
         """Create a default single cell.
 
         Returns:
             GridTrace: A tracer for a two triangle grid
         """
-        points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
-        cells = [UGrid.cell_type_enum.TRIANGLE, 3, 0, 1, 2,
-                 UGrid.cell_type_enum.TRIANGLE, 3, 2, 3, 0]
-        ugrid = UGrid(points, cells)
+        ugrid = self.default_two_triangle_ugrid()
         tracer = GridTrace(ugrid)
         self.assertIsInstance(tracer, GridTrace)
         tracer.vector_multiplier = 1
@@ -85,10 +104,7 @@ class TestGridTrace(unittest.TestCase):
         Returns:
             GridTrace: A tracer holding the two triangle grid and nothing else
         """
-        points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
-        cells = [UGrid.cell_type_enum.TRIANGLE, 3, 0, 1, 2,
-                 UGrid.cell_type_enum.TRIANGLE, 3, 2, 3, 0]
-        return GridTrace(UGrid(points, cells))
+        return GridTrace(self.default_two_triangle_ugrid())
 
     def test_basic_trace_point(self):
         """Test basic tracing functionality."""
@@ -119,9 +135,7 @@ class TestGridTrace(unittest.TestCase):
         _trace, times = tracer.trace_point((.5, .5, 0), .5)
         self.assertAlmostEqual(.05, times[1] - times[0])
 
-        points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
-        cells = [UGrid.cell_type_enum.TRIANGLE, 3, 0, 1, 2, UGrid.cell_type_enum.TRIANGLE, 3, 2, 3, 0]
-        constructed = GridTrace(UGrid(points, cells), initial_delta_time=2.5)
+        constructed = GridTrace(self.default_two_triangle_ugrid(), initial_delta_time=2.5)
         self.assertAlmostEqual(2.5, constructed.initial_delta_time)
 
     def test_max_change_distance(self):
@@ -143,9 +157,7 @@ class TestGridTrace(unittest.TestCase):
     def test_small_scalars_trace_point(self):
         """Test functionality with small scalars."""
         tracer = self.create_default_single_cell()
-        # Pinned to the fixed first step these expected values were computed with; the default now
-        # derives it from max_change_distance.
-        tracer.initial_delta_time = 1.0
+        self.pin_legacy_first_step(tracer)
         start_time = .5
         tracer.max_change_distance = .25
         scalars = [(.1, .1, 0), (.1, .1, 0), (.1, .1, 0), (.1, .1, 0)]
@@ -713,9 +725,7 @@ class TestGridTrace(unittest.TestCase):
     def test_multi_cell(self):
         """Test default functionality of multiple cells."""
         tracer = self.create_default_two_cell()
-        # Pinned to the fixed first step these expected values were computed with; the default now
-        # derives it from max_change_distance.
-        tracer.initial_delta_time = 1.0
+        self.pin_legacy_first_step(tracer)
         start_time = 0
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
@@ -742,9 +752,7 @@ class TestGridTrace(unittest.TestCase):
     def test_max_change_velocity(self):
         """Test functionality of max change in velocity."""
         tracer = self.create_default_two_cell()
-        # Pinned to the fixed first step these expected values were computed with; the default now
-        # derives it from max_change_distance.
-        tracer.initial_delta_time = 1.0
+        self.pin_legacy_first_step(tracer)
         tracer.max_change_velocity = .01
         tracer.min_delta_time = .001
         start_time = 0
@@ -797,9 +805,7 @@ class TestGridTrace(unittest.TestCase):
     def test_unique_time_steps(self):
         """Test functionality of unique time steps."""
         tracer = self.create_default_two_cell()
-        # Pinned to the fixed first step these expected values were computed with; the default now
-        # derives it from max_change_distance.
-        tracer.initial_delta_time = 1.0
+        self.pin_legacy_first_step(tracer)
         start_time = 10
 
         scalars = [(.2, 0, 0), (.3, 0, 0)]
@@ -828,9 +834,7 @@ class TestGridTrace(unittest.TestCase):
     def test_inactive_cell(self):
         """Test functionality of inactive cells."""
         tracer = self.create_default_two_cell()
-        # Pinned to the fixed first step these expected values were computed with; the default now
-        # derives it from max_change_distance.
-        tracer.initial_delta_time = 1.0
+        self.pin_legacy_first_step(tracer)
         start_time = 10
 
         scalars = [(.2, 0, 0), (99999, 0, 0)]
