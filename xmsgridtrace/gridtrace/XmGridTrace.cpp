@@ -154,18 +154,15 @@ std::vector<char> iCellActivity(const XmUGrid& a_ugrid,
 /// \param[in] a_ugrid The grid the vectors belong to
 /// \param[in] a_scalars The vectors, one per point or one per cell
 /// \param[in] a_scalarLoc Whether a_scalars is per point or per cell
-/// \param[in] a_activity The activity; empty means all active
-/// \param[in] a_activityLoc Whether a_activity is per point or per cell
+/// \param[in] a_cellActive Which cells are active, one flag per cell; see iCellActivity
 /// \return The peak speed, or 0 when nothing is active
 //------------------------------------------------------------------------------
 double iPeakSpeed(const XmUGrid& a_ugrid,
                   const VecPt3d& a_scalars,
                   DataLocationEnum a_scalarLoc,
-                  const DynBitset& a_activity,
-                  DataLocationEnum a_activityLoc)
+                  const std::vector<char>& a_cellActive)
 {
   const int cellCount = a_ugrid.GetCellCount();
-  const std::vector<char> cellActive = iCellActivity(a_ugrid, a_activity, a_activityLoc);
 
   double peakSquared = 0.0;
   // Two values that are not speeds are skipped rather than counted. XM_NODATA is what the
@@ -187,7 +184,7 @@ double iPeakSpeed(const XmUGrid& a_ugrid,
     VecInt cellPoints;
     for (int cellIdx = 0; cellIdx < cellCount; ++cellIdx)
     {
-      if (!cellActive[cellIdx])
+      if (!a_cellActive[cellIdx])
         continue;
       a_ugrid.GetCellPoints(cellIdx, cellPoints);
       for (int pointIdx : cellPoints)
@@ -201,7 +198,7 @@ double iPeakSpeed(const XmUGrid& a_ugrid,
   {
     for (int cellIdx = 0; cellIdx < cellCount && cellIdx < (int)a_scalars.size(); ++cellIdx)
     {
-      if (cellActive[cellIdx])
+      if (a_cellActive[cellIdx])
         consider(a_scalars[cellIdx]);
     }
   }
@@ -252,6 +249,25 @@ void iApplyWeights(const XmUGrid2dDataExtractor& a_x,
   a_outY = static_cast<float>(interpY);
 } // iApplyWeights
 
+//------------------------------------------------------------------------------
+/// \brief Interpolates elevation over a triangulation with one search's weights.
+///
+/// The triangulation's points carry z: a grid point its own, and a centroid the mean of its
+/// cell's points (XmUGridTriangulatorBase::GenerateCentroidTriangles). So the weights a
+/// point-location search returns for the field serve for the surface too.
+/// \param[in] a_points The triangulation's points
+/// \param[in] a_idxs Triangulation point indices from the search
+/// \param[in] a_weights Interpolation weights parallel to a_idxs
+/// \return The interpolated z
+//------------------------------------------------------------------------------
+double iInterpolateZ(const VecPt3d& a_points, const VecInt& a_idxs, const VecDbl& a_weights)
+{
+  double z = 0.0;
+  for (size_t i = 0; i < a_idxs.size(); ++i)
+    z += a_points[a_idxs[i]].z * a_weights[i];
+  return z;
+} // iInterpolateZ
+
 ////////////////////////////////////////////////////////////////////////////////
 /// One trace in progress, and everything about it that has to survive a time step change.
 ///
@@ -280,6 +296,12 @@ struct TraceState
   /// with the trace and picks up the multiplier from the first step onward; this one is
   /// written once and never again.
   double m_seedMagnitude = XM_NODATA;
+  /// The grid point or cell the seed was placed at by StartTracesAtIndices, or -1 for a seed
+  /// placed at a position. An indexed seed's activity is decided by the grid rather than by
+  /// where it lands; see SeedIsActive.
+  int m_seedIdx = -1;
+  /// Whether m_seedIdx is a point or a cell. Unused while m_seedIdx is -1.
+  DataLocationEnum m_seedLoc = DataLocationEnum::LOC_UNKNOWN;
   bool m_started = false;    ///< the seed has been evaluated and recorded
   /// Why it stopped, or that it is waiting. Doubles as the resume flag -- see iIsTerminal --
   /// so there is one source of truth rather than a reason and a separate finished bool that
@@ -346,17 +368,26 @@ public:
   double GetInitialDeltaTime() const final;
   void SetInitialDeltaTime(double a_initialDeltaTime) final;
 
+  bool StartTracesAtIndices(const VecInt& a_indices,
+                            DataLocationEnum a_indexLoc,
+                            const VecDbl& a_ptTimes) final;
+
 private:
   void StepTrace(TraceState& a_state);
   double StillSpeed() const;
   double FirstDeltaT(double a_vx, double a_vy, double a_stillSpeed) const;
   bool StillAtBothSteps(const Pt3d& a_atTime1, const Pt3d& a_atTime2, double a_stillSpeed) const;
+  bool SeedIsActive(const TraceState& a_state) const;
+  double SurfaceZ(const Pt3d& a_pt, double a_lookupZ);
+  double SearchSurfaceZ(const Pt3d& a_pt, double a_missZ);
+  XmUGridTriangles2d& SurfaceTriangles();
 
   bool GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
                                   double a_currentTime,
                                   xms::Pt3d& a_data,
                                   xms::Pt3d* a_atTime1 = nullptr,
-                                  xms::Pt3d* a_atTime2 = nullptr) const;
+                                  xms::Pt3d* a_atTime2 = nullptr,
+                                  double* a_lookupZ = nullptr) const;
 
   std::shared_ptr<XmUGrid> m_ugrid;                ///< UGrid for the TracePoint operation
   double m_vectorMultiplier=1;          ///< multiplier for all vectors in grid
@@ -374,12 +405,16 @@ private:
   BSHP<XmUGrid2dDataExtractor> m_extractor1y;
   double m_time1=-1;  ///< time of the first time step
   double m_peakSpeed1=0; ///< fastest speed in the first time step's field; see iPeakSpeed
+  /// Which cells the first time step's field can be extracted from; see iCellActivity. Kept
+  /// for SeedIsActive, which judges an indexed seed by the grid's activity.
+  std::vector<char> m_cellActive1;
   /// data extractor for the x component for the second time step
   BSHP<XmUGrid2dDataExtractor> m_extractor2x;
   /// data extractor for the y component for the second time step
   BSHP<XmUGrid2dDataExtractor> m_extractor2y;
   double m_time2=-1;        ///< time of the second time step
   double m_peakSpeed2=0;    ///< fastest speed in the second time step's field; see iPeakSpeed
+  std::vector<char> m_cellActive2; ///< as m_cellActive1, for the second time step
   xms::DynBitset m_activity2; ///< activity of the second time step, to compare with the next
   /// Data location of the second time step's scalars, to compare with the next. The
   /// triangulation is built for a location, so a change here forbids sharing.
@@ -404,9 +439,17 @@ private:
   /// measured ~40 ms each. Null until a trace actually exits, so a tracer whose traces all
   /// stay inside the grid never pays the memory.
   BSHP<XmUGrid2dPolylineDataExtractor> m_boundaryExtractor;
-  /// Traces started by StartTracePoints and advanced by ContinueTracePoints. Empty unless
-  /// a batch is in flight; one batch per tracer, because the time step window it runs
-  /// against is itself instance state.
+  /// The grid's centroid-fan triangulation, every cell active, which traced points take their
+  /// z from when the field is point-located. The extractor triangulates point data by ear
+  /// cutting instead, which splits a quad along a diagonal and so puts a different surface
+  /// through it from the one a display draws. Cell-located data is triangulated around the
+  /// centroids already, and reads its z from the field's own search (see SurfaceZ). Built on
+  /// the first point that needs it, so a tracer only ever given cell data never pays for it.
+  /// Depends only on the grid, which is fixed at construction.
+  BSHP<XmUGridTriangles2d> m_surfaceTriangles;
+  /// Traces started by StartTraces or StartTracesAtIndices and advanced by ContinueTraces.
+  /// Empty unless a batch is in flight; one batch per tracer, because the time step window it
+  /// runs against is itself instance state.
   std::vector<TraceState> m_batch;
 
   /// Why the last trace operation ended. Kept beside the message so the single-point
@@ -605,6 +648,7 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars,
     m_extractor1y = m_extractor2y;
     m_time1 = m_time2;
     m_peakSpeed1 = m_peakSpeed2;
+    m_cellActive1.swap(m_cellActive2);
   }
 
   m_time2 = a_time;
@@ -655,7 +699,8 @@ void XmGridTraceImpl::AddGridScalarsAtTime(const VecPt3d& a_scalars,
   // After the extractors, so the peak is taken over the same arrays they were handed. What
   // they do with an array of the wrong size is not visible from here, which is why iPeakSpeed
   // and iCellActivity bounds-test rather than assume.
-  m_peakSpeed2 = iPeakSpeed(*m_ugrid, a_scalars, a_scalarLoc, a_activity, a_activityLoc);
+  m_cellActive2 = iCellActivity(*m_ugrid, a_activity, a_activityLoc);
+  m_peakSpeed2 = iPeakSpeed(*m_ugrid, a_scalars, a_scalarLoc, m_cellActive2);
 }
 //------------------------------------------------------------------------------
 /// \brief The speed at or below which the field counts as still in the loaded window.
@@ -721,6 +766,91 @@ bool XmGridTraceImpl::StillAtBothSteps(const Pt3d& a_atTime1,
          iIsStill(a_atTime2.x * m_vectorMultiplier, a_atTime2.y * m_vectorMultiplier,
                   a_stillSpeed);
 } // XmGridTraceImpl::StillAtBothSteps
+//------------------------------------------------------------------------------
+/// \brief Whether an indexed seed is active at both loaded time steps.
+///
+/// A point seed is active if any cell around it is, a cell seed only if it is itself, by the
+/// cell activity the field's extractor derives (see iCellActivity). The lookup at the seed
+/// mostly agrees on its own -- the search skips inactive triangles, so a point on an edge
+/// shared with an inactive cell finds the active side -- but it judges the position, and a
+/// cell's point mean can fall in a neighbour when the cell is not convex. Deciding by index
+/// is what lets a caller know from its own activity which indices cannot trace.
+/// \param[in] a_state The trace whose seed to judge
+/// \return true if the seed may trace, which a seed placed at a position always may
+//------------------------------------------------------------------------------
+bool XmGridTraceImpl::SeedIsActive(const TraceState& a_state) const
+{
+  if (a_state.m_seedIdx < 0)
+    return true;
+  VecInt adjacentCells;
+  if (a_state.m_seedLoc == DataLocationEnum::LOC_POINTS)
+    m_ugrid->GetPointAdjacentCells(a_state.m_seedIdx, adjacentCells);
+  else
+    adjacentCells.assign(1, a_state.m_seedIdx);
+  for (const std::vector<char>* cellActive : {&m_cellActive1, &m_cellActive2})
+  {
+    const bool anyActive =
+      std::any_of(adjacentCells.begin(), adjacentCells.end(), [&](int a_cellIdx) {
+        return a_cellIdx >= 0 && a_cellIdx < (int)cellActive->size() && (*cellActive)[a_cellIdx];
+      });
+    if (!anyActive)
+      return false;
+  }
+  return true;
+} // XmGridTraceImpl::SeedIsActive
+//------------------------------------------------------------------------------
+/// \brief The grid's surface z at a point the field was just looked up at.
+///
+/// Cell-located data is triangulated around the cell centroids, which is the surface, so the
+/// lookup's own z is already the answer and costs nothing more. Point-located data is ear
+/// cut, which is not, so it takes a search of the centroid fan (see m_surfaceTriangles).
+/// \param[in] a_pt The point
+/// \param[in] a_lookupZ z from the lookup at a_pt; see GetVectorAtLocationAndTime
+/// \return The surface z at a_pt
+//------------------------------------------------------------------------------
+double XmGridTraceImpl::SurfaceZ(const Pt3d& a_pt, double a_lookupZ)
+{
+  if (m_extractor1x->GetScalarLocation() == DataLocationEnum::LOC_CELLS)
+    return a_lookupZ;
+  // The ear-cut z stands in for a miss. The two triangulations cover the same cells, and the
+  // centroid fan has every cell active, so a miss is a point the lookup only just caught
+  // within its search tolerance on the grid's outer edge -- where both triangulations
+  // interpolate between the same two points and agree.
+  return SearchSurfaceZ(a_pt, a_lookupZ);
+} // XmGridTraceImpl::SurfaceZ
+//------------------------------------------------------------------------------
+/// \brief Searches the grid's centroid-fan triangulation for the surface z at a point.
+/// \param[in] a_pt The point
+/// \param[in] a_missZ The z to report if the search does not find a_pt
+/// \return The surface z at a_pt, or a_missZ
+//------------------------------------------------------------------------------
+double XmGridTraceImpl::SearchSurfaceZ(const Pt3d& a_pt, double a_missZ)
+{
+  XmUGridTriangles2d& triangles = SurfaceTriangles();
+  const int cellIdx = triangles.GetIntersectedCell(a_pt, m_searchIdxs, m_searchWeights);
+  XMGT_COUNT_SEARCH(1);
+  if (cellIdx < 0)
+    return a_missZ;
+  return iInterpolateZ(triangles.GetPoints(), m_searchIdxs, m_searchWeights);
+} // XmGridTraceImpl::SearchSurfaceZ
+//------------------------------------------------------------------------------
+/// \brief The grid's centroid-fan triangulation.
+///
+/// The first time step's own triangulation when the data is cell-located, since that is the
+/// centroid fan already, and m_surfaceTriangles, built on first use, otherwise.
+/// \return The triangulation
+//------------------------------------------------------------------------------
+XmUGridTriangles2d& XmGridTraceImpl::SurfaceTriangles()
+{
+  if (m_extractor1x->GetScalarLocation() == DataLocationEnum::LOC_CELLS)
+    return *m_extractor1x->GetUGridTriangles();
+  if (!m_surfaceTriangles)
+  {
+    m_surfaceTriangles = XmUGridTriangles2d::New();
+    m_surfaceTriangles->BuildTriangles(*m_ugrid, XmUGridTriangles2d::PO_CENTROIDS_ONLY);
+  }
+  return *m_surfaceTriangles;
+} // XmGridTraceImpl::SurfaceTriangles
 
 //------------------------------------------------------------------------------
 /// \brief Advances one trace as far as the currently loaded pair of time steps allows.
@@ -779,17 +909,19 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
       stopWith(GTEXIT_WAITING_FOR_TIME_STEP);
       return;
     }
-    if (!GetVectorAtLocationAndTime(pt0, ptTime, vector)) // Ensure extraction did not fail
+    // Ensure extraction did not fail
+    if (!GetVectorAtLocationAndTime(pt0, ptTime, vector, nullptr, nullptr, &pt0.z))
     {
       stopWith(GTEXIT_EXTRACTION_FAILED);
       return;
     }
-    if (EQ_TOL(vector.x, XM_NODATA, 1) || EQ_TOL(vector.y, XM_NODATA, 1))
+    if (EQ_TOL(vector.x, XM_NODATA, 1) || EQ_TOL(vector.y, XM_NODATA, 1) || !SeedIsActive(a_state))
     {
       stopWith(GTEXIT_SEED_NOT_TRACEABLE);
       return;
     }
 
+    pt0.z = SurfaceZ(pt0, pt0.z);
     outTrace.push_back(pt0);
     outTimes.push_back(ptTime);
 
@@ -874,7 +1006,7 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     pt1.y = pt0.y + deltaT * vy0;
 
     if (!GetVectorAtLocationAndTime(pt1, ptTime + elapsedTime + deltaT, vtkVec, &vtkVecAtTime1,
-                                    &vtkVecAtTime2))
+                                    &vtkVecAtTime2, &pt1.z))
     {
       outTrace.clear();
       outTimes.clear();
@@ -908,8 +1040,8 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
       deltaT *= (newSegDist / segDist);
       bContinue = false;
       stopReason = GTEXIT_LEFT_GRID;
-      if (!GetVectorAtLocationAndTime(pt1, ptTime + elapsedTime + deltaT, vtkVec,
-                                      &vtkVecAtTime1, &vtkVecAtTime2) ||
+      if (!GetVectorAtLocationAndTime(pt1, ptTime + elapsedTime + deltaT, vtkVec, &vtkVecAtTime1,
+                                      &vtkVecAtTime2, &pt1.z) ||
           vtkVec.x == XM_NODATA || vtkVec.y == XM_NODATA)
       {
         stopWith(GTEXIT_EXTRACTION_FAILED);
@@ -931,6 +1063,7 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     const bool still1 = iIsStill(vx1, vy1, stillSpeed);
     if (still1 && StillAtBothSteps(vtkVecAtTime1, vtkVecAtTime2, stillSpeed))
     {
+      pt1.z = SurfaceZ(pt1, pt1.z);
       outTrace.push_back(pt1);
       outTimes.push_back(ptTime + elapsedTime + deltaT);
       pt0 = pt1;
@@ -987,6 +1120,10 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
         Pt3d newPt;
         newPt.x = (pt0.x * perc) + (pt1.x * (1 - perc));
         newPt.y = (pt0.y * perc) + (pt1.y * (1 - perc));
+        // Searched for rather than interpolated between pt0 and pt1: the step can cross
+        // triangle edges, and the surface bends at every one. The field was never looked up
+        // here, so there is no lookup z to reuse.
+        newPt.z = SearchSurfaceZ(newPt, pt0.z);
 
         distTraveled = m_maxTracingDistance;
         outTrace.push_back(newPt);
@@ -1003,6 +1140,8 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
       // caller reading them as parallel arrays cannot detect.
       const bool moved = outTrace.empty() || !EQ_TOL(pt1.x, outTrace.back().x, XM_ZERO_TOL) ||
                          !EQ_TOL(pt1.y, outTrace.back().y, XM_ZERO_TOL);
+      if (moved)
+        pt1.z = SurfaceZ(pt1, pt1.z); // only for a point that is kept; it can cost a search
       pt0 = pt1;
       elapsedTime += deltaT;
       vx0 = vx1;
@@ -1059,6 +1198,71 @@ void XmGridTraceImpl::StartTraces(const VecPt3d& a_pts, const VecDbl& a_ptTimes)
     m_batch[i].m_ptTime = a_ptTimes[i];
   }
 } // XmGridTraceImpl::StartTraces
+//------------------------------------------------------------------------------
+/// \brief Begins tracing a batch seeded at grid points or cells
+/// \param[in] a_indices The point or cell of each seed
+/// \param[in] a_indexLoc LOC_POINTS for point indices, LOC_CELLS for cell indices
+/// \param[in] a_ptTimes The starting time of each trace, one per index
+/// \return false if the batch was refused, leaving no batch in flight
+//------------------------------------------------------------------------------
+bool XmGridTraceImpl::StartTracesAtIndices(const VecInt& a_indices,
+                                           DataLocationEnum a_indexLoc,
+                                           const VecDbl& a_ptTimes)
+{
+  m_batch.clear();
+  // Refused whole, as StartTraces refuses mismatched times: each of these is a caller bug,
+  // and seeding what could be seeded would let it go unnoticed.
+  int indexCount = 0;
+  if (a_indexLoc == DataLocationEnum::LOC_POINTS)
+    indexCount = m_ugrid->GetPointCount();
+  else if (a_indexLoc == DataLocationEnum::LOC_CELLS)
+    indexCount = m_ugrid->GetCellCount();
+  else
+  {
+    XM_LOG(xmlog::error, "Gridtracer: StartTracesAtIndices needs point or cell indices.");
+    return false;
+  }
+  if (a_indices.size() != a_ptTimes.size())
+  {
+    XM_LOG(xmlog::error, "Gridtracer: StartTracesAtIndices needs one start time per index.");
+    return false;
+  }
+  if (std::any_of(a_indices.begin(), a_indices.end(),
+                  [&](int a_idx) { return a_idx < 0 || a_idx >= indexCount; }))
+  {
+    XM_LOG(xmlog::error, "Gridtracer: StartTracesAtIndices was given an index outside the grid.");
+    return false;
+  }
+
+  m_batch.resize(a_indices.size());
+  VecInt cellPoints;
+  for (size_t i = 0; i < a_indices.size(); ++i)
+  {
+    TraceState& state = m_batch[i];
+    state.m_seedIdx = a_indices[i];
+    state.m_seedLoc = a_indexLoc;
+    state.m_ptTime = a_ptTimes[i];
+    if (a_indexLoc == DataLocationEnum::LOC_POINTS)
+    {
+      state.m_pt = m_ugrid->GetPointLocation(state.m_seedIdx);
+      continue;
+    }
+    // The mean of the cell's points, which is where a display drawing one glyph per cell puts
+    // it. z is replaced by the surface's when the seed is recorded.
+    m_ugrid->GetCellPoints(state.m_seedIdx, cellPoints);
+    if (cellPoints.empty())
+    {
+      // A cell with no points has no position at all, so it cannot be looked up; this is
+      // what a lookup outside the grid would have reported.
+      state.m_exitReason = GTEXIT_SEED_NOT_TRACEABLE;
+      continue;
+    }
+    for (int pointIdx : cellPoints)
+      state.m_pt += m_ugrid->GetPointLocation(pointIdx);
+    state.m_pt /= (double)cellPoints.size();
+  }
+  return true;
+} // XmGridTraceImpl::StartTracesAtIndices
 //------------------------------------------------------------------------------
 /// \brief Advances every unfinished trace as far as the loaded time steps allow
 /// \return How many traces are waiting on a later time step
@@ -1117,12 +1321,16 @@ void XmGridTraceImpl::GetSeedMagnitudes(VecDbl& a_outMagnitudes) const
 /// \param[out] a_atTime1 If given, the first time step's vector at a_pt, before blending --
 /// what a_data would be at m_time1. Written only when a_data is not no-data.
 /// \param[out] a_atTime2 If given, the second time step's vector at a_pt, likewise
+/// \param[out] a_lookupZ If given, the z of the first time step's triangulation at a_pt,
+/// likewise. For cell-located data that triangulation is the centroid fan, so this is already
+/// the surface z; SurfaceZ decides whether it can be used.
 //------------------------------------------------------------------------------
 bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
                                                  double a_currentTime,
                                                  xms::Pt3d& a_data,
                                                  xms::Pt3d* a_atTime1,
-                                                 xms::Pt3d* a_atTime2) const
+                                                 xms::Pt3d* a_atTime2,
+                                                 double* a_lookupZ) const
 {
   if (!m_extractor1x || !m_extractor1y || !m_extractor2x || !m_extractor2y)
   {
@@ -1138,11 +1346,18 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
   // of a time step -- and both time steps too when they share a triangulation.
   float x1 = m_extractor1x->GetNoDataValue();
   float y1 = m_extractor1y->GetNoDataValue();
+  double z1 = 0.0;
   const int cell1 =
     m_extractor1x->GetUGridTriangles()->GetIntersectedCell(a_pt, m_searchIdxs, m_searchWeights);
   XMGT_COUNT_SEARCH(1);
   if (cell1 >= 0)
+  {
     iApplyWeights(*m_extractor1x, *m_extractor1y, m_searchIdxs, m_searchWeights, x1, y1);
+    // Taken now: a second search below would overwrite the weights
+    if (a_lookupZ)
+      z1 = iInterpolateZ(m_extractor1x->GetUGridTriangles()->GetPoints(), m_searchIdxs,
+                         m_searchWeights);
+  }
 
   float x2 = m_extractor2x->GetNoDataValue();
   float y2 = m_extractor2y->GetNoDataValue();
@@ -1195,6 +1410,8 @@ bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
     *a_atTime1 = Pt3d(x1, y1, 0.0);
   if (a_atTime2)
     *a_atTime2 = Pt3d(x2, y2, 0.0);
+  if (a_lookupZ)
+    *a_lookupZ = z1;
   return true;
 } // XmGridTraceImpl::GetVectorAtLocationAndTime
 //------------------------------------------------------------------------------
@@ -3590,6 +3807,370 @@ void XmGridTraceUnitTests::testSeedReleasedAtWindowEndDerivesItsFirstStep()
     TS_ASSERT_DELTA(1.0, traces[0][1].x, 1e-6);
   }
 } // XmGridTraceUnitTests::testSeedReleasedAtWindowEndDerivesItsFirstStep
+//------------------------------------------------------------------------------
+/// \brief Where each path of a traced batch starts, or XM_NODATA for an empty path.
+/// \param[in] a_traces The paths, as GetTraceResults returns them
+/// \return The first position of each path, in batch order
+//------------------------------------------------------------------------------
+VecPt3d iFirstPoints(const std::vector<VecPt3d>& a_traces)
+{
+  VecPt3d starts;
+  for (const VecPt3d& trace : a_traces)
+    starts.push_back(trace.empty() ? Pt3d(XM_NODATA, XM_NODATA, XM_NODATA) : trace.front());
+  return starts;
+} // iFirstPoints
+//------------------------------------------------------------------------------
+/// \brief Returns a tracer over two trapezoids and an empty cell, with a point field in +x.
+///
+///  3---------2-------------5
+///  |          \            |
+///  |    0      \     2     |
+///  |            \          |
+///  0-------------1---------4
+///
+/// Neither trapezoid's point mean is its area centroid, so which of the two a cell seed
+/// starts at can be told apart. Cell 1 is empty: it has no points at all. It is not last
+/// because xmsgrid (9.1.1) loses every point's adjacent cells when the stream ends in one.
+/// \return the tracer, with steps at 0 and 10 loaded
+//------------------------------------------------------------------------------
+BSHP<XmGridTrace> iCreateTrapezoidTracer()
+{
+  VecPt3d points = {{0, 0, 0}, {4, 0, 0}, {3, 2, 0}, {0, 2, 0}, {6, 0, 0}, {6, 2, 0}};
+  VecInt cells = {XMU_QUAD, 4, 0, 1, 2, 3, XMU_EMPTY_CELL, 0, XMU_QUAD, 4, 1, 4, 5, 2};
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(XmUGrid::New(points, cells));
+  tracer->SetMaxChangeDistance(0.5);
+  const DynBitset allActive;
+  const VecPt3d vectors(points.size(), Pt3d(0.1, 0.0, 0.0));
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, allActive,
+                               DataLocationEnum::LOC_POINTS, 0.0);
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, allActive,
+                               DataLocationEnum::LOC_POINTS, 10.0);
+  return tracer;
+} // iCreateTrapezoidTracer
+//------------------------------------------------------------------------------
+/// \brief An indexed batch starts each path at its point, or at the mean of its cell's
+///        points, in the order the indices were given.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testIndexSeedsStartAtPointsAndCellMeans()
+{
+  BSHP<XmGridTrace> tracer = iCreateTrapezoidTracer();
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+
+  // Out of order on purpose: a caller pairs each path with its index by position alone.
+  TS_ASSERT(tracer->StartTracesAtIndices({3, 0}, DataLocationEnum::LOC_POINTS, {0.0, 0.0}));
+  tracer->ContinueTraces();
+  tracer->GetTraceResults(traces, times, reasons);
+  const VecPt3d expectedPointStarts = {{0, 2, 0}, {0, 0, 0}};
+  TS_ASSERT_DELTA_VECPT3D(expectedPointStarts, iFirstPoints(traces), 1e-12);
+
+  // The point means are (4.75, 1) and (1.75, 1). The area centroids are (4.73, 1.07) and
+  // (1.76, 0.95), pulled toward each trapezoid's wider side; the mean is what a display
+  // drawing one glyph per cell puts the glyph at. The empty cell has neither, and keeps its
+  // slot with an empty path.
+  TS_ASSERT(tracer->StartTracesAtIndices({2, 0, 1}, DataLocationEnum::LOC_CELLS, {0.0, 0.0, 0.0}));
+  tracer->ContinueTraces();
+  tracer->GetTraceResults(traces, times, reasons);
+  const Pt3d noPath(XM_NODATA, XM_NODATA, XM_NODATA);
+  const VecPt3d expectedCellStarts = {{4.75, 1, 0}, {1.75, 1, 0}, noPath};
+  TS_ASSERT_DELTA_VECPT3D(expectedCellStarts, iFirstPoints(traces), 1e-12);
+  TS_ASSERT_EQUALS((int)GTEXIT_SEED_NOT_TRACEABLE, (int)reasons[2]);
+
+  VecDbl magnitudes;
+  tracer->GetSeedMagnitudes(magnitudes);
+  const VecDbl expectedMagnitudes = {0.1, 0.1, XM_NODATA};
+  TS_ASSERT_DELTA_VEC(expectedMagnitudes, magnitudes, 1e-6);
+} // XmGridTraceUnitTests::testIndexSeedsStartAtPointsAndCellMeans
+//------------------------------------------------------------------------------
+/// \brief An indexed batch that cannot be seeded as given is refused whole.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testIndexSeedsRefuseABadBatch()
+{
+  BSHP<XmGridTrace> tracer = iCreateTrapezoidTracer();
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+  // Starts a good batch first, so each case also shows that a refusal discards the batch
+  // before it, as a refused StartTraces does: a caller that missed the false would otherwise
+  // read the previous batch's paths as this one's.
+  auto refused = [&](const VecInt& a_indices, DataLocationEnum a_loc, const VecDbl& a_times) {
+    TS_ASSERT(tracer->StartTracesAtIndices({0}, DataLocationEnum::LOC_POINTS, {0.0}));
+    tracer->GetTraceResults(traces, times, reasons);
+    TS_ASSERT_EQUALS(size_t(1), traces.size());
+    const bool accepted = tracer->StartTracesAtIndices(a_indices, a_loc, a_times);
+    tracer->GetTraceResults(traces, times, reasons);
+    return !accepted && traces.empty();
+  };
+
+  TS_ASSERT(refused({0}, DataLocationEnum::LOC_UNKNOWN, {0.0}));
+  TS_ASSERT(refused({0, 1}, DataLocationEnum::LOC_POINTS, {0.0}));
+  // Six points and three cells, so the first index past each end.
+  TS_ASSERT(refused({0, 6}, DataLocationEnum::LOC_POINTS, {0.0, 0.0}));
+  TS_ASSERT(refused({3}, DataLocationEnum::LOC_CELLS, {0.0}));
+  TS_ASSERT(refused({-1}, DataLocationEnum::LOC_CELLS, {0.0}));
+
+  // Nothing to seed is not a mistake: a caller whose selection came up empty gets an empty
+  // batch, not an error.
+  TS_ASSERT(tracer->StartTracesAtIndices({}, DataLocationEnum::LOC_CELLS, {}));
+} // XmGridTraceUnitTests::testIndexSeedsRefuseABadBatch
+//------------------------------------------------------------------------------
+/// \brief Returns a tracer over a concave quad and the triangle filling its notch.
+///
+/// Cell 0 is the arrowhead 0-3-2-1, pointing +x from the y axis with its notch at point 1;
+/// cell 1 is the triangle 0-1-2 filling the notch.
+///
+///   point 0 (0, 0)   point 1 (3, 2)   point 2 (0, 4)   point 3 (4, 2)
+///
+/// Cell 0's point mean, (1.75, 2), is in the notch -- inside cell 1, not cell 0. The field
+/// is point-located, uniform, in +y.
+/// \param[in] a_activity1 The activity of the step at time 0
+/// \param[in] a_activity2 The activity of the step at time 10
+/// \param[in] a_activityLoc Whether the activity is per point or per cell
+/// \return the tracer
+//------------------------------------------------------------------------------
+BSHP<XmGridTrace> iCreateNotchedTracer(const DynBitset& a_activity1,
+                                       const DynBitset& a_activity2,
+                                       DataLocationEnum a_activityLoc)
+{
+  VecPt3d points = {{0, 0, 0}, {3, 2, 0}, {0, 4, 0}, {4, 2, 0}};
+  VecInt cells = {XMU_QUAD, 4, 0, 3, 2, 1, XMU_TRIANGLE, 3, 0, 1, 2};
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(XmUGrid::New(points, cells));
+  tracer->SetMaxChangeDistance(0.5);
+  const VecPt3d vectors(points.size(), Pt3d(0.0, 0.1, 0.0));
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, a_activity1, a_activityLoc,
+                               0.0);
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, a_activity2, a_activityLoc,
+                               10.0);
+  return tracer;
+} // iCreateNotchedTracer
+//------------------------------------------------------------------------------
+/// \brief Which paths of a batch came back as untraceable seeds.
+/// \param[in] a_tracer The tracer, with its batch already started
+/// \return 1 for each path that is empty with GTEXIT_SEED_NOT_TRACEABLE, 0 for the rest
+//------------------------------------------------------------------------------
+VecInt iUntraceableSeeds(XmGridTrace& a_tracer)
+{
+  a_tracer.ContinueTraces();
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
+  a_tracer.GetTraceResults(traces, times, reasons);
+  VecInt untraceable;
+  for (size_t i = 0; i < traces.size(); ++i)
+    untraceable.push_back(traces[i].empty() && reasons[i] == GTEXIT_SEED_NOT_TRACEABLE);
+  return untraceable;
+} // iUntraceableSeeds
+//------------------------------------------------------------------------------
+/// \brief An indexed seed traces only if its point or cell is active at both loaded steps.
+///
+/// A point is active if any cell around it is; a cell, if it is itself, and a cell is
+/// active only if all of its points are. The notched grid is what shows this is decided by
+/// the index and not by where the seed lands: cell 0's seed lands in cell 1, which is active
+/// throughout, so a seed placed there by position traces while cell 0's does not.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testIndexSeedActivityIsJudgedByIndex()
+{
+  const VecInt expected = {1, 0};
+
+  // Cell 0 inactive at both steps. Point 3 is only in cell 0; point 1 is in both.
+  DynBitset cellActivity;
+  cellActivity.push_back(false);
+  cellActivity.push_back(true);
+  BSHP<XmGridTrace> tracer =
+    iCreateNotchedTracer(cellActivity, cellActivity, DataLocationEnum::LOC_CELLS);
+  tracer->StartTracesAtIndices({0, 1}, DataLocationEnum::LOC_CELLS, {0.0, 0.0});
+  TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
+  tracer->StartTracesAtIndices({3, 1}, DataLocationEnum::LOC_POINTS, {0.0, 0.0});
+  TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
+  tracer->StartTraces({{1.75, 2, 0}}, {0.0});
+  TS_ASSERT_EQUALS_VEC(VecInt{0}, iUntraceableSeeds(*tracer));
+
+  // Cell 0 inactive at only one of the two steps, either one, which is as good as inactive:
+  // the seed's field is blended from both.
+  DynBitset allCellsActive;
+  allCellsActive.push_back(true);
+  allCellsActive.push_back(true);
+  tracer = iCreateNotchedTracer(allCellsActive, cellActivity, DataLocationEnum::LOC_CELLS);
+  tracer->StartTracesAtIndices({0, 1}, DataLocationEnum::LOC_CELLS, {0.0, 0.0});
+  TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
+  tracer->StartTracesAtIndices({3, 1}, DataLocationEnum::LOC_POINTS, {0.0, 0.0});
+  TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
+  tracer = iCreateNotchedTracer(cellActivity, allCellsActive, DataLocationEnum::LOC_CELLS);
+  tracer->StartTracesAtIndices({0, 1}, DataLocationEnum::LOC_CELLS, {0.0, 0.0});
+  TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
+
+  // Point 3 inactive, which makes cell 0 inactive and leaves cell 1 alone.
+  DynBitset pointActivity;
+  for (bool active : {true, true, true, false})
+    pointActivity.push_back(active);
+  tracer = iCreateNotchedTracer(pointActivity, pointActivity, DataLocationEnum::LOC_POINTS);
+  tracer->StartTracesAtIndices({0, 1}, DataLocationEnum::LOC_CELLS, {0.0, 0.0});
+  TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
+  tracer->StartTracesAtIndices({3, 1}, DataLocationEnum::LOC_POINTS, {0.0, 0.0});
+  TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
+} // XmGridTraceUnitTests::testIndexSeedActivityIsJudgedByIndex
+//------------------------------------------------------------------------------
+/// \brief Returns a tracer over a 10 x 10 quad with one corner raised, and a uniform field.
+///
+///  3 (0, 10, 0)     2 (10, 10, 10)
+///
+///  0 (0, 0, 0)      1 (10, 0, 0)
+///
+/// Its centroid fan -- what a display draws the grid with -- puts the centroid at (5, 5) with
+/// the mean corner z, 2.5. Ear cutting splits it along a diagonal instead, putting 0 or 5
+/// there, so a z taken from that triangulation shows up. The field runs toward point 0, across
+/// several of the fan's triangles.
+/// \param[in] a_scalarLoc1 Whether the field at time 0 is per point or per cell
+/// \param[in] a_scalarLoc2 Likewise for the field at time 100
+/// \param[in] a_vector The field's vector, the same everywhere and at both steps
+/// \return the tracer, with steps at 0 and 100 loaded
+//------------------------------------------------------------------------------
+BSHP<XmGridTrace> iCreateRaisedCornerTracer(DataLocationEnum a_scalarLoc1,
+                                            DataLocationEnum a_scalarLoc2,
+                                            const Pt3d& a_vector = Pt3d(-1.0, -0.5, 0.0))
+{
+  VecPt3d points = {{0, 0, 0}, {10, 0, 0}, {10, 10, 10}, {0, 10, 0}};
+  VecInt cells = {XMU_QUAD, 4, 0, 1, 2, 3};
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(XmUGrid::New(points, cells));
+  tracer->SetMaxChangeDistance(1.0);
+  const DynBitset allActive;
+  double time = 0.0;
+  for (DataLocationEnum loc : {a_scalarLoc1, a_scalarLoc2})
+  {
+    const size_t count = loc == DataLocationEnum::LOC_POINTS ? points.size() : 1;
+    tracer->AddGridScalarsAtTime(VecPt3d(count, a_vector), loc, allActive, loc, time);
+    time += 100.0;
+  }
+  return tracer;
+} // iCreateRaisedCornerTracer
+//------------------------------------------------------------------------------
+/// \brief A path with each z replaced by the raised-corner quad's centroid-fan surface.
+///
+/// In each fan triangle the centroid's weight is the distance to the nearest edge over the
+/// centroid's own, 5, and only the two triangles meeting at the raised corner give that
+/// corner any weight: (x + y - 10) / 10 of it.
+/// \param[in] a_trace Positions in the quad
+/// \return a_trace with every z on the surface
+//------------------------------------------------------------------------------
+VecPt3d iOnRaisedCornerSurface(VecPt3d a_trace)
+{
+  for (Pt3d& pt : a_trace)
+  {
+    const double toEdge = std::min({pt.x, pt.y, 10 - pt.x, 10 - pt.y});
+    pt.z = 2.5 * toEdge / 5 + 10 * std::max(0.0, (pt.x + pt.y - 10) / 10);
+  }
+  return a_trace;
+} // iOnRaisedCornerSurface
+//------------------------------------------------------------------------------
+/// \brief Every traced position lies on the grid's centroid-fan surface, however it was
+///        seeded and wherever its field is located.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testTracedPointsLieOnTheCentroidFanSurface()
+{
+  for (DataLocationEnum loc : {DataLocationEnum::LOC_POINTS, DataLocationEnum::LOC_CELLS})
+  {
+    BSHP<XmGridTrace> tracer = iCreateRaisedCornerTracer(loc, loc);
+    std::vector<VecPt3d> traces;
+    std::vector<VecDbl> times;
+    std::vector<XmGridTraceExitEnum> reasons;
+
+    // A seed's own z is not kept; 99 is nowhere near the surface.
+    tracer->StartTraces({{8, 3, 99}}, {0.0});
+    tracer->ContinueTraces();
+    tracer->GetTraceResults(traces, times, reasons);
+    std::vector<VecPt3d> paths = traces;
+
+    // The cell's seed is the fan's centroid, where ear cutting would give 0 or 5.
+    tracer->StartTracesAtIndices({0}, DataLocationEnum::LOC_CELLS, {0.0});
+    tracer->ContinueTraces();
+    tracer->GetTraceResults(traces, times, reasons);
+    TS_ASSERT_DELTA(2.5, iFirstPoints(traces)[0].z, 1e-9);
+    paths.push_back(traces[0]);
+
+    tracer->StartTracesAtIndices({2}, DataLocationEnum::LOC_POINTS, {0.0});
+    tracer->ContinueTraces();
+    tracer->GetTraceResults(traces, times, reasons);
+    TS_ASSERT_DELTA(10.0, iFirstPoints(traces)[0].z, 1e-9);
+    paths.push_back(traces[0]);
+
+    VecPt3d single;
+    VecDbl singleTimes;
+    tracer->TracePoint({8, 3, 99}, 0.0, single, singleTimes);
+    paths.push_back(single);
+
+    for (const VecPt3d& path : paths)
+    {
+      // Several steps each. All but the cell seed's cross from one fan triangle into another;
+      // that one stays in the left triangle, where ear cutting would still put z at x or 0.
+      TS_ASSERT(path.size() >= 5);
+      TS_ASSERT_DELTA_VECPT3D(iOnRaisedCornerSurface(path), path, 1e-6);
+    }
+  }
+} // XmGridTraceUnitTests::testTracedPointsLieOnTheCentroidFanSurface
+//------------------------------------------------------------------------------
+/// \brief A path cut short by the max tracing distance ends on the surface too.
+///
+/// The end point falls part way along a step, where the field was never looked up, and the
+/// step from (8, 3) crosses a fan edge: interpolating z between the step's two ends would put
+/// it at 0.95 rather than the surface's 0.83.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testMaxDistanceEndLiesOnTheSurface()
+{
+  for (DataLocationEnum loc : {DataLocationEnum::LOC_POINTS, DataLocationEnum::LOC_CELLS})
+  {
+    BSHP<XmGridTrace> tracer = iCreateRaisedCornerTracer(loc, loc);
+    tracer->SetMaxChangeDistance(4.0);
+    tracer->SetMaxTracingDistance(3.0);
+    tracer->StartTraces({{8, 3, 0}}, {0.0});
+    tracer->ContinueTraces();
+    std::vector<VecPt3d> traces;
+    std::vector<VecDbl> times;
+    std::vector<XmGridTraceExitEnum> reasons;
+    tracer->GetTraceResults(traces, times, reasons);
+
+    TS_ASSERT_EQUALS((int)GTEXIT_MAX_TRACING_DISTANCE, (int)reasons[0]);
+    // Three units along (-2, -1) / sqrt(5) from the seed
+    const Pt3d end(8 - 6 / sqrt(5.0), 3 - 3 / sqrt(5.0), 0);
+    const VecPt3d expected = iOnRaisedCornerSurface({{8, 3, 0}, end});
+    TS_ASSERT_DELTA_VECPT3D(expected, traces[0], 1e-6);
+  }
+} // XmGridTraceUnitTests::testMaxDistanceEndLiesOnTheSurface
+//------------------------------------------------------------------------------
+/// \brief A path lies on the surface when its two time steps are triangulated differently.
+///
+/// Cell data at the first step and point data at the second cannot share a triangulation, so
+/// each lookup searches twice, and the second search reuses the scratch the first one's z is
+/// read from. The z is the first step's: its cell data is triangulated as the centroid fan.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSurfaceZWhenStepsDoNotShareATriangulation()
+{
+  BSHP<XmGridTrace> tracer =
+    iCreateRaisedCornerTracer(DataLocationEnum::LOC_CELLS, DataLocationEnum::LOC_POINTS);
+  VecPt3d trace;
+  VecDbl times;
+  tracer->TracePoint({8, 3, 0}, 0.0, trace, times);
+  TS_ASSERT(trace.size() >= 5);
+  TS_ASSERT_DELTA_VECPT3D(iOnRaisedCornerSurface(trace), trace, 1e-6);
+} // XmGridTraceUnitTests::testSurfaceZWhenStepsDoNotShareATriangulation
+//------------------------------------------------------------------------------
+/// \brief A path that stops in still water ends on the surface.
+///
+/// The still stop records its last point separately from an ordinary step. At (8, 3) the fan
+/// puts the surface at 2, where ear cutting would put it at 1 or 3.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testStillEndLiesOnTheSurface()
+{
+  const Pt3d still(0.0, 0.0, 0.0);
+  BSHP<XmGridTrace> tracer =
+    iCreateRaisedCornerTracer(DataLocationEnum::LOC_POINTS, DataLocationEnum::LOC_POINTS, still);
+  VecPt3d trace;
+  VecDbl times;
+  tracer->TracePoint({8, 3, 0}, 0.0, trace, times);
+  TS_ASSERT_EQUALS((int)GTEXIT_ZERO_VELOCITY, (int)tracer->GetExitReason());
+  const VecPt3d expected = {{8, 3, 2}, {8, 3, 2}};
+  TS_ASSERT_DELTA_VECPT3D(expected, trace, 1e-9);
+} // XmGridTraceUnitTests::testStillEndLiesOnTheSurface
 //------------------------------------------------------------------------------
 /// \brief Measures the cost of tracing many seed points over a realistic grid.
 ///

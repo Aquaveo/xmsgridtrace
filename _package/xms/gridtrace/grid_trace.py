@@ -161,6 +161,9 @@ class GridTrace(object):
     def trace_point(self, pt, pt_time):
         """Run the grid trace for a point.
 
+        Each position's z is the grid's surface there, as get_trace_results describes, so the z of pt is
+        not used.
+
         Args:
             pt (iterable): The starting point of the trace
             pt_time (float): The starting time of the trace
@@ -208,6 +211,9 @@ class GridTrace(object):
         Stopping early is fine: traces still waiting end where they got to. One batch is in flight per
         tracer; starting a batch discards any previous one.
 
+        Only the x and y of each point are used; every position a trace returns takes its z from the
+        grid's surface (see get_trace_results).
+
         Args:
             pts (iterable): The starting point of each trace
             pt_times (iterable): The starting time of each trace, one per point
@@ -216,6 +222,31 @@ class GridTrace(object):
             ValueError: If pt_times does not have one entry per point
         """
         self._instance.start_traces(pts, pt_times)
+
+    def start_traces_at_indices(self, indices, loc, pt_times):
+        """Begin tracing a batch seeded at grid points or cells.
+
+        The same batch start_traces begins, traced and read back the same way, with one entry per index
+        in the order given. A point's seed is the point itself; a cell's is the mean of the cell's
+        points, not its area centroid -- where a display drawing one glyph per cell puts the glyph.
+
+        A point seed traces only if some cell around it is active, and a cell seed only if the cell is:
+        as given by cell activity, or, with point activity, when all of its points are. Both loaded time
+        steps have to agree. A seed also needs a field where it lands, which the point mean of a concave
+        cell may not have. A seed that does not trace keeps its place in the batch with an empty path,
+        exit reason SEED_NOT_TRACEABLE, and an XM_NODATA seed magnitude.
+
+        Args:
+            indices (iterable): The point or cell index of each seed
+            loc (str): 'points' if indices are point indices, 'cells' if cell indices
+            pt_times (iterable): The starting time of each trace, one per index
+
+        Raises:
+            ValueError: If loc is not 'points' or 'cells', the times are not one per index, or an index
+                is not a point or cell of the grid. The batch is refused whole and any previous batch is
+                discarded, as start_traces does.
+        """
+        self._instance.start_traces_at_indices(indices, loc, pt_times)
 
     def continue_traces(self):
         """Advance every unfinished trace as far as the loaded time steps allow.
@@ -236,10 +267,15 @@ class GridTrace(object):
         than two points: a seed that leaves the grid on its first step yields only the seed itself, so
         callers must not assume one usable polyline per seed.
 
+        Every position's z is the grid's surface at its x and y, the seed's included, whatever z the
+        seed was given. The surface is the one a display draws the grid with: each cell fanned into
+        triangles around its area centroid, which sits at the mean of the cell's point elevations -- or
+        ear cut, where that centroid falls outside the cell.
+
         Returns:
             tuple: The positions of each trace, the times of each trace, and why each trace stopped as
-            an exit_reason_enum. All three are parallel to the seeds passed to start_traces, and each
-            entry's times are parallel to its positions
+            an exit_reason_enum. All three are parallel to the seeds passed to start_traces or
+            start_traces_at_indices, and each entry's times are parallel to its positions
         """
         return self._instance.get_trace_results()
 
