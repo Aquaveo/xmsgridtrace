@@ -62,10 +62,12 @@ public:
   void testIndexSeedsStartAtPointsAndCellMeans();
   void testIndexSeedsRefuseABadBatch();
   void testIndexSeedActivityIsJudgedByIndex();
-  void testTracedPointsLieOnTheCentroidFanSurface();
+  void testCellFieldPathsLieOnTheCentroidFan();
+  void testPointFieldPathsTakeZFromThePoints();
   void testMaxDistanceEndLiesOnTheSurface();
   void testSurfaceZWhenStepsDoNotShareATriangulation();
   void testStillEndLiesOnTheSurface();
+  void testLeftGridEndLiesOnTheSurface();
   void testTraceBenchmark();
 
 }; // XmGridTraceUnitTests
