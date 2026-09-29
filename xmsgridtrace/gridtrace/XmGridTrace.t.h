@@ -59,6 +59,13 @@ public:
   void testPeakSpeedIgnoresInactivePoints();
   void testCellActivityStaysInsideAShortBitset();
   void testSeedReleasedAtWindowEndDerivesItsFirstStep();
+  void testIndexSeedsStartAtPointsAndCellMeans();
+  void testIndexSeedsRefuseABadBatch();
+  void testIndexSeedActivityIsJudgedByIndex();
+  void testTracedPointsLieOnTheCentroidFanSurface();
+  void testMaxDistanceEndLiesOnTheSurface();
+  void testSurfaceZWhenStepsDoNotShareATriangulation();
+  void testStillEndLiesOnTheSurface();
   void testTraceBenchmark();
 
 }; // XmGridTraceUnitTests

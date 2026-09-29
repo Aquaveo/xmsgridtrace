@@ -313,6 +313,9 @@ void initXmGridTrace(py::module &m) {
   const char* trace_point_doc = R"pydoc(
       Runs the Grid Trace for a point.
 
+      Each position's z is the grid's surface there, as get_trace_results describes, so the
+      z of pt is not used.
+
       Args:
           pt (iterable): The starting point of the trace.
 
@@ -378,6 +381,9 @@ void initXmGridTrace(py::module &m) {
       Stopping early is fine: traces still waiting end where they got to. One batch is in
       flight per tracer; starting a batch discards any previous one.
 
+      Only the x and y of each point are used; every position a trace returns takes its z
+      from the grid's surface (see get_trace_results).
+
       Args:
           pts (iterable): The starting point of each trace.
 
@@ -404,6 +410,62 @@ void initXmGridTrace(py::module &m) {
           self.StartTraces(*points, *times);
         }, start_traces_doc, py::arg("pts"), py::arg("pt_times"));
   // ---------------------------------------------------------------------------
+  // function: start_traces_at_indices
+  // ---------------------------------------------------------------------------
+  const char* start_traces_at_indices_doc = R"pydoc(
+      Begins tracing a batch seeded at grid points or cells.
+
+      The same batch start_traces begins, traced and read back the same way, with one entry
+      per index in the order given. A point's seed is the point itself; a cell's is the mean
+      of the cell's points, not its area centroid -- where a display drawing one glyph per
+      cell puts the glyph.
+
+      A point seed traces only if some cell around it is active, and a cell seed only if the
+      cell is: as given by cell activity, or, with point activity, when all of its points
+      are. Both loaded time steps have to agree. A seed also needs a field where it lands,
+      which the point mean of a concave cell may not have. A seed that does not trace keeps
+      its place in the batch with an empty path, exit reason SEED_NOT_TRACEABLE, and an
+      XM_NODATA seed magnitude.
+
+      Args:
+          indices (iterable): The point or cell index of each seed.
+
+          loc (str): 'points' if indices are point indices, 'cells' if cell indices.
+
+          pt_times (iterable): The starting time of each trace, one per index.
+
+      Raises:
+          ValueError: If loc is not 'points' or 'cells', the times are not one per index, or
+              an index is not a point or cell of the grid. The batch is refused whole and
+              any previous batch is discarded, as start_traces does.
+  )pydoc";
+  gridtrace.def("start_traces_at_indices", [](xms::XmGridTrace &self, py::iterable indices,
+    std::string loc, py::iterable pt_times) {
+          boost::shared_ptr<xms::VecInt> idxs = xms::VecIntFromPyIter(indices);
+          boost::shared_ptr<xms::VecDbl> times = xms::VecDblFromPyIter(pt_times);
+          xms::DataLocationEnum loc_e = xms::DataLocationEnum::LOC_UNKNOWN;
+          if (loc == "points")
+            loc_e = xms::DataLocationEnum::LOC_POINTS;
+          else if (loc == "cells")
+            loc_e = xms::DataLocationEnum::LOC_CELLS;
+          // Called before any error is raised, for the reason start_traces gives: it clears
+          // the previous batch, and that has to happen on the error path too.
+          if (self.StartTracesAtIndices(*idxs, loc_e, *times))
+            return;
+          std::string msg;
+          if (loc_e == xms::DataLocationEnum::LOC_UNKNOWN)
+            msg = "start_traces_at_indices needs loc 'points' or 'cells', not '" + loc + "'";
+          else if (idxs->size() != times->size())
+            msg = "start_traces_at_indices needs one start time per index, got " +
+                  std::to_string(idxs->size()) + " indices and " +
+                  std::to_string(times->size()) + " times";
+          else
+            msg = "start_traces_at_indices was given an index that is not one of the grid's " +
+                  loc;
+          throw py::value_error(msg);
+        }, start_traces_at_indices_doc, py::arg("indices"), py::arg("loc"),
+        py::arg("pt_times"));
+  // ---------------------------------------------------------------------------
   // function: continue_traces
   // ---------------------------------------------------------------------------
   const char* continue_traces_doc = R"pydoc(
@@ -428,10 +490,16 @@ void initXmGridTrace(py::module &m) {
       fewer than two points: a seed that leaves the grid on its first step yields only the
       seed itself, so callers must not assume one usable polyline per seed.
 
+      Every position's z is the grid's surface at its x and y, the seed's included, whatever
+      z the seed was given. The surface is the one a display draws the grid with: each cell
+      fanned into triangles around its area centroid, which sits at the mean of the cell's
+      point elevations -- or ear cut, where that centroid falls outside the cell.
+
       Returns:
           tuple: The positions of each trace, the times of each trace, and why each trace
           stopped as an exit_reason_enum. All three are parallel to the seeds passed to
-          start_traces, and each entry's times are parallel to its positions.
+          start_traces or start_traces_at_indices, and each entry's times are parallel to its
+          positions.
   )pydoc";
   gridtrace.def("get_trace_results", [](const xms::XmGridTrace &self) -> py::iterable {
           std::vector<xms::VecPt3d> outTraces;

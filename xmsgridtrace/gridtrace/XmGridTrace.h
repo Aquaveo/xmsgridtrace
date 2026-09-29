@@ -70,7 +70,7 @@ enum XmGridTraceExitEnum {
   GTEXIT_LEFT_GRID,             ///< stepped out of the grid; the path stops at the boundary
   GTEXIT_ZERO_VELOCITY,         ///< the field is still under the particle at both loaded steps
   GTEXIT_MIN_DELTA_TIME,        ///< subdividing reached the smallest allowed step
-  GTEXIT_SEED_NOT_TRACEABLE,    ///< the seed was outside the grid or in an inactive cell
+  GTEXIT_SEED_NOT_TRACEABLE,    ///< the seed has no field there, or its point or cell is inactive
   GTEXIT_EXTRACTION_FAILED      ///< a field lookup failed; the trace is discarded
 };
 
@@ -156,6 +156,8 @@ public:
                                     double a_time) = 0;
 
   /// \brief Runs the Grid Trace for a point
+  ///
+  /// Each position's z is the grid's surface there, as GetTraceResults describes.
   /// \param[in] a_pt The starting point of the trace
   /// \param[in] a_ptTime The starting time of the trace
   /// \param[out] a_outTrace the resultant positions at each step
@@ -208,6 +210,13 @@ public:
   /// step yields only the seed itself, so callers must not assume one usable polyline per
   /// seed.
   ///
+  /// Every position's z is the grid's surface at its x and y, the seed's included, whatever
+  /// z the seed was given. The surface is the grid's centroid-fan triangulation -- each cell
+  /// split into triangles around its area centroid, which sits at the mean of the cell's
+  /// point elevations, or ear-cut where that centroid falls outside the cell -- the
+  /// triangulation a display draws the grid with, so a path lies on the drawn surface rather
+  /// than cutting through it.
+  ///
   /// \param[out] a_outTraces The positions of each trace, one entry per seed
   /// \param[out] a_outTimes The times of each trace, parallel to and the same length as the
   ///             matching entry of a_outTraces
@@ -232,8 +241,8 @@ public:
   //----------------------------------------------------------------------------
   /// \brief The speed of the field at each seed of the batch, when it was released
   ///
-  /// Reports the batch, exactly as GetTraceResults does: empty before StartTraces and after
-  /// a refused one, and untouched by TracePoint, which traces through its own state.
+  /// Reports the batch, exactly as GetTraceResults does: empty before a batch is started and
+  /// after one is refused, and untouched by TracePoint, which traces through its own state.
   ///
   /// Recorded when the seed is first evaluated, before the vector multiplier is applied, so
   /// it describes the field rather than the tracing. A caller sizing a glyph by speed wants
@@ -325,6 +334,43 @@ public:
   ///
   /// \param[in] a_initialDeltaTime the first step, or <= 0 to derive it from the field
   virtual void SetInitialDeltaTime(double a_initialDeltaTime) = 0;
+
+  //----------------------------------------------------------------------------
+  /// \brief Begins tracing a batch seeded at grid points or cells rather than at positions.
+  ///
+  /// StartTraces in every other respect: the same batch, advanced by ContinueTraces and read
+  /// back by GetTraceResults and GetSeedMagnitudes, one entry per index in the order given.
+  ///
+  /// A point seed starts at the point. A cell seed starts at the mean of the cell's points --
+  /// not XmUGrid::GetCellCentroid, which weights by area -- because that is where a display
+  /// that draws one glyph per cell puts the glyph.
+  ///
+  /// A point seed traces only if some cell around it is active, and a cell seed only if the
+  /// cell itself is, where a cell is active as the field's extractor decides it: from cell
+  /// activity as given, or from point activity as a cell whose points are all active. The seed
+  /// must be active at both loaded time steps. That is judged by the index, not by where the
+  /// seed lands, so a caller can tell from its own activity which seeds cannot trace. It is
+  /// not the whole story: a seed also needs a field where it lands, which the point mean of a
+  /// concave cell may not have, and an empty cell has no point mean at all. Every seed that
+  /// does not trace keeps its slot, with an empty path, GTEXIT_SEED_NOT_TRACEABLE, and an
+  /// XM_NODATA seed magnitude, so a caller can pair each result with its index by position
+  /// alone.
+  ///
+  /// The batch is refused entirely, as StartTraces refuses mismatched times, when a_indexLoc
+  /// is neither LOC_POINTS nor LOC_CELLS, when a_ptTimes is not one per index, or when any
+  /// index is not a point or cell of the grid. A caller that gets one of these wrong has a
+  /// bug, and a partial batch would hide it.
+  ///
+  /// Declared last, after SetInitialDeltaTime, so that adding it appended a vtable slot rather
+  /// than shifting the ones above it.
+  ///
+  /// \param[in] a_indices The point or cell of each seed
+  /// \param[in] a_indexLoc LOC_POINTS for point indices, LOC_CELLS for cell indices
+  /// \param[in] a_ptTimes The starting time of each trace, one per index
+  /// \return false if the batch was refused, leaving no batch in flight
+  virtual bool StartTracesAtIndices(const VecInt& a_indices,
+                                    DataLocationEnum a_indexLoc,
+                                    const VecDbl& a_ptTimes) = 0;
 
 private:
   XM_DISALLOW_COPY_AND_ASSIGN(XmGridTrace)

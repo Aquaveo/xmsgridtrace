@@ -573,6 +573,89 @@ class TestGridTrace(unittest.TestCase):
         self.assertAlmostEqual(3.0, past_end[0][0])
         self.assertAlmostEqual(1.0, before_start[0][0])
 
+    def create_half_inactive_two_cell(self):
+        """Create a tracer over two quads side by side, the second inactive at both steps.
+
+        Returns:
+            GridTrace: The tracer, with a cell-located field in +x loaded at 0 and 10
+        """
+        points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0), (2, 0, 0), (2, 1, 0)]
+        cells = [UGrid.cell_type_enum.QUAD, 4, 0, 1, 2, 3,
+                 UGrid.cell_type_enum.QUAD, 4, 1, 4, 5, 2]
+        tracer = GridTrace(UGrid(points, cells))
+        tracer.max_change_distance = .25
+        scalars = [(.1, 0, 0), (.1, 0, 0)]
+        activity = [True, False]
+        tracer.add_grid_scalars_at_time(scalars, "cells", activity, "cells", 0)
+        tracer.add_grid_scalars_at_time(scalars, "cells", activity, "cells", 10)
+        return tracer
+
+    def test_start_traces_at_indices_seeds_points_and_cell_means(self):
+        """Indexed seeds start at their point or cell, in the order given, and keep their slot."""
+        tracer = self.create_half_inactive_two_cell()
+
+        # Point 2 is shared with the inactive cell, which does not stop it; point 4 is only in
+        # the inactive cell, which does.
+        tracer.start_traces_at_indices([2, 4, 0], "points", [0, 0, 0])
+        tracer.continue_traces()
+        traces, _times, reasons = tracer.get_trace_results()
+        self.assertEqual(3, len(traces))
+        np.testing.assert_array_almost_equal((1, 1, 0), traces[0][0])
+        np.testing.assert_array_almost_equal((0, 0, 0), traces[2][0])
+        self.assertEqual(0, len(traces[1]))
+        self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[1])
+
+        tracer.start_traces_at_indices([1, 0], "cells", [0, 0])
+        tracer.continue_traces()
+        traces, _times, reasons = tracer.get_trace_results()
+        self.assertEqual(2, len(traces))
+        self.assertEqual(0, len(traces[0]))
+        self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[0])
+        np.testing.assert_array_almost_equal((.5, .5, 0), traces[1][0])
+        self.assertLess(list(tracer.get_seed_magnitudes())[0], 0.0)
+
+    def test_start_traces_at_indices_rejects_a_bad_batch(self):
+        """A batch that cannot be seeded as given raises, and leaves no batch behind."""
+        tracer = self.create_half_inactive_two_cell()
+        bad_batches = [
+            ([0], "nodes", [0]),  # not a location
+            ([0, 1], "points", [0]),  # one time for two seeds
+            ([6], "points", [0]),  # six points, so one past the end
+            ([-1], "cells", [0]),
+        ]
+        for indices, loc, pt_times in bad_batches:
+            with self.subTest(indices=indices, loc=loc, pt_times=pt_times):
+                tracer.start_traces_at_indices([0], "points", [0])
+                with self.assertRaises(ValueError):
+                    tracer.start_traces_at_indices(indices, loc, pt_times)
+                traces, _times, _reasons = tracer.get_trace_results()
+                self.assertEqual(0, len(traces))
+
+    def test_traced_positions_lie_on_the_grid_surface(self):
+        """Every traced z is the grid's surface there, not the seed's z or an ear-cut guess."""
+        # One corner raised to 10. The display's centroid fan puts the centre at the mean corner
+        # z, 2.5; ear cutting the quad along a diagonal would put it at 0 or 5.
+        points = [(0, 0, 0), (10, 0, 0), (10, 10, 10), (0, 10, 0)]
+        cells = [UGrid.cell_type_enum.QUAD, 4, 0, 1, 2, 3]
+        tracer = GridTrace(UGrid(points, cells))
+        tracer.max_change_distance = 1
+        field = [(-1, -.5, 0)] * 4
+        activity = [True] * 4
+        tracer.add_grid_scalars_at_time(field, "points", activity, "points", 0)
+        tracer.add_grid_scalars_at_time(field, "points", activity, "points", 100)
+
+        tracer.start_traces_at_indices([0], "cells", [0])
+        tracer.continue_traces()
+        traces, _times, _reasons = tracer.get_trace_results()
+        np.testing.assert_array_almost_equal((5, 5, 2.5), traces[0][0])
+
+        # The seed's own z is not kept. At (8, 3) the fan triangle under the raised corner puts
+        # the surface at 2.
+        tracer.start_traces([(8, 3, 99)], [0])
+        tracer.continue_traces()
+        traces, _times, _reasons = tracer.get_trace_results()
+        np.testing.assert_array_almost_equal((8, 3, 2), traces[0][0])
+
     def test_extractor_can_be_imported_alongside(self):
         """xms.extractor and xms.gridtrace must both load in one process.
 
