@@ -59,9 +59,11 @@ public:
   void testPeakSpeedIgnoresInactivePoints();
   void testCellActivityStaysInsideAShortBitset();
   void testSeedReleasedAtWindowEndDerivesItsFirstStep();
-  void testIndexSeedsStartAtPointsAndCellMeans();
+  void testIndexSeedsStartAtPoints();
+  void testIndexSeedsStartAtCellMeans();
   void testIndexSeedsRefuseABadBatch();
   void testIndexSeedActivityIsJudgedByIndex();
+  void testIndexSeedActivityFollowsTheLoadedSteps();
   void testCellFieldPathsLieOnTheCentroidFan();
   void testPointFieldPathsTakeZFromThePoints();
   void testMaxDistanceEndLiesOnTheSurface();

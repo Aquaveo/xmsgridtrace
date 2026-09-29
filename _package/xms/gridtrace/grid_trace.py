@@ -286,8 +286,9 @@ class GridTrace(object):
     def get_seed_magnitudes(self):
         """Return the speed of the field at each seed of the batch, when it was released.
 
-        Reports the batch, exactly as get_trace_results does: empty before start_traces and after a
-        refused one, and untouched by trace_point, which traces through its own state.
+        Reports the batch, exactly as get_trace_results does: empty before start_traces or
+        start_traces_at_indices and after a refused one, and untouched by trace_point, which traces
+        through its own state.
 
         Recorded when the seed is first evaluated, before the vector multiplier is applied, so it
         describes the field rather than the tracing. Two components -- the tracer is two-dimensional
@@ -304,8 +305,8 @@ class GridTrace(object):
         and this one reads the batch it is writing.
 
         Returns:
-            Sequence[float]: One speed per seed, parallel to the seeds passed to start_traces and to
-            everything get_trace_results returns
+            Sequence[float]: One speed per seed, parallel to the seeds passed to start_traces or
+            start_traces_at_indices, and to everything get_trace_results returns
         """
         return self._instance.get_seed_magnitudes()
 

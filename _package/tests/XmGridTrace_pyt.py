@@ -590,8 +590,8 @@ class TestGridTrace(unittest.TestCase):
         tracer.add_grid_scalars_at_time(scalars, "cells", activity, "cells", 10)
         return tracer
 
-    def test_start_traces_at_indices_seeds_points_and_cell_means(self):
-        """Indexed seeds start at their point or cell, in the order given, and keep their slot."""
+    def test_start_traces_at_indices_seeds_points(self):
+        """Point seeds start at their point, in the order given, and one that cannot trace keeps its slot."""
         tracer = self.create_half_inactive_two_cell()
 
         # Point 2 is shared with the inactive cell, which does not stop it; point 4 is only in
@@ -605,6 +605,11 @@ class TestGridTrace(unittest.TestCase):
         self.assertEqual(0, len(traces[1]))
         self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[1])
 
+    def test_start_traces_at_indices_seeds_cell_means(self):
+        """Cell seeds start at the mean of the cell's points, in the order given, and keep their slot."""
+        tracer = self.create_half_inactive_two_cell()
+
+        # Cell 1 is inactive.
         tracer.start_traces_at_indices([1, 0], "cells", [0, 0])
         tracer.continue_traces()
         traces, _times, reasons = tracer.get_trace_results()
@@ -612,24 +617,39 @@ class TestGridTrace(unittest.TestCase):
         self.assertEqual(0, len(traces[0]))
         self.assertEqual(exit_reason_enum.SEED_NOT_TRACEABLE, reasons[0])
         np.testing.assert_array_almost_equal((.5, .5, 0), traces[1][0])
-        self.assertLess(list(tracer.get_seed_magnitudes())[0], 0.0)
+        magnitudes = list(tracer.get_seed_magnitudes())
+        self.assertLess(magnitudes[0], 0.0)
+        self.assertAlmostEqual(.1, magnitudes[1])
 
     def test_start_traces_at_indices_rejects_a_bad_batch(self):
         """A batch that cannot be seeded as given raises, and leaves no batch behind."""
         tracer = self.create_half_inactive_two_cell()
         bad_batches = [
-            ([0], "nodes", [0]),  # not a location
-            ([0, 1], "points", [0]),  # one time for two seeds
-            ([6], "points", [0]),  # six points, so one past the end
-            ([-1], "cells", [0]),
+            ([0], "nodes", [0], "needs loc 'points' or 'cells'"),
+            ([0, 1], "points", [0], "one start time per index"),
+            ([6], "points", [0], "not one of the grid's points"),  # six points, so one past the end
+            ([-1], "cells", [0], "not one of the grid's cells"),
         ]
-        for indices, loc, pt_times in bad_batches:
+        for indices, loc, pt_times, message in bad_batches:
             with self.subTest(indices=indices, loc=loc, pt_times=pt_times):
                 tracer.start_traces_at_indices([0], "points", [0])
-                with self.assertRaises(ValueError):
+                traces, _times, _reasons = tracer.get_trace_results()
+                self.assertEqual(1, len(traces))
+                with self.assertRaisesRegex(ValueError, message):
                     tracer.start_traces_at_indices(indices, loc, pt_times)
                 traces, _times, _reasons = tracer.get_trace_results()
                 self.assertEqual(0, len(traces))
+
+    def test_add_grid_scalars_at_time_rejects_an_unrecognised_location(self):
+        """A location that is not 'points', 'cells' or 'unknown' raises; 'unknown' does not."""
+        tracer = self.create_half_inactive_two_cell()
+        scalars = [(.1, 0, 0), (.1, 0, 0)]
+        with self.assertRaisesRegex(ValueError, "not nodes"):
+            tracer.add_grid_scalars_at_time(scalars, "nodes", [], "cells", 20)
+        with self.assertRaisesRegex(ValueError, "not nodes"):
+            tracer.add_grid_scalars_at_time(scalars, "cells", [], "nodes", 20)
+        tracer.add_grid_scalars_at_time(scalars, "unknown", [], "cells", 30)
+        tracer.add_grid_scalars_at_time(scalars, "cells", [], "unknown", 40)
 
     def create_raised_corner(self, loc):
         """Create a tracer over a 10 x 10 quad with corner (10, 10) raised to 10.
@@ -682,7 +702,8 @@ class TestGridTrace(unittest.TestCase):
         tracer.continue_traces()
         traces, _times, _reasons = tracer.get_trace_results()
         path = traces[0]
-        self.assertGreaterEqual(len(path), 5)
+        # More than its two ends, so the check below covers the path between them.
+        self.assertGreater(len(path), 2)
 
         # The points' elevations interpolated as point data are, which does not depend on the
         # diagonal the quad is cut along.
