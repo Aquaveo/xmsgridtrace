@@ -631,20 +631,35 @@ class TestGridTrace(unittest.TestCase):
                 traces, _times, _reasons = tracer.get_trace_results()
                 self.assertEqual(0, len(traces))
 
-    def test_traced_positions_lie_on_the_grid_surface(self):
-        """Every traced z is the grid's surface there, not the seed's z or an ear-cut guess."""
-        # One corner raised to 10. The display's centroid fan puts the centre at the mean corner
-        # z, 2.5; ear cutting the quad along a diagonal would put it at 0 or 5.
+    def create_raised_corner(self, loc):
+        """Create a tracer over a 10 x 10 quad with corner (10, 10) raised to 10.
+
+        The display's centroid fan puts the quad's centre at the mean corner z, 2.5; ear cutting it
+        along a diagonal, as point-located data is, puts the centre at 0 or 5.
+
+        Args:
+            loc (str): Where the field is located, 'points' or 'cells'
+
+        Returns:
+            tuple: The UGrid and a tracer over it, with a uniform field at times 0 and 100
+        """
         points = [(0, 0, 0), (10, 0, 0), (10, 10, 10), (0, 10, 0)]
         cells = [UGrid.cell_type_enum.QUAD, 4, 0, 1, 2, 3]
-        tracer = GridTrace(UGrid(points, cells))
+        ugrid = UGrid(points, cells)
+        tracer = GridTrace(ugrid)
         tracer.max_change_distance = 1
-        field = [(-1, -.5, 0)] * 4
-        activity = [True] * 4
-        tracer.add_grid_scalars_at_time(field, "points", activity, "points", 0)
-        tracer.add_grid_scalars_at_time(field, "points", activity, "points", 100)
+        count = len(points) if loc == 'points' else 1
+        field = [(-1, -.5, 0)] * count
+        activity = [True] * count
+        tracer.add_grid_scalars_at_time(field, loc, activity, loc, 0)
+        tracer.add_grid_scalars_at_time(field, loc, activity, loc, 100)
+        return ugrid, tracer
 
-        tracer.start_traces_at_indices([0], "cells", [0])
+    def test_cell_field_positions_lie_on_the_drawn_surface(self):
+        """Traced through a cell field, every z is on the fan a display draws, not the seed's z."""
+        _ugrid, tracer = self.create_raised_corner('cells')
+
+        tracer.start_traces_at_indices([0], 'cells', [0])
         tracer.continue_traces()
         traces, _times, _reasons = tracer.get_trace_results()
         np.testing.assert_array_almost_equal((5, 5, 2.5), traces[0][0])
@@ -655,6 +670,26 @@ class TestGridTrace(unittest.TestCase):
         tracer.continue_traces()
         traces, _times, _reasons = tracer.get_trace_results()
         np.testing.assert_array_almost_equal((8, 3, 2), traces[0][0])
+
+    def test_point_field_positions_take_z_from_the_points(self):
+        """Traced through a point field, every z comes from the grid's points, not the seed's z."""
+        # Imported here rather than at module scope, which would change the import order
+        # test_extractor_can_be_imported_alongside exercises.
+        from xms.extractor import UGrid2dDataExtractor
+
+        ugrid, tracer = self.create_raised_corner('points')
+        tracer.start_traces([(8, 3, 99)], [0])
+        tracer.continue_traces()
+        traces, _times, _reasons = tracer.get_trace_results()
+        path = traces[0]
+        self.assertGreaterEqual(len(path), 5)
+
+        # The points' elevations interpolated as point data are, which does not depend on the
+        # diagonal the quad is cut along.
+        elevations = UGrid2dDataExtractor(ugrid)
+        elevations.set_grid_point_scalars([0, 0, 10, 0], [], 'points')
+        expected = [(x, y, elevations.extract_at_location((x, y, 0))) for x, y, _z in path]
+        np.testing.assert_array_almost_equal(expected, path, decimal=5)
 
     def test_extractor_can_be_imported_alongside(self):
         """xms.extractor and xms.gridtrace must both load in one process.

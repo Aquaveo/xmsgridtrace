@@ -210,12 +210,19 @@ public:
   /// step yields only the seed itself, so callers must not assume one usable polyline per
   /// seed.
   ///
-  /// Every position's z is the grid's surface at its x and y, the seed's included, whatever
-  /// z the seed was given. The surface is the grid's centroid-fan triangulation -- each cell
-  /// split into triangles around its area centroid, which sits at the mean of the cell's
-  /// point elevations, or ear-cut where that centroid falls outside the cell -- the
-  /// triangulation a display draws the grid with, so a path lies on the drawn surface rather
-  /// than cutting through it.
+  /// Every position's z is the grid's at its x and y, the seed's included, whatever z the
+  /// seed was given. Where the field was looked up, the z is interpolated in the same
+  /// triangle, with the same weights, so it costs no search of its own; the end of a path cut
+  /// short by the max tracing distance, where it was not, is searched for in the same
+  /// triangulation.
+  ///
+  /// A cell-located field is triangulated as each cell's centroid fan -- triangles around its
+  /// area centroid, which sits at the mean of the cell's point elevations, or ear cut where
+  /// that centroid falls outside the cell -- which is the triangulation a display draws the
+  /// grid with. A point-located field is triangulated between the grid's own points, so the z
+  /// comes from the points' elevations; across a cell that is not planar, that can differ
+  /// from the drawn fan. When the two loaded time steps are located differently, the earlier
+  /// one's triangulation decides.
   ///
   /// \param[out] a_outTraces The positions of each trace, one entry per seed
   /// \param[out] a_outTimes The times of each trace, parallel to and the same length as the

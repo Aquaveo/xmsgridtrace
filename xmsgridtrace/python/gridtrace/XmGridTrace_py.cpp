@@ -490,10 +490,14 @@ void initXmGridTrace(py::module &m) {
       fewer than two points: a seed that leaves the grid on its first step yields only the
       seed itself, so callers must not assume one usable polyline per seed.
 
-      Every position's z is the grid's surface at its x and y, the seed's included, whatever
-      z the seed was given. The surface is the one a display draws the grid with: each cell
-      fanned into triangles around its area centroid, which sits at the mean of the cell's
-      point elevations -- or ear cut, where that centroid falls outside the cell.
+      Every position's z is the grid's at its x and y, the seed's included, whatever z the
+      seed was given, interpolated in the same triangle as the field there. A cell-located
+      field is triangulated as the fan a display draws the grid with: each cell split into
+      triangles around its area centroid, which sits at the mean of the cell's point
+      elevations -- or ear cut, where that centroid falls outside the cell. A point-located
+      field is triangulated between the grid's own points, so the z comes from the points'
+      elevations; across a cell that is not planar, that can differ from the drawn fan. When
+      the two loaded time steps are located differently, the earlier one's decides.
 
       Returns:
           tuple: The positions of each trace, the times of each trace, and why each trace
