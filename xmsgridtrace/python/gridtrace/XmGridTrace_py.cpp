@@ -19,6 +19,25 @@
 //----- Namespace declaration --------------------------------------------------
 namespace py = pybind11;
 
+//----- Internal functions -----------------------------------------------------
+namespace
+{
+//------------------------------------------------------------------------------
+/// \brief Reads a location argument: 'points' or 'cells'.
+/// \param[in] a_loc The string a caller passed
+/// \return LOC_POINTS or LOC_CELLS, or LOC_UNKNOWN for any other string, 'unknown' included;
+///         each caller decides which of those it accepts
+//------------------------------------------------------------------------------
+xms::DataLocationEnum iLocFromString(const std::string& a_loc)
+{
+  if (a_loc == "points")
+    return xms::DataLocationEnum::LOC_POINTS;
+  if (a_loc == "cells")
+    return xms::DataLocationEnum::LOC_CELLS;
+  return xms::DataLocationEnum::LOC_UNKNOWN;
+} // iLocFromString
+} // namespace
+
 //----- Python Interface -------------------------------------------------------
 PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);
 
@@ -270,28 +289,16 @@ void initXmGridTrace(py::module &m) {
           std::string activity_loc,
           double time) {
 
-            xms::DataLocationEnum scalar_loc_e;
-            if (scalar_loc == "points")
-              scalar_loc_e = xms::DataLocationEnum::LOC_POINTS;
-            else if (scalar_loc == "cells")
-              scalar_loc_e = xms::DataLocationEnum::LOC_CELLS;
-            else if (scalar_loc == "unknown")
-              scalar_loc_e = xms::DataLocationEnum::LOC_UNKNOWN;
-            else
+            const xms::DataLocationEnum scalar_loc_e = iLocFromString(scalar_loc);
+            if (scalar_loc_e == xms::DataLocationEnum::LOC_UNKNOWN && scalar_loc != "unknown")
             {
               std::string msg = "nodal_func_type string must be one of 'points', 'cells', "
                                 "'unknown' not " + scalar_loc;
               throw py::value_error(msg);
             }
 
-            xms::DataLocationEnum activity_loc_e;
-            if (activity_loc == "points")
-              activity_loc_e = xms::DataLocationEnum::LOC_POINTS;
-            else if (activity_loc == "cells")
-              activity_loc_e = xms::DataLocationEnum::LOC_CELLS;
-            else if (activity_loc == "unknown")
-              activity_loc_e = xms::DataLocationEnum::LOC_UNKNOWN;
-            else
+            const xms::DataLocationEnum activity_loc_e = iLocFromString(activity_loc);
+            if (activity_loc_e == xms::DataLocationEnum::LOC_UNKNOWN && activity_loc != "unknown")
             {
               std::string msg = "nodal_func_type string must be one of 'points', 'cells', "
                                 "'unknown' not " + activity_loc;
@@ -443,11 +450,9 @@ void initXmGridTrace(py::module &m) {
     std::string loc, py::iterable pt_times) {
           boost::shared_ptr<xms::VecInt> idxs = xms::VecIntFromPyIter(indices);
           boost::shared_ptr<xms::VecDbl> times = xms::VecDblFromPyIter(pt_times);
-          xms::DataLocationEnum loc_e = xms::DataLocationEnum::LOC_UNKNOWN;
-          if (loc == "points")
-            loc_e = xms::DataLocationEnum::LOC_POINTS;
-          else if (loc == "cells")
-            loc_e = xms::DataLocationEnum::LOC_CELLS;
+          // Anything but 'points' or 'cells', 'unknown' included, reads as LOC_UNKNOWN, which
+          // StartTracesAtIndices refuses.
+          const xms::DataLocationEnum loc_e = iLocFromString(loc);
           // Called before any error is raised, for the reason start_traces gives: it clears
           // the previous batch, and that has to happen on the error path too.
           if (self.StartTracesAtIndices(*idxs, loc_e, *times))
@@ -525,8 +530,9 @@ void initXmGridTrace(py::module &m) {
   const char* get_seed_magnitudes_doc = R"pydoc(
       Returns the speed of the field at each seed of the batch, when it was released.
 
-      Reports the batch, exactly as get_trace_results does: empty before start_traces and
-      after a refused one, and untouched by trace_point, which traces through its own state.
+      Reports the batch, exactly as get_trace_results does: empty before start_traces or
+      start_traces_at_indices and after a refused one, and untouched by trace_point, which
+      traces through its own state.
 
       Recorded when the seed is first evaluated, before the vector multiplier is applied, so
       it describes the field rather than the tracing. Two components -- the tracer is
@@ -544,7 +550,7 @@ void initXmGridTrace(py::module &m) {
 
       Returns:
           Sequence[float]: One speed per seed, parallel to the seeds passed to start_traces
-          and to everything get_trace_results returns.
+          or start_traces_at_indices, and to everything get_trace_results returns.
   )pydoc";
   gridtrace.def("get_seed_magnitudes", [](const xms::XmGridTrace &self) -> py::iterable {
           xms::VecDbl outMagnitudes;

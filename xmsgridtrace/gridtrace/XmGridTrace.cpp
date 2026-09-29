@@ -1279,7 +1279,9 @@ void XmGridTraceImpl::GetSeedMagnitudes(VecDbl& a_outMagnitudes) const
 /// time step's triangulation with the weights its vector was. It is the z of every traced
 /// position the field is looked up at. Cell-located data is triangulated as the centroid fan
 /// a display draws; point-located data is ear cut through the grid's own points, so the z
-/// comes from the points the vector does, and costs no search of its own.
+/// comes from the points the vector does, and costs no search of its own. It may point at
+/// a_pt.z, as it does from every caller that passes one: a_pt is read only in the searches,
+/// before this is written.
 //------------------------------------------------------------------------------
 bool XmGridTraceImpl::GetVectorAtLocationAndTime(const xms::Pt3d& a_pt,
                                                  double a_currentTime,
@@ -3805,10 +3807,10 @@ BSHP<XmGridTrace> iCreateTrapezoidTracer()
   return tracer;
 } // iCreateTrapezoidTracer
 //------------------------------------------------------------------------------
-/// \brief An indexed batch starts each path at its point, or at the mean of its cell's
-///        points, in the order the indices were given.
+/// \brief An indexed batch of points starts each path at its point, in the order the indices
+///        were given.
 //------------------------------------------------------------------------------
-void XmGridTraceUnitTests::testIndexSeedsStartAtPointsAndCellMeans()
+void XmGridTraceUnitTests::testIndexSeedsStartAtPoints()
 {
   BSHP<XmGridTrace> tracer = iCreateTrapezoidTracer();
   std::vector<VecPt3d> traces;
@@ -3821,6 +3823,17 @@ void XmGridTraceUnitTests::testIndexSeedsStartAtPointsAndCellMeans()
   tracer->GetTraceResults(traces, times, reasons);
   const VecPt3d expectedPointStarts = {{0, 2, 0}, {0, 0, 0}};
   TS_ASSERT_DELTA_VECPT3D(expectedPointStarts, iFirstPoints(traces), 1e-12);
+} // XmGridTraceUnitTests::testIndexSeedsStartAtPoints
+//------------------------------------------------------------------------------
+/// \brief An indexed batch of cells starts each path at the mean of its cell's points, in
+///        the order the indices were given, and an empty cell keeps its slot.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testIndexSeedsStartAtCellMeans()
+{
+  BSHP<XmGridTrace> tracer = iCreateTrapezoidTracer();
+  std::vector<VecPt3d> traces;
+  std::vector<VecDbl> times;
+  std::vector<XmGridTraceExitEnum> reasons;
 
   // The point means are (4.75, 1) and (1.75, 1). The area centroids are (4.73, 1.07) and
   // (1.76, 0.95), pulled toward each trapezoid's wider side; the mean is what a display
@@ -3838,7 +3851,7 @@ void XmGridTraceUnitTests::testIndexSeedsStartAtPointsAndCellMeans()
   tracer->GetSeedMagnitudes(magnitudes);
   const VecDbl expectedMagnitudes = {0.1, 0.1, XM_NODATA};
   TS_ASSERT_DELTA_VEC(expectedMagnitudes, magnitudes, 1e-6);
-} // XmGridTraceUnitTests::testIndexSeedsStartAtPointsAndCellMeans
+} // XmGridTraceUnitTests::testIndexSeedsStartAtCellMeans
 //------------------------------------------------------------------------------
 /// \brief An indexed batch that cannot be seeded as given is refused whole.
 //------------------------------------------------------------------------------
@@ -3968,6 +3981,31 @@ void XmGridTraceUnitTests::testIndexSeedActivityIsJudgedByIndex()
   TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
 } // XmGridTraceUnitTests::testIndexSeedActivityIsJudgedByIndex
 //------------------------------------------------------------------------------
+/// \brief An indexed seed is judged by the two steps loaded now, not by a step since dropped.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testIndexSeedActivityFollowsTheLoadedSteps()
+{
+  // Cell 0 inactive at time 0 only, so once a third step drops it, cell 0 is active at both
+  // steps left and its seeds are no longer refused.
+  DynBitset cellActivity;
+  cellActivity.push_back(false);
+  cellActivity.push_back(true);
+  DynBitset allCellsActive;
+  allCellsActive.push_back(true);
+  allCellsActive.push_back(true);
+  BSHP<XmGridTrace> tracer =
+    iCreateNotchedTracer(cellActivity, allCellsActive, DataLocationEnum::LOC_CELLS);
+  const VecPt3d vectors(4, Pt3d(0.0, 0.1, 0.0));
+  tracer->AddGridScalarsAtTime(vectors, DataLocationEnum::LOC_POINTS, allCellsActive,
+                               DataLocationEnum::LOC_CELLS, 20.0);
+
+  const VecInt expected = {0, 0};
+  tracer->StartTracesAtIndices({0, 1}, DataLocationEnum::LOC_CELLS, {10.0, 10.0});
+  TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
+  tracer->StartTracesAtIndices({3, 1}, DataLocationEnum::LOC_POINTS, {10.0, 10.0});
+  TS_ASSERT_EQUALS_VEC(expected, iUntraceableSeeds(*tracer));
+} // XmGridTraceUnitTests::testIndexSeedActivityFollowsTheLoadedSteps
+//------------------------------------------------------------------------------
 /// \brief The points of a 10 x 10 quad with one corner raised; see iCreateRaisedCornerTracer.
 /// \return the points, counterclockwise from the origin
 //------------------------------------------------------------------------------
@@ -4077,17 +4115,19 @@ std::vector<VecPt3d> iTraceEachKindOfSeed(XmGridTrace& a_tracer)
   auto tracedPath = [&]() {
     a_tracer.ContinueTraces();
     a_tracer.GetTraceResults(traces, times, reasons);
-    return traces[0];
+    TS_ASSERT_EQUALS(size_t(1), traces.size());
+    return traces.empty() ? VecPt3d() : traces[0];
   };
-  a_tracer.StartTraces({{8, 3, 99}}, {0.0});
+  const Pt3d offSurfaceSeed(8, 3, 99);
+  a_tracer.StartTraces({offSurfaceSeed}, {0.0});
   paths.push_back(tracedPath());
-  a_tracer.StartTracesAtIndices({0}, DataLocationEnum::LOC_CELLS, {0.0});
+  TS_ASSERT(a_tracer.StartTracesAtIndices({0}, DataLocationEnum::LOC_CELLS, {0.0}));
   paths.push_back(tracedPath());
-  a_tracer.StartTracesAtIndices({2}, DataLocationEnum::LOC_POINTS, {0.0});
+  TS_ASSERT(a_tracer.StartTracesAtIndices({2}, DataLocationEnum::LOC_POINTS, {0.0}));
   paths.push_back(tracedPath());
   VecPt3d single;
   VecDbl singleTimes;
-  a_tracer.TracePoint({8, 3, 99}, 0.0, single, singleTimes);
+  a_tracer.TracePoint(offSurfaceSeed, 0.0, single, singleTimes);
   paths.push_back(single);
   return paths;
 } // iTraceEachKindOfSeed
