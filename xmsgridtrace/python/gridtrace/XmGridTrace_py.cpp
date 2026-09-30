@@ -627,15 +627,25 @@ void initXmGridTrace(py::module &m) {
     // XmGridTraceExitEnum
     py::enum_<xms::XmGridTraceExitEnum>(m, "exit_reason_enum",
                     "exit_reason_enum why a trace stopped")
-        .value("NOT_STARTED", xms::GTEXIT_NOT_STARTED)
-        .value("WAITING_FOR_TIME_STEP", xms::GTEXIT_WAITING_FOR_TIME_STEP)
-        .value("MAX_TRACING_TIME", xms::GTEXIT_MAX_TRACING_TIME)
-        .value("MAX_TRACING_DISTANCE", xms::GTEXIT_MAX_TRACING_DISTANCE)
-        .value("LEFT_GRID", xms::GTEXIT_LEFT_GRID)
-        .value("ZERO_VELOCITY", xms::GTEXIT_ZERO_VELOCITY)
-        .value("MIN_DELTA_TIME", xms::GTEXIT_MIN_DELTA_TIME)
-        .value("SEED_NOT_TRACEABLE", xms::GTEXIT_SEED_NOT_TRACEABLE)
-        .value("EXTRACTION_FAILED", xms::GTEXIT_EXTRACTION_FAILED);
+        .value("NOT_STARTED", xms::GTEXIT_NOT_STARTED, "No stepping has happened yet.")
+        .value("WAITING_FOR_TIME_STEP", xms::GTEXIT_WAITING_FOR_TIME_STEP,
+               "Reached the second loaded time step; add a later one to resume.")
+        .value("MAX_TRACING_TIME", xms::GTEXIT_MAX_TRACING_TIME,
+               "The trace spent its time budget.")
+        .value("MAX_TRACING_DISTANCE", xms::GTEXIT_MAX_TRACING_DISTANCE,
+               "The trace spent its distance budget.")
+        // Named for what it meant before a trace that crosses the grid's boundary coasted on;
+        // the name is kept so callers matching on it are not broken.
+        .value("LEFT_GRID", xms::GTEXIT_LEFT_GRID,
+               "Stepped into an inactive cell; the path stops at its edge. Crossing the grid's "
+               "boundary, or the shore of a hole in it, does not end a trace: it coasts on.")
+        .value("ZERO_VELOCITY", xms::GTEXIT_ZERO_VELOCITY,
+               "The field is still under the particle at both loaded time steps.")
+        .value("MIN_DELTA_TIME", xms::GTEXIT_MIN_DELTA_TIME,
+               "Subdividing reached the smallest allowed step.")
+        .value("SEED_NOT_TRACEABLE", xms::GTEXIT_SEED_NOT_TRACEABLE,
+               "The seed has no field there, or its point or cell is inactive.")
+        .value("EXTRACTION_FAILED", xms::GTEXIT_EXTRACTION_FAILED, "A field lookup failed.");
 
     // DataLocationEnum is deliberately NOT registered here. It is xmsextractor's type, and
     // xms.extractor registers it under this same name; pybind11's type registry is

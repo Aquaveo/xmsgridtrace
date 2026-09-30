@@ -63,16 +63,21 @@ class dyn_bitset;
 /// would keep every trace seeded in it alive, and every time step loading, for the rest of the
 /// series.
 ///
-/// Crossing the grid's outer boundary ends no trace. Past it there is no field, so the trace
+/// Crossing the grid's boundary ends no trace, whether the boundary is the grid's outer edge
+/// or the shore of a hole in it, such as an island. Past it there is no field, so the trace
 /// coasts on in a straight line at the velocity it crossed with -- continuing its last step
 /// without a bend -- and ends like any other, on a budget or waiting at the end of the window.
 /// The coast keeps the z of the crossing, there being no surface to lay it on, and does not
-/// follow the field again if its line passes back over the grid. An inactive cell is not the
-/// boundary: a trace still stops at its edge, with GTEXIT_LEFT_GRID, including one it would
-/// cross on its way out of the grid. A calm where the trace crosses does not stop it either,
-/// since the coast does not use the field there. A particle held still by a calm field, as
-/// described above, does not leave at all: its step points wherever interpolation noise does,
-/// so it holds at the boundary instead, and moves off when the field picks up.
+/// follow the field again if its line passes back over the grid: a trace that reaches an
+/// island coasts across it and on over the grid beyond, heedless of the field there. An
+/// inactive cell is not the boundary: a trace still stops at its edge, with GTEXIT_LEFT_GRID,
+/// including one it would cross on its way out of the grid. A calm where the trace crosses
+/// does not stop it either, since the coast does not use the field there. A particle held
+/// still by a calm field, as described above, does not leave at all: its step points wherever
+/// interpolation noise does, so it holds at the boundary instead, and moves off when the field
+/// picks up. A crossing is looked for only where a step ends with no field, so a hole or an
+/// inactive cell narrower than a step can be stepped over; the max change distance bounds how
+/// long a step can be.
 enum XmGridTraceExitEnum {
   GTEXIT_NOT_STARTED,           ///< no stepping has happened yet
   GTEXIT_WAITING_FOR_TIME_STEP, ///< reached the 2nd loaded step; supply a later one to resume
