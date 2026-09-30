@@ -147,6 +147,7 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
+        # Leaves at (1, 1) at 1 and coasts on at (1, 1) to the end of the window at 10.
         expected_out_trace = [(.5, .5, 0),
                               (0.67677668424809445, 0.67677668424809445, 0.00000000000000000),
                               (0.85355336849618890, 0.85355336849618890, 0.00000000000000000),
@@ -169,6 +170,7 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
+        # Leaves at (1, 1) at 5.5 and coasts on at (.1, .1) to the end of the window at 10.
         expected_out_trace = [(.5, .5, 0),
                               (0.60000000149011612, 0.60000000149011612, 0),
                               (0.72000000327825542, 0.72000000327825542, 0),
@@ -812,6 +814,7 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
+        # Leaves at (1, 1) at .4 and coasts on at (1, 1) to the end of the window at 10.
         expected_out_trace = [(.5, .5, 0), (1, 1, 0), (10.6, 10.6, 0)]
         expected_out_times = [-.1, .4, 10]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
@@ -877,6 +880,7 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
+        # Leaves at (2, .5) and coasts on at its last step's speed of .2 to the end of the window at 10.
         expected_out_trace = [(.5, .5, 0),
                               (0.60000000149011612, 0.50000000000000000, 0.00000000000000000),
                               (0.73200000077486038, 0.50000000000000000, 0.00000000000000000),
@@ -908,6 +912,7 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
+        # Leaves at (2, .5) and coasts on at its last step's speed of .2 to the end of the window at 10.
         expected_out_trace = [(.5, .5, 0),
                               (0.60000000149011612, 0.50000000000000000, 0.00000000000000000),
                               (0.66600000113248825, 0.50000000000000000, 0.00000000000000000),
@@ -965,6 +970,7 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
+        # Leaves at (2, .5) at 18.36261 and coasts on at its last step's speed, .27442, to the end of the window at 20.
         expected_out_trace = [(0.5, 0.5, 0),
                               (0.60000000149011612, 0.5, 0),
                               (0.74400000184774395, 0.5, 0),

@@ -305,7 +305,7 @@ struct TraceState
   /// Whether m_seedIdx is a point or a cell. Unused while m_seedIdx is -1.
   DataLocationEnum m_seedLoc = DataLocationEnum::LOC_UNKNOWN;
   bool m_started = false;    ///< the seed has been evaluated and recorded
-  /// The trace has crossed the grid's outer boundary and coasts at the velocity it crossed
+  /// The trace has crossed the grid's boundary and coasts at the velocity it crossed
   /// with, held in m_vx and m_vy; see CoastTrace. Carried across time steps like the rest, so
   /// a resumed trace carries on along the same line rather than looking for a field there is
   /// none of.
@@ -382,10 +382,7 @@ public:
 private:
   void StepTrace(TraceState& a_state);
   XmGridTraceExitEnum CoastTrace(TraceState& a_state) const;
-  size_t FindWhereStepLeaves(const VecPt3d& a_points,
-                             double a_time0,
-                             double a_time1,
-                             bool& a_leavesGrid) const;
+  size_t FindWhereStepLeaves(const VecPt3d& a_points, bool& a_leavesGrid) const;
   void RecordExit(TraceState& a_state, XmGridTraceExitEnum a_reason);
   double StillSpeed() const;
   double FirstDeltaT(double a_vx, double a_vy, double a_stillSpeed) const;
@@ -870,7 +867,7 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     saveProgress();
     RecordExit(a_state, a_reason);
   };
-  // Past the grid's outer boundary there is no field to follow, so a trace that reaches it
+  // Past the grid's boundary there is no field to follow, so a trace that reaches it
   // coasts on from pt0 at (vx0, vy0) instead of ending there; see CoastTrace.
   auto coastOn = [&]() {
     saveProgress();
@@ -934,7 +931,7 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
   // several conditions in one iteration overwrite each other, and a later split can put the
   // trace back into motion after the time step clamp has already fired.
   XmGridTraceExitEnum stopReason = GTEXIT_WAITING_FOR_TIME_STEP;
-  // Whether this iteration's step ends where the trace crosses the grid's outer boundary.
+  // Whether this iteration's step ends where the trace crosses the grid's boundary.
   // Voided by a split, like stopReason, since the shorter retry may not reach it.
   bool crossesBoundary = false;
 
@@ -1014,11 +1011,10 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
       }
       m_boundaryExtractor->SetPolyline(points);
       points = m_boundaryExtractor->GetExtractLocations();
-      // The field has no value past the grid's outer boundary, and none in an inactive cell
+      // The field has no value past the grid's boundary, and none in an inactive cell
       // either, but only an inactive cell ends the trace: past the boundary it coasts on.
       bool leavesGrid = false;
-      const size_t leaveAt = FindWhereStepLeaves(points, ptTime + elapsedTime,
-                                                 ptTime + elapsedTime + deltaT, leavesGrid);
+      const size_t leaveAt = FindWhereStepLeaves(points, leavesGrid);
       if (leavesGrid && iIsStill(vx0, vy0, stillSpeed))
       {
         // A particle held still by a calm field is not leaving: what is left of a still vector
@@ -1067,7 +1063,7 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
     // accepted like any other, and the trace moves off again as the field picks up, or reaches
     // the end of the window and waits for the next time step. It does not wait mid-window: a
     // resumed trace restarts from where it stopped, and the rest of this window would be lost.
-    // A step that crosses the grid's outer boundary is the exception: the trace coasts on at
+    // A step that crosses the grid's boundary is the exception: the trace coasts on at
     // the velocity the step was taken with, so a calm where it crosses does not stop it.
     const bool still1 = iIsStill(vx1, vy1, stillSpeed);
     if (still1 && !crossesBoundary && StillAtBothSteps(vtkVecAtTime1, vtkVecAtTime2, stillSpeed))
@@ -1177,7 +1173,7 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
   stopWith(stopReason);
 } // XmGridTraceImpl::StepTrace
 //------------------------------------------------------------------------------
-/// \brief Carries a trace that has crossed the grid's outer boundary on in a straight line.
+/// \brief Carries a trace that has crossed the grid's boundary on in a straight line.
 ///
 /// Past the boundary there is no field, so the trace keeps the velocity it crossed with --
 /// that of the step that reached the boundary -- and so continues that step without a bend.
@@ -1187,7 +1183,8 @@ void XmGridTraceImpl::StepTrace(TraceState& a_state)
 /// step like any other, and resumes along the same line.
 ///
 /// It never looks the grid up again, so it does not follow the field if its line passes back
-/// over the grid, and it keeps the z of the crossing, there being no surface to lay it on.
+/// over the grid -- across a bay, or the far shore of an island it reached -- and it keeps the
+/// z of the crossing, there being no surface to lay it on.
 /// \param[in,out] a_state The coasting trace
 /// \return Why it stopped
 //------------------------------------------------------------------------------
@@ -1228,27 +1225,21 @@ XmGridTraceExitEnum XmGridTraceImpl::CoastTrace(TraceState& a_state) const
 ///
 /// Each piece of the step between two of a_points lies in a single triangle or wholly
 /// outside the grid, so the middle of a piece speaks for all of it. The first piece with no
-/// field is where the step leaves: across the grid's outer boundary when it lies outside the
-/// boundary extractor's triangulation -- which covers every cell, whatever its activity --
+/// field is where the step leaves: across the grid's boundary when it lies outside the
+/// boundary extractor's triangulation -- which covers every cell, whatever its activity, and
+/// nothing else, so a hole in the grid is outside it just as the grid's surroundings are --
 /// and into an inactive cell otherwise. The step's end alone cannot tell: a step can cross a
 /// dry cell on the boundary on its way out, or leave across a bay and end in a dry cell
 /// beyond it.
 /// \param[in] a_points The step's start, every triangle edge it crosses, and its end, in
 ///            order, as the boundary extractor returns them
-/// \param[in] a_time0 The time at the step's start
-/// \param[in] a_time1 The time at the step's end
-/// \param[out] a_leavesGrid Whether the step leaves across the grid's outer boundary
+/// \param[out] a_leavesGrid Whether the step leaves across the grid's boundary
 /// \return The index in a_points of where the step leaves; zero when it leaves at its start
 //------------------------------------------------------------------------------
-size_t XmGridTraceImpl::FindWhereStepLeaves(const VecPt3d& a_points,
-                                            double a_time0,
-                                            double a_time1,
-                                            bool& a_leavesGrid) const
+size_t XmGridTraceImpl::FindWhereStepLeaves(const VecPt3d& a_points, bool& a_leavesGrid) const
 {
   const BSHP<XmUGridTriangles2d> triangles =
     m_boundaryExtractor->GetDataExtractor()->GetUGridTriangles();
-  const Pt3d& start = a_points.front();
-  const double length = Mdist(start.x, start.y, a_points.back().x, a_points.back().y);
   Pt3d vec;
   for (size_t i = 0; i + 1 < a_points.size(); ++i)
   {
@@ -1261,8 +1252,9 @@ size_t XmGridTraceImpl::FindWhereStepLeaves(const VecPt3d& a_points,
     XMGT_COUNT_SEARCH(1);
     if (a_leavesGrid)
       return i;
-    const double along = length > 0 ? Mdist(start.x, start.y, middle.x, middle.y) / length : 1;
-    if (!GetVectorAtLocationAndTime(middle, a_time0 + (a_time1 - a_time0) * along, vec) ||
+    // Whether there is a field does not depend on when: the lookup reports none wherever
+    // either loaded time step has none, whatever the time (see GetVectorAtLocationAndTime).
+    if (!GetVectorAtLocationAndTime(middle, m_time1, vec) ||
         EQ_TOL(vec.x, XM_NODATA, 1) || EQ_TOL(vec.y, XM_NODATA, 1))
       return i;
   }
@@ -2063,6 +2055,7 @@ void XmGridTraceUnitTests::testMaxChangeDistance()
 
   tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
 
+  // Leaves at (1, 1) at 1 and coasts on at (1, 1) to the end of the window at 10.
   VecPt3d expectedOutTrace = {{.5, .5, 0},
                               {0.67677668424809445, 0.67677668424809445, 0.00000000000000000},
                               {0.85355336849618890, 0.85355336849618890, 0.00000000000000000},
@@ -2105,6 +2098,7 @@ void XmGridTraceUnitTests::testSmallScalarsTracePoint()
   double startTime = .5;
   tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
 
+  // Leaves at (1, 1) at 5.5 and coasts on at (.1, .1) to the end of the window at 10.
   VecPt3d expectedOutTrace = {{.5, .5, 0},
                               {0.60000000149011612, 0.60000000149011612, 0},
                               {0.72000000327825542, 0.72000000327825542, 0},
@@ -2423,6 +2417,7 @@ void XmGridTraceUnitTests::testBeforeTimestep()
 
   tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
 
+  // Leaves at (1, 1) at .4 and coasts on at (1, 1) to the end of the window at 10.
   VecPt3d expectedOutTrace = {{.5, .5, 0}, {1, 1, 0}, {10.6, 10.6, 0}};
   VecDbl expectedOutTimes = {-.1, .4, 10};
   TS_ASSERT_DELTA_VECPT3D(expectedOutTrace, outTrace, .0001);
@@ -2516,6 +2511,7 @@ void XmGridTraceUnitTests::testMultiCell()
 
   tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
 
+  // Leaves at (2, .5) and coasts on at its last step's speed of .2 to the end of the window at 10.
   VecPt3d expectedOutTrace = {{.5, .5, 0},
                               {0.60000000149011612, 0.50000000000000000, 0.00000000000000000},
                               {0.73200000077486038, 0.50000000000000000, 0.00000000000000000},
@@ -2559,6 +2555,7 @@ void XmGridTraceUnitTests::testMaxChangeVelocity()
 
   tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
 
+  // Leaves at (2, .5) and coasts on at its last step's speed of .2 to the end of the window at 10.
   VecPt3d expectedOutTrace = {{.5, .5, 0},
                               {0.60000000149011612, 0.50000000000000000, 0.00000000000000000},
                               {0.66600000113248825, 0.50000000000000000, 0.00000000000000000},
@@ -2632,6 +2629,8 @@ void XmGridTraceUnitTests::testUniqueTimeSteps()
 
   tracer->TracePoint(startPoint, startTime, outTrace, outTimes);
 
+  // Leaves at (2, .5) at 18.36261 and coasts on at its last step's speed, .27442, to the end of
+  // the window at 20.
   VecPt3d expectedOutTrace = {{0.5, 0.5, 0},
                               {0.60000000149011612, 0.5, 0},
                               {0.74400000184774395, 0.5, 0},
@@ -3347,19 +3346,18 @@ void XmGridTraceUnitTests::testBoundaryExtractorIsCached()
 
   g_boundaryExtractorBuilds = 0;
 
-  // Each trace coasts on past the unit square once it leaves, so ending outside it is what
-  // shows the exit happened.
+  // Each trace leaves the unit square at (1, 1) and coasts on at (1, 1) to the end of the
+  // window at 10, as in testBasicTracePoint; ending there is what shows the exit happened.
+  const VecPt3d expectedTrace = {{.5, .5, 0}, {1, 1, 0}, {10, 10, 0}};
   VecPt3d firstTrace;
   VecDbl firstTimes;
   tracer->TracePoint(startPoint, startTime, firstTrace, firstTimes);
-  TS_ASSERT(!firstTrace.empty() && firstTrace.back().x > 1.0);
+  TS_ASSERT_DELTA_VECPT3D(expectedTrace, firstTrace, 1e-9);
   TS_ASSERT_EQUALS(size_t(1), g_boundaryExtractorBuilds);
-  TS_ASSERT(firstTrace.size() >= 2);
 
   VecPt3d secondTrace;
   VecDbl secondTimes;
   tracer->TracePoint(startPoint, startTime, secondTrace, secondTimes);
-  TS_ASSERT(!secondTrace.empty() && secondTrace.back().x > 1.0);
   TS_ASSERT_EQUALS(size_t(1), g_boundaryExtractorBuilds);
 
   TS_ASSERT_DELTA_VECPT3D(firstTrace, secondTrace, 1e-12);
@@ -4759,6 +4757,77 @@ void XmGridTraceUnitTests::testLeavingAcrossAGapCoastsFromWhereItLeft()
   TS_ASSERT_DELTA_VEC(expectedTimes, times, 1e-9);
 } // XmGridTraceUnitTests::testLeavingAcrossAGapCoastsFromWhereItLeft
 //------------------------------------------------------------------------------
+/// \brief A seed on the edge of an inactive cell, heading into it, stops where it is.
+///
+/// Its first step leaves the field where it starts, into the dry quad rather than out of the
+/// grid, so there is no step to take and nothing to coast from: the trace holds only the
+/// seed, as GetTraceResults warns an entry can.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testSeedOnADryCellsEdgeStopsThere()
+{
+  BSHP<XmGridTrace> tracer = iEastThroughADryQuad(0);
+
+  VecPt3d trace;
+  VecDbl times;
+  tracer->TracePoint({1, .5, 0}, 0.0, trace, times);
+
+  const VecPt3d expected = {{1, .5, 0}};
+  const VecDbl expectedTimes = {0};
+  TS_ASSERT_EQUALS((int)GTEXIT_LEFT_GRID, (int)tracer->GetExitReason());
+  TS_ASSERT_DELTA_VECPT3D(expected, trace, 1e-9);
+  TS_ASSERT_DELTA_VEC(expectedTimes, times, 1e-9);
+} // XmGridTraceUnitTests::testSeedOnADryCellsEdgeStopsThere
+//------------------------------------------------------------------------------
+/// \brief A trace that reaches an island coasts across it and on over the grid beyond.
+///
+/// A 3 x 3 grid of unit quads with the middle one missing. The field runs east up to x = 1
+/// and north from x = 2. The trace leaves the west quad into the hole at (1, 1.5) and coasts
+/// east, across the hole and on over the east quad, whose field would turn it north, to the
+/// end of the window.
+//------------------------------------------------------------------------------
+void XmGridTraceUnitTests::testReachingAnIslandCoastsAcrossIt()
+{
+  VecPt3d points;
+  VecPt3d field;
+  for (int j = 0; j < 4; ++j)
+  {
+    for (int i = 0; i < 4; ++i)
+    {
+      points.push_back(Pt3d(i, j, 0));
+      field.push_back(i <= 1 ? Pt3d(1, 0, 0) : Pt3d(0, 1, 0));
+    }
+  }
+  VecInt cells;
+  for (int j = 0; j < 3; ++j)
+  {
+    for (int i = 0; i < 3; ++i)
+    {
+      if (i == 1 && j == 1)
+        continue; // the island
+      const int corner = j * 4 + i;
+      cells.insert(cells.end(), {XMU_QUAD, 4, corner, corner + 1, corner + 5, corner + 4});
+    }
+  }
+  BSHP<XmGridTrace> tracer = XmGridTrace::New(XmUGrid::New(points, cells));
+  // Short enough that the first step ends on the island rather than jumping it.
+  tracer->SetInitialDeltaTime(.75);
+  const DynBitset allActive;
+  tracer->AddGridScalarsAtTime(field, DataLocationEnum::LOC_POINTS, allActive,
+                               DataLocationEnum::LOC_POINTS, 0.0);
+  tracer->AddGridScalarsAtTime(field, DataLocationEnum::LOC_POINTS, allActive,
+                               DataLocationEnum::LOC_POINTS, 4.0);
+
+  VecPt3d trace;
+  VecDbl times;
+  tracer->TracePoint({.5, 1.5, 0}, 0.0, trace, times);
+
+  const VecPt3d expected = {{.5, 1.5, 0}, {1, 1.5, 0}, {4.5, 1.5, 0}};
+  const VecDbl expectedTimes = {0, .5, 4};
+  TS_ASSERT_EQUALS((int)GTEXIT_WAITING_FOR_TIME_STEP, (int)tracer->GetExitReason());
+  TS_ASSERT_DELTA_VECPT3D(expected, trace, 1e-9);
+  TS_ASSERT_DELTA_VEC(expectedTimes, times, 1e-9);
+} // XmGridTraceUnitTests::testReachingAnIslandCoastsAcrossIt
+//------------------------------------------------------------------------------
 /// \brief A particle held still on the boundary holds there, then leaves with the field.
 ///
 /// The field spins up from rest, due east, and the seed sits on the east edge just after it
@@ -4954,6 +5023,8 @@ void XmGridTraceUnitTests::testTraceBenchmark()
   const size_t interiorExtractorBuilds = g_boundaryExtractorBuilds;
   iRunTraceBenchmark(tracer, boundarySeeds, boundary);
   iReportTraceBenchmark("boundary", boundary);
+  // Read before the mixed run, whose seeds reach the edge too.
+  const size_t boundaryExtractorBuilds = g_boundaryExtractorBuilds;
   iRunTraceBenchmark(tracer, mixedSeeds, mixed);
   iReportTraceBenchmark("mixed", mixed);
 
@@ -4971,7 +5042,7 @@ void XmGridTraceUnitTests::testTraceBenchmark()
   // ends like any other, so no exit reason shows it; the extractor that finds the crossing
   // does, being built on the first exit and never before.
   TS_ASSERT_EQUALS(size_t(0), interiorExtractorBuilds);
-  TS_ASSERT_EQUALS(size_t(1), g_boundaryExtractorBuilds);
+  TS_ASSERT_EQUALS(size_t(1), boundaryExtractorBuilds);
   // Re-latching activity onto an existing search must stay cheaper than rebuilding the
   // triangulation, or "share one triangulation and flip activity" is not even a candidate.
   TS_ASSERT(flipSeconds < triSeconds);

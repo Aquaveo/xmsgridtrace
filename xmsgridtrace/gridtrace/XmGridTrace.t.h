@@ -77,6 +77,8 @@ public:
   void testCalmAtTheCrossingDoesNotStopTheCoast();
   void testDryCellOnTheBoundaryStopsTheTrace();
   void testLeavingAcrossAGapCoastsFromWhereItLeft();
+  void testSeedOnADryCellsEdgeStopsThere();
+  void testReachingAnIslandCoastsAcrossIt();
   void testStillParticleHoldsAtTheBoundary();
   void testCrossingStepThatSplitsFollowsTheField();
   void testDistanceBudgetSpentBeforeTheBoundary();
