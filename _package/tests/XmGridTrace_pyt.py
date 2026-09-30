@@ -113,8 +113,9 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
-        expected_out_trace = [(.5, .5, 0), (1, 1, 0)]
-        expected_out_times = [.5, 1]
+        # Past the corner it leaves by, it coasts on at (1, 1) to the end of the window.
+        expected_out_trace = [(.5, .5, 0), (1, 1, 0), (10, 10, 0)]
+        expected_out_times = [.5, 1, 10]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
@@ -149,8 +150,9 @@ class TestGridTrace(unittest.TestCase):
         expected_out_trace = [(.5, .5, 0),
                               (0.67677668424809445, 0.67677668424809445, 0.00000000000000000),
                               (0.85355336849618890, 0.85355336849618890, 0.00000000000000000),
-                              (1, 1, 0)]
-        expected_out_times = [.5, 0.67677668424809445, 0.85355336849618890, 1]
+                              (1, 1, 0),
+                              (10, 10, 0)]
+        expected_out_times = [.5, 0.67677668424809445, 0.85355336849618890, 1, 10]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
@@ -171,8 +173,9 @@ class TestGridTrace(unittest.TestCase):
                               (0.60000000149011612, 0.60000000149011612, 0),
                               (0.72000000327825542, 0.72000000327825542, 0),
                               (0.86400000542402267, 0.86400000542402267, 0),
-                              (1, 1, 0)]
-        expected_out_times = [.5, 1.5, 2.7, 4.14, 5.5]
+                              (1, 1, 0),
+                              (1.45, 1.45, 0)]
+        expected_out_times = [.5, 1.5, 2.7, 4.14, 5.5, 10]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
@@ -692,7 +695,7 @@ class TestGridTrace(unittest.TestCase):
         np.testing.assert_array_almost_equal((8, 3, 2), traces[0][0])
 
     def test_point_field_positions_take_z_from_the_points(self):
-        """Traced through a point field, every z comes from the grid's points, not the seed's z."""
+        """Traced through a point field, every z on the grid comes from its points, not the seed's z."""
         # Imported here rather than at module scope, which would change the import order
         # test_extractor_can_be_imported_alongside exercises.
         from xms.extractor import UGrid2dDataExtractor
@@ -706,10 +709,15 @@ class TestGridTrace(unittest.TestCase):
         self.assertGreater(len(path), 2)
 
         # The points' elevations interpolated as point data are, which does not depend on the
-        # diagonal the quad is cut along.
+        # diagonal the quad is cut along. Past the quad there is no surface: a trace that leaves
+        # coasts on at the z it crossed the boundary with.
         elevations = UGrid2dDataExtractor(ugrid)
         elevations.set_grid_point_scalars([0, 0, 10, 0], [], 'points')
-        expected = [(x, y, elevations.extract_at_location((x, y, 0))) for x, y, _z in path]
+        expected = []
+        for x, y, _z in path:
+            on_quad = -1e-9 <= x <= 10 + 1e-9 and -1e-9 <= y <= 10 + 1e-9
+            z = elevations.extract_at_location((x, y, 0)) if on_quad else expected[-1][2]
+            expected.append((x, y, z))
         np.testing.assert_array_almost_equal(expected, path, decimal=5)
 
     def test_extractor_can_be_imported_alongside(self):
@@ -804,8 +812,8 @@ class TestGridTrace(unittest.TestCase):
 
         result_tuple = tracer.trace_point((.5, .5, 0), start_time)
 
-        expected_out_trace = [(.5, .5, 0), (1, 1, 0)]
-        expected_out_times = [-.1, .4]
+        expected_out_trace = [(.5, .5, 0), (1, 1, 0), (10.6, 10.6, 0)]
+        expected_out_times = [-.1, .4, 10]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
@@ -876,7 +884,8 @@ class TestGridTrace(unittest.TestCase):
                               (1.1529537134766579, 0.50000000000000000, 0.00000000000000000),
                               (1.4957102079987525, 0.50000000000000000, 0.00000000000000000),
                               (1.9923067892670629, 0.50000000000000000, 0.00000000000000000),
-                              (2, .5, 0)]
+                              (2, .5, 0),
+                              (2.0063227894759184, .5, 0)]
         expected_out_times = [0,
                               1.0000000000000000,
                               2.2000000000000002,
@@ -884,7 +893,8 @@ class TestGridTrace(unittest.TestCase):
                               5.3680000000000003,
                               7.4416000000000002,
                               9.9299199999999992,
-                              9.9683860530914945]
+                              9.9683860530914945,
+                              10]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
@@ -917,7 +927,8 @@ class TestGridTrace(unittest.TestCase):
                               (1.6587784227485147, 0.50000000000000000, 0.00000000000000000),
                               (1.7743310862797812, 0.50000000000000000, 0.00000000000000000),
                               (1.9129942825173010, 0.50000000000000000, 0.00000000000000000),
-                              (2, .5, 0)]
+                              (2, .5, 0),
+                              (2.0746527088905355, .5, 0)]
         expected_out_times = [0,
                               1.0000000000000000,
                               1.6000000000000001,
@@ -937,7 +948,8 @@ class TestGridTrace(unittest.TestCase):
                               7.9206286002749442,
                               8.4983919093219331,
                               9.1917078801783187,
-                              9.6267364611093829]
+                              9.6267364611093829,
+                              10]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
@@ -959,14 +971,16 @@ class TestGridTrace(unittest.TestCase):
                               (0.95481600679159162, 0.5, 0),
                               (1.2691074101881981, 0.5, 0),
                               (1.747260385068264, 0.5, 0),
-                              (2, 0.5, 0)]
+                              (2, 0.5, 0),
+                              (2.449326304114714, 0.5, 0)]
         expected_out_times = [10,
                               11,
                               12.199999999999999,
                               13.640000000000001,
                               15.368,
                               17.441600000000001,
-                              18.362609001148471]
+                              18.362609001148471,
+                              20]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
 
@@ -995,6 +1009,8 @@ class TestGridTrace(unittest.TestCase):
                               13.969279307058475]
         np.testing.assert_array_almost_equal(expected_out_trace, result_tuple[0])
         np.testing.assert_array_almost_equal(expected_out_times, result_tuple[1])
+        # An inactive cell is not the boundary: the trace stops at its edge rather than coasting.
+        self.assertEqual(exit_reason_enum.LEFT_GRID, tracer.get_exit_reason())
 
     def test_start_inactive_cell(self):
         """Test functionality of starting in an inactive cell."""

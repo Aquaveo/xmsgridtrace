@@ -161,8 +161,8 @@ class GridTrace(object):
     def trace_point(self, pt, pt_time):
         """Run the grid trace for a point.
 
-        Each position's z is the grid's surface there, as get_trace_results describes, so the z of pt is
-        not used.
+        Each position on the grid takes its z from the grid's surface there, as get_trace_results
+        describes, so the z of pt is not used.
 
         Args:
             pt (iterable): The starting point of the trace
@@ -211,8 +211,8 @@ class GridTrace(object):
         Stopping early is fine: traces still waiting end where they got to. One batch is in flight per
         tracer; starting a batch discards any previous one.
 
-        Only the x and y of each point are used; every position a trace returns takes its z from the
-        grid's surface (see get_trace_results).
+        Only the x and y of each point are used; every position a trace returns on the grid takes its z
+        from the grid's surface (see get_trace_results).
 
         Args:
             pts (iterable): The starting point of each trace
@@ -264,11 +264,14 @@ class GridTrace(object):
         """Return the batch traced so far.
 
         Valid at any point, complete once continue_traces has returned zero. An entry can hold fewer
-        than two points: a seed that leaves the grid on its first step yields only the seed itself, so
-        callers must not assume one usable polyline per seed.
+        than two points: a seed on the edge of an inactive cell that steps straight into it can yield
+        only the seed itself, so callers must not assume one usable polyline per seed. Leaving the grid
+        is not such a case: past the boundary there is no field, so the trace coasts on in a straight
+        line at the velocity it crossed with, keeping the crossing's z, and ends on a budget or waits
+        at the end of the window like any other.
 
-        Every position's z is the grid's at its x and y, the seed's included, whatever z the seed was
-        given, interpolated in the same triangle as the field there. A cell-located field is
+        Every position on the grid has the grid's z at its x and y, the seed's included, whatever z the
+        seed was given, interpolated in the same triangle as the field there. A cell-located field is
         triangulated as the fan a display draws the grid with: each cell split into triangles around its
         area centroid, which sits at the mean of the cell's point elevations -- or ear cut, where that
         centroid falls outside the cell. A point-located field is triangulated between the grid's own
