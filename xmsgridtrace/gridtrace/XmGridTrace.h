@@ -36,8 +36,8 @@ class dyn_bitset;
 /// \brief Why a trace stopped.
 ///
 /// Reported per trace instead of the message string it replaced. A batch traces every
-/// visible glyph -- tens of thousands of them -- and a caller has to be able to tell "left
-/// the grid, draw it short" from "spent its distance budget, this is the normal ending"
+/// visible glyph -- tens of thousands of them -- and a caller has to be able to tell "ran
+/// into dry cells, draw it short" from "spent its distance budget, this is the normal ending"
 /// without comparing strings. The old messages could not support that anyway: they were
 /// composed by appending, so no fixed string identified a case.
 ///
@@ -62,12 +62,23 @@ class dyn_bitset;
 /// again. The tracer cannot see past the second loaded step, and treating dead water as waiting
 /// would keep every trace seeded in it alive, and every time step loading, for the rest of the
 /// series.
+///
+/// Crossing the grid's outer boundary ends no trace. Past it there is no field, so the trace
+/// coasts on in a straight line at the velocity it crossed with -- continuing its last step
+/// without a bend -- and ends like any other, on a budget or waiting at the end of the window.
+/// The coast keeps the z of the crossing, there being no surface to lay it on, and does not
+/// follow the field again if its line passes back over the grid. An inactive cell is not the
+/// boundary: a trace still stops at its edge, with GTEXIT_LEFT_GRID, including one it would
+/// cross on its way out of the grid. A calm where the trace crosses does not stop it either,
+/// since the coast does not use the field there. A particle held still by a calm field, as
+/// described above, does not leave at all: its step points wherever interpolation noise does,
+/// so it holds at the boundary instead, and moves off when the field picks up.
 enum XmGridTraceExitEnum {
   GTEXIT_NOT_STARTED,           ///< no stepping has happened yet
   GTEXIT_WAITING_FOR_TIME_STEP, ///< reached the 2nd loaded step; supply a later one to resume
   GTEXIT_MAX_TRACING_TIME,      ///< the trace spent its time budget
   GTEXIT_MAX_TRACING_DISTANCE,  ///< the trace spent its distance budget
-  GTEXIT_LEFT_GRID,             ///< stepped out of the grid; the path stops at the boundary
+  GTEXIT_LEFT_GRID,             ///< stepped into an inactive cell; the path stops at its edge
   GTEXIT_ZERO_VELOCITY,         ///< the field is still under the particle at both loaded steps
   GTEXIT_MIN_DELTA_TIME,        ///< subdividing reached the smallest allowed step
   GTEXIT_SEED_NOT_TRACEABLE,    ///< the seed has no field there, or its point or cell is inactive
@@ -157,7 +168,8 @@ public:
 
   /// \brief Runs the Grid Trace for a point
   ///
-  /// Each position's z is the grid's surface there, as GetTraceResults describes.
+  /// Each position on the grid takes its z from the grid's surface there, as GetTraceResults
+  /// describes.
   /// \param[in] a_pt The starting point of the trace
   /// \param[in] a_ptTime The starting time of the trace
   /// \param[out] a_outTrace the resultant positions at each step
@@ -206,15 +218,17 @@ public:
   /// \brief Copies out the batch traced so far. Valid at any point, complete once
   ///        ContinueTraces has returned zero.
   ///
-  /// An entry can hold fewer than two points: a seed that leaves the grid on its very first
-  /// step yields only the seed itself, so callers must not assume one usable polyline per
-  /// seed.
+  /// An entry can hold fewer than two points: a seed on the edge of an inactive cell that
+  /// steps straight into it can yield only the seed itself, so callers must not assume one
+  /// usable polyline per seed. Leaving the grid is not such a case; the trace coasts on past
+  /// the boundary (see XmGridTraceExitEnum).
   ///
-  /// Every position's z is the grid's at its x and y, the seed's included, whatever z the
-  /// seed was given. Where the field was looked up, the z is interpolated in the same
-  /// triangle, with the same weights, so it costs no search of its own; the end of a path cut
-  /// short by the max tracing distance, where it was not, is searched for in the same
-  /// triangulation.
+  /// Every position on the grid has the grid's z at its x and y, the seed's included,
+  /// whatever z the seed was given; past the boundary a coasting trace keeps the z it crossed
+  /// with, there being no surface. Where the field was looked up, the z is interpolated in
+  /// the same triangle, with the same weights, so it costs no search of its own; the end of a
+  /// path cut short by the max tracing distance inside the grid, where it was not, is searched
+  /// for in the same triangulation.
   ///
   /// A cell-located field is triangulated as each cell's centroid fan -- triangles around its
   /// area centroid, which sits at the mean of the cell's point elevations, or ear cut where

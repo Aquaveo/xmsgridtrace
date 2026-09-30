@@ -69,7 +69,17 @@ public:
   void testMaxDistanceEndLiesOnTheSurface();
   void testSurfaceZWhenStepsDoNotShareATriangulation();
   void testStillEndLiesOnTheSurface();
-  void testLeftGridEndLiesOnTheSurface();
+  void testLeftGridCoastsAtTheCrossingZ();
+  void testLeavingTheGridContinuesItsLastStep();
+  void testCoastingTraceWaitsForTheNextTimeStep();
+  void testCoastingTraceSpendsItsDistanceAcrossTimeSteps();
+  void testSeedOnTheBoundaryCoastsFromIt();
+  void testCalmAtTheCrossingDoesNotStopTheCoast();
+  void testDryCellOnTheBoundaryStopsTheTrace();
+  void testLeavingAcrossAGapCoastsFromWhereItLeft();
+  void testStillParticleHoldsAtTheBoundary();
+  void testCrossingStepThatSplitsFollowsTheField();
+  void testDistanceBudgetSpentBeforeTheBoundary();
   void testTraceBenchmark();
 
 }; // XmGridTraceUnitTests
